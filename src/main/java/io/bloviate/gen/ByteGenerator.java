@@ -14,11 +14,10 @@ public class ByteGenerator implements DataGenerator<Byte[]> {
 
     public static class Builder {
 
-        private int size;
+        private final int size;
 
-        public Builder size(int size) {
+        public Builder(int size) {
             this.size = size;
-            return this;
         }
 
         public ByteGenerator build() {
