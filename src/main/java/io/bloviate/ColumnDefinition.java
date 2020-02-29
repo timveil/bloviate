@@ -4,16 +4,16 @@ import io.bloviate.gen.DataGenerator;
 
 public class ColumnDefinition {
 
-    private final String name;
+    private final String header;
     private final DataGenerator dataGenerator;
 
-    public ColumnDefinition(String name, DataGenerator dataGenerator) {
-        this.name = name;
+    public ColumnDefinition(String header, DataGenerator dataGenerator) {
+        this.header = header;
         this.dataGenerator = dataGenerator;
     }
 
-    public String getName() {
-        return name;
+    public String getHeader() {
+        return header;
     }
 
     public DataGenerator getDataGenerator() {

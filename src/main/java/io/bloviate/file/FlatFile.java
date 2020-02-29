@@ -1,10 +1,13 @@
 package io.bloviate.file;
 
 import io.bloviate.ColumnDefinition;
-import io.bloviate.CsvFile;
-import io.bloviate.FileDefinition;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 
-import java.io.File;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,8 +20,26 @@ public class FlatFile implements FileGenerator {
     private final long rows;
 
     @Override
-    public File generate() {
-        return null;
+    public void generate() {
+
+        String extension = definition.getFileType().getExtension();
+        String output = fileName + '.' + extension;
+
+        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(output));
+             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT);
+        ) {
+
+            for (int i = 0; i < rows; i++) {
+                for (ColumnDefinition columnDefinition : columnDefinitions) {
+                    csvPrinter.print(columnDefinition.getDataGenerator().generate());
+                }
+                csvPrinter.println();
+            }
+
+            csvPrinter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -30,10 +51,10 @@ public class FlatFile implements FileGenerator {
         private List<ColumnDefinition> columnDefinitions = new ArrayList<>();
         private long rows = 1000;
 
-        public Builder name(String fileName) {
+        public Builder(String fileName) {
             this.fileName = fileName;
-            return this;
         }
+
 
         public Builder output(FileDefinition fileDefinition) {
             this.definition = fileDefinition;
@@ -69,7 +90,7 @@ public class FlatFile implements FileGenerator {
         this.fileName = builder.fileName;
         this.columnDefinitions = builder.columnDefinitions;
         this.compress = builder.compress;
-        this.definition  = builder.definition;
+        this.definition = builder.definition;
         this.rows = builder.rows;
     }
 

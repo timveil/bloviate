@@ -1,8 +1,8 @@
-package io.bloviate;
+package io.bloviate.file;
 
 public class CsvFile extends FileDefinition {
 
     public CsvFile() {
-        super(',', ".csv");
+        super(FileType.CSV);
     }
 }
