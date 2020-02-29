@@ -14,16 +14,17 @@ public class ByteGenerator implements DataGenerator<Byte[]> {
 
     @Override
     public String generateAsString() {
-        return null;
+        return new String(ArrayUtils.toPrimitive(generate()));
     }
 
 
     public static class Builder {
 
-        private final int size;
+        private int size = 100;
 
-        public Builder(int size) {
+        public Builder size(int size) {
             this.size = size;
+            return this;
         }
 
         public ByteGenerator build() {
