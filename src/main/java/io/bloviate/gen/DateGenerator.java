@@ -18,6 +18,11 @@ public class DateGenerator implements DataGenerator<Date> {
         return new Date(randomTime);
     }
 
+    @Override
+    public String generateAsString() {
+        return generate().toString();
+    }
+
     public static class Builder {
 
         private Date startInclusive = new Date(0);

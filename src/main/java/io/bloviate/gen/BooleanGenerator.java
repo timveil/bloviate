@@ -9,6 +9,11 @@ public class BooleanGenerator implements DataGenerator<Boolean> {
         return RandomUtils.nextBoolean();
     }
 
+    @Override
+    public String generateAsString() {
+        return generate().toString();
+    }
+
     public static class Builder {
         public BooleanGenerator build() {
             return new BooleanGenerator(this);

@@ -12,6 +12,11 @@ public class LongGenerator implements DataGenerator<Long> {
         return RandomUtils.nextLong(startInclusive, endExclusive);
     }
 
+    @Override
+    public String generateAsString() {
+        return generate().toString();
+    }
+
     public static class Builder {
 
         private long startInclusive = 0;

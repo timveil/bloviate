@@ -12,6 +12,11 @@ public class ShortGenerator implements DataGenerator<Short> {
         return (short) RandomUtils.nextInt(startInclusive, endExclusive);
     }
 
+    @Override
+    public String generateAsString() {
+        return generate().toString();
+    }
+
     public static class Builder {
 
         private int startInclusive = 0;

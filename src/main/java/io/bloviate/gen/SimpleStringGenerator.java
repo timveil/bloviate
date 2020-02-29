@@ -13,6 +13,11 @@ public class SimpleStringGenerator implements DataGenerator<String> {
         return RandomStringUtils.random(length, letters, numbers);
     }
 
+    @Override
+    public String generateAsString() {
+        return generate();
+    }
+
     public static class Builder {
 
         private int length = 10;

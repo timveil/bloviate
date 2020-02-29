@@ -1,5 +1,6 @@
 package io.bloviate.gen;
 
+import java.sql.Date;
 import java.sql.Timestamp;
 
 public class SqlTimestampGenerator implements DataGenerator<Timestamp> {
@@ -16,6 +17,11 @@ public class SqlTimestampGenerator implements DataGenerator<Timestamp> {
                 .build().generate();
 
         return new Timestamp(randomTime);
+    }
+
+    @Override
+    public String generateAsString() {
+        return generate().toString();
     }
 
     public static class Builder {

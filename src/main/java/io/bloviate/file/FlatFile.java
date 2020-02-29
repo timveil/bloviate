@@ -3,6 +3,8 @@ package io.bloviate.file;
 import io.bloviate.ColumnDefinition;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -12,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FlatFile implements FileGenerator {
+
+    final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final String fileName;
     private final FileDefinition definition;
@@ -28,18 +32,26 @@ public class FlatFile implements FileGenerator {
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(output));
              CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT);
         ) {
+            printHeader(csvPrinter);
 
             for (int i = 0; i < rows; i++) {
                 for (ColumnDefinition columnDefinition : columnDefinitions) {
-                    csvPrinter.print(columnDefinition.getDataGenerator().generate());
+                    csvPrinter.print(columnDefinition.getDataGenerator().generateAsString());
                 }
                 csvPrinter.println();
             }
 
             csvPrinter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
+    }
+
+    private void printHeader(CSVPrinter csvPrinter) throws IOException {
+        for (ColumnDefinition columnDefinition : columnDefinitions) {
+            csvPrinter.print(columnDefinition.getHeader());
+        }
+        csvPrinter.println();
     }
 
 

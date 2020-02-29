@@ -9,6 +9,12 @@ public class CharacterGenerator implements DataGenerator<Character> {
         return (char) (RandomUtils.nextInt(0, 26) + 'a');
     }
 
+    @Override
+    public String generateAsString() {
+        return generate().toString();
+    }
+
+
     public static class Builder {
         public CharacterGenerator build() {
             return new CharacterGenerator(this);

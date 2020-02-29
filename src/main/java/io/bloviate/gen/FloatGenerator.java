@@ -12,6 +12,12 @@ public class FloatGenerator implements DataGenerator<Float> {
         return RandomUtils.nextFloat(startInclusive, endExclusive);
     }
 
+    @Override
+    public String generateAsString() {
+        return generate().toString();
+    }
+
+
     public static class Builder {
 
         private float startInclusive = 0;

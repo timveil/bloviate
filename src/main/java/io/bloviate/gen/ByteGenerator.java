@@ -12,6 +12,12 @@ public class ByteGenerator implements DataGenerator<Byte[]> {
         return ArrayUtils.toObject(RandomUtils.nextBytes(size));
     }
 
+    @Override
+    public String generateAsString() {
+        return null;
+    }
+
+
     public static class Builder {
 
         private final int size;

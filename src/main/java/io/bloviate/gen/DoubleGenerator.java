@@ -12,6 +12,12 @@ public class DoubleGenerator implements DataGenerator<Double> {
         return RandomUtils.nextDouble(startInclusive, endExclusive);
     }
 
+    @Override
+    public String generateAsString() {
+        return generate().toString();
+    }
+
+
     public static class Builder {
 
         private double startInclusive = 0;
