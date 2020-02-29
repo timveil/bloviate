@@ -20,7 +20,7 @@ public class SqlTimestampGenerator implements DataGenerator<Timestamp> {
 
     public static class Builder {
 
-        private Timestamp startInclusive = new Timestamp(Long.MIN_VALUE);
+        private Timestamp startInclusive = new Timestamp(0);
         private Timestamp endExclusive = new Timestamp(Long.MAX_VALUE);
 
         public Builder start(Timestamp start) {

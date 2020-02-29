@@ -20,7 +20,7 @@ public class SqlTimeGenerator implements DataGenerator<Time> {
 
     public static class Builder {
 
-        private Time startInclusive = new Time(Long.MIN_VALUE);
+        private Time startInclusive = new Time(0);
         private Time endExclusive = new Time(Long.MAX_VALUE);
 
         public Builder start(Time start) {

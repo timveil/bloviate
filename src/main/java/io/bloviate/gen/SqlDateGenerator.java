@@ -21,7 +21,7 @@ public class SqlDateGenerator implements DataGenerator<Date> {
 
     public static class Builder {
 
-        private Date startInclusive = new Date(Long.MIN_VALUE);
+        private Date startInclusive = new Date(0);
         private Date endExclusive = new Date(Long.MAX_VALUE);
 
         public Builder start(Date start) {
