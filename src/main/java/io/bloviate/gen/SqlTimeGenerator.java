@@ -1,7 +1,8 @@
 package io.bloviate.gen;
 
-import java.sql.Date;
 import java.sql.Time;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 public class SqlTimeGenerator implements DataGenerator<Time> {
 
@@ -26,8 +27,8 @@ public class SqlTimeGenerator implements DataGenerator<Time> {
 
     public static class Builder {
 
-        private Time startInclusive = new Time(0);
-        private Time endExclusive = new Time(Long.MAX_VALUE);
+        private Time startInclusive = new Time(Instant.EPOCH.toEpochMilli());
+        private Time endExclusive = new Time(Instant.now().plus(100, ChronoUnit.HOURS).toEpochMilli());
 
         public Builder start(Time start) {
             this.startInclusive = start;

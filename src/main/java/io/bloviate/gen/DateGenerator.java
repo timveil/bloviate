@@ -1,5 +1,7 @@
 package io.bloviate.gen;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 public class DateGenerator implements DataGenerator<Date> {
@@ -25,8 +27,8 @@ public class DateGenerator implements DataGenerator<Date> {
 
     public static class Builder {
 
-        private Date startInclusive = new Date(0);
-        private Date endExclusive = new Date(Long.MAX_VALUE);
+        private Date startInclusive = Date.from(Instant.EPOCH);
+        private Date endExclusive = Date.from(Instant.now().plus(100, ChronoUnit.DAYS));
 
         public Builder start(Date start) {
             this.startInclusive = start;

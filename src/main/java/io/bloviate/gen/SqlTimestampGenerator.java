@@ -1,7 +1,8 @@
 package io.bloviate.gen;
 
-import java.sql.Date;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 public class SqlTimestampGenerator implements DataGenerator<Timestamp> {
 
@@ -26,8 +27,8 @@ public class SqlTimestampGenerator implements DataGenerator<Timestamp> {
 
     public static class Builder {
 
-        private Timestamp startInclusive = new Timestamp(0);
-        private Timestamp endExclusive = new Timestamp(Long.MAX_VALUE);
+        private Timestamp startInclusive = Timestamp.from(Instant.EPOCH);
+        private Timestamp endExclusive = Timestamp.from(Instant.now().plus(100, ChronoUnit.DAYS));
 
         public Builder start(Timestamp start) {
             this.startInclusive = start;
