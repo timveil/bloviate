@@ -13,7 +13,7 @@ definitions.add(new ColumnDefinition("short_col", new ShortGenerator.Builder().b
 definitions.add(new ColumnDefinition("string_col", new SimpleStringGenerator.Builder().length(10).build()));
 definitions.add(new ColumnDefinition("sql_date_col", new SqlDateGenerator.Builder().build()));
 definitions.add(new ColumnDefinition("sql_time_col", new SqlTimeGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("sql_timestamp_col", new SqlTimeGenerator.Builder().build()));
+definitions.add(new ColumnDefinition("sql_timestamp_col", new SqlTimestampGenerator.Builder().build()));
 
 new FlatFile.Builder("test").addAll(definitions).build().generate();
 ```
