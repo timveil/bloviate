@@ -52,8 +52,8 @@ public class FlatFile implements FileGenerator {
         logger.debug("writing to file [{}]", output);
 
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(output));
-             CSVPrinter csvPrinter = new CSVPrinter(writer, format);
-        ) {
+             CSVPrinter csvPrinter = new CSVPrinter(writer, format)) {
+
             printHeader(csvPrinter);
 
             for (int i = 0; i < rows; i++) {
@@ -67,6 +67,7 @@ public class FlatFile implements FileGenerator {
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
+
     }
 
     private CSVFormat getCsvFormat(FileType fileType) {

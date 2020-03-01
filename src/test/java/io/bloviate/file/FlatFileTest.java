@@ -49,5 +49,7 @@ class FlatFileTest {
         new FlatFile.Builder("target/tab-test").output(new TabDelimitedFile()).addAll(definitions).build().generate();
 
         new FlatFile.Builder("target/pipe-test").output(new PipeDelimitedFile()).addAll(definitions).build().generate();
+
+        new FlatFile.Builder("target/large-csv-test").output(new CsvFile()).addAll(definitions).rows(1000000).build().generate();
     }
 }

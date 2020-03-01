@@ -19,6 +19,8 @@ package io.bloviate.gen;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 
+import java.nio.charset.StandardCharsets;
+
 public class ByteGenerator implements DataGenerator<Byte[]> {
 
     private final int size;
@@ -30,7 +32,7 @@ public class ByteGenerator implements DataGenerator<Byte[]> {
 
     @Override
     public String generateAsString() {
-        return new String(ArrayUtils.toPrimitive(generate()));
+        return new String(ArrayUtils.toPrimitive(generate()), StandardCharsets.UTF_8);
     }
 
 
