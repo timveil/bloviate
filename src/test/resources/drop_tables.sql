@@ -1,0 +1,11 @@
+drop table if exists bit_table;
+drop table if exists bool_table;
+drop table if exists bytes_table;
+drop table if exists date_table;
+drop table if exists decimal_table;
+drop table if exists float_table;
+drop table if exists inet_table;
+drop table if exists string_table;
+drop table if exists int_table;
+drop table if exists time_table;
+drop table if exists timestamp_table;

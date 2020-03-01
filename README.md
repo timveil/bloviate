@@ -22,3 +22,12 @@ new FlatFile.Builder("target/tab-test").output(new TabDelimitedFile()).addAll(de
 
 new FlatFile.Builder("target/pipe-test").output(new PipeDelimitedFile()).addAll(definitions).build().generate();
 ```
+
+CREATE TABLE array_table
+(
+    id uuid PRIMARY KEY,
+    a ARRAY
+    b string[]
+);
+
+  Cause: org.postgresql.util.PSQLException: ERROR: at or near "array": syntax error

@@ -22,6 +22,7 @@ import io.bloviate.gen.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringJoiner;
 
 public class TableFiller implements DatabaseFiller {
 
@@ -30,6 +31,8 @@ public class TableFiller implements DatabaseFiller {
     private final String catalog;
     private final String schemaPattern;
     private final String columnNamePattern;
+    private final int rows;
+    private final int batchSize;
 
     @Override
     public void fill() throws SQLException {
@@ -37,6 +40,33 @@ public class TableFiller implements DatabaseFiller {
         DatabaseMetaData databaseMetaData = connection.getMetaData();
 
         List<ColumnDefinition> definitions = getColumnDefinitions(databaseMetaData);
+
+        StringJoiner joiner = new StringJoiner(",");
+        for (int i=0; i < definitions.size(); i++) {
+            joiner.add("?");
+        }
+        String valuesString = joiner.toString();
+
+        String sql = String.format("insert into %s values (%s)", tableName, valuesString);
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            int rowCount = 0;
+            for (int i = 0; i < rows; i++) {
+
+                int colCount = 1;
+                for (ColumnDefinition definition : definitions) {
+                    ps.setObject(colCount, definition.getDataGenerator().generate());
+                    colCount++;
+                }
+
+                if (++rowCount % batchSize == 0) {
+                    ps.executeBatch();
+                }
+            }
+
+            ps.executeBatch();
+        }
 
     }
 
@@ -156,6 +186,8 @@ public class TableFiller implements DatabaseFiller {
         private String catalog = null;
         private String schemaPattern = "public";
         private String columnNamePattern = null;
+        private int rows = 1000;
+        private int batchSize = 128;
 
         public Builder(Connection connection, String tableName) {
             this.connection = connection;
@@ -177,6 +209,16 @@ public class TableFiller implements DatabaseFiller {
             return this;
         }
 
+        public Builder rows(int rows) {
+            this.rows = rows;
+            return this;
+        }
+
+        public Builder batchSize(int batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
+
         public TableFiller build() {
             return new TableFiller(this);
         }
@@ -188,5 +230,7 @@ public class TableFiller implements DatabaseFiller {
         this.catalog = builder.catalog;
         this.schemaPattern = builder.schemaPattern;
         this.columnNamePattern = builder.columnNamePattern;
+        this.rows = builder.rows;
+        this.batchSize = builder.batchSize;
     }
 }
