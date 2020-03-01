@@ -37,7 +37,6 @@ public class FlatFile implements FileGenerator {
              CSVPrinter csvPrinter = new CSVPrinter(writer, format);
         ) {
             printHeader(csvPrinter);
-            printHeader(csvPrinter);
 
             for (int i = 0; i < rows; i++) {
                 for (ColumnDefinition columnDefinition : columnDefinitions) {
