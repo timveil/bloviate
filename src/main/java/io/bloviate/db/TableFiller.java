@@ -18,6 +18,8 @@ package io.bloviate.db;
 
 import io.bloviate.ColumnDefinition;
 import io.bloviate.gen.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -25,6 +27,8 @@ import java.util.List;
 import java.util.StringJoiner;
 
 public class TableFiller implements DatabaseFiller {
+
+    final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Connection connection;
     private final String tableName;
@@ -42,7 +46,7 @@ public class TableFiller implements DatabaseFiller {
         List<ColumnDefinition> definitions = getColumnDefinitions(databaseMetaData);
 
         StringJoiner joiner = new StringJoiner(",");
-        for (int i=0; i < definitions.size(); i++) {
+        for (int i = 0; i < definitions.size(); i++) {
             joiner.add("?");
         }
         String valuesString = joiner.toString();
@@ -81,6 +85,8 @@ public class TableFiller implements DatabaseFiller {
                 int size = columns.getInt("COLUMN_SIZE");
                 int decimalDigits = columns.getInt("DECIMAL_DIGITS");
                 int radix = columns.getInt("NUM_PREC_RADIX");
+
+                logger.debug("table [{}], column_name [{}], data_type [{}], column_size[{}], digits[{}], radix[{}]", tableName, name, sqlType, size, decimalDigits, radix);
 
                 JDBCType jdbcType = JDBCType.valueOf(sqlType);
 
