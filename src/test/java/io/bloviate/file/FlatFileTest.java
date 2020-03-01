@@ -31,8 +31,7 @@ class FlatFileTest {
         List<ColumnDefinition> definitions = new ArrayList<>();
 
         definitions.add(new ColumnDefinition("boolean_col", new BooleanGenerator.Builder().build()));
-        // not sure it makes sense to write byte[] as strings to file
-        //definitions.add(new ColumnDefinition("byte_col", new ByteGenerator.Builder().build()));
+        definitions.add(new ColumnDefinition("byte_col", new ByteGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("date_col", new DateGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("double_col", new DoubleGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("float_col", new FloatGenerator.Builder().build()));
