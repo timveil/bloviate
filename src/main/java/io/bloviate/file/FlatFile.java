@@ -49,6 +49,8 @@ public class FlatFile implements FileGenerator {
 
         String output = fileName + '.' + extension;
 
+        logger.debug("writing to file [{}]", output);
+
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(output));
              CSVPrinter csvPrinter = new CSVPrinter(writer, format);
         ) {
