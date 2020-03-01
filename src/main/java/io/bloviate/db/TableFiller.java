@@ -53,6 +53,8 @@ public class TableFiller implements DatabaseFiller {
 
         String sql = String.format("insert into %s values (%s)", tableName, valuesString);
 
+        logger.debug(sql);
+
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
             int rowCount = 0;
@@ -63,6 +65,7 @@ public class TableFiller implements DatabaseFiller {
                     ps.setObject(colCount, definition.getDataGenerator().generate());
                     colCount++;
                 }
+                ps.addBatch();
 
                 if (++rowCount % batchSize == 0) {
                     ps.executeBatch();
@@ -173,6 +176,8 @@ public class TableFiller implements DatabaseFiller {
                     generator = new UUIDGenerator.Builder().build();
                 } else if ("varbit".equalsIgnoreCase(typeName)) {
                     generator = new BitGenerator.Builder().build();
+                } else if ("inet".equalsIgnoreCase(typeName)) {
+                    generator = new SimpleStringGenerator.Builder().build();
                 } else {
                     throw new UnsupportedOperationException("Data Type [" + typeName + "] for OTHER not supported");
                 }
