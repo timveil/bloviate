@@ -8,6 +8,28 @@
     <artifactId>bloviate</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <packaging>jar</packaging>
+
+    <name>Bloviate</name>
+    <description>Dummy data generator for Java</description>
+    <url>https://github.com/timveil/bloviate</url>
+    <inceptionYear>2020</inceptionYear>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>timveil</id>
+            <name>Tim Veil</name>
+            <email>tjveil@gmail.com</email>
+            <url>https://github.com/timveil</url>
+        </developer>
+    </developers>
 
     <properties>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -18,6 +40,7 @@
     </properties>
 
     <dependencies>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
@@ -56,7 +79,6 @@
 
         </plugins>
     </build>
-
 
 
 </project>
