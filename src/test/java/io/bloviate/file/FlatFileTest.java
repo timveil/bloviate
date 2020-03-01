@@ -28,6 +28,10 @@ class FlatFileTest {
         definitions.add(new ColumnDefinition("sql_timestamp_col", new SqlTimestampGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("sql_uuid_col", new UUIDGenerator.Builder().build()));
 
-        new FlatFile.Builder("test").addAll(definitions).build().generate();
+        new FlatFile.Builder("target/csv-test").addAll(definitions).build().generate();
+
+        new FlatFile.Builder("target/tab-test").output(new TabDelimitedFile()).addAll(definitions).build().generate();
+
+        new FlatFile.Builder("target/pipe-test").output(new PipeDelimitedFile()).addAll(definitions).build().generate();
     }
 }

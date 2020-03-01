@@ -26,12 +26,17 @@ public class FlatFile implements FileGenerator {
     @Override
     public void generate() {
 
-        String extension = definition.getFileType().getExtension();
+        FileType fileType = definition.getFileType();
+        String extension = fileType.getExtension();
+
+        CSVFormat format = getCsvFormat(fileType);
+
         String output = fileName + '.' + extension;
 
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(output));
-             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT);
+             CSVPrinter csvPrinter = new CSVPrinter(writer, format);
         ) {
+            printHeader(csvPrinter);
             printHeader(csvPrinter);
 
             for (int i = 0; i < rows; i++) {
@@ -45,6 +50,24 @@ public class FlatFile implements FileGenerator {
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+    private CSVFormat getCsvFormat(FileType fileType) {
+        CSVFormat format;
+        switch (fileType) {
+            case CSV:
+                format = CSVFormat.DEFAULT;
+                break;
+            case TDV:
+                format = CSVFormat.TDF;
+                break;
+            case PIPE:
+                format = CSVFormat.DEFAULT.withDelimiter('|');
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + fileType);
+        }
+        return format;
     }
 
     private void printHeader(CSVPrinter csvPrinter) throws IOException {
