@@ -44,6 +44,7 @@ class FlatFileTest {
         definitions.add(new ColumnDefinition("sql_time_col", new SqlTimeGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("sql_timestamp_col", new SqlTimestampGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("sql_uuid_col", new UUIDGenerator.Builder().build()));
+        definitions.add(new ColumnDefinition("instant_col", new InstantGenerator.Builder().build()));
 
         new FlatFile.Builder("target/csv-test").addAll(definitions).build().generate();
 
@@ -51,6 +52,6 @@ class FlatFileTest {
 
         new FlatFile.Builder("target/pipe-test").output(new PipeDelimitedFile()).addAll(definitions).build().generate();
 
-        new FlatFile.Builder("target/large-csv-test").output(new CsvFile()).addAll(definitions).rows(1000000).build().generate();
+        //new FlatFile.Builder("target/large-csv-test").output(new CsvFile()).addAll(definitions).rows(1000000).build().generate();
     }
 }
