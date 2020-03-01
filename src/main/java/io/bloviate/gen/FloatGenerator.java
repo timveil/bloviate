@@ -33,6 +33,13 @@ public class FloatGenerator implements DataGenerator<Float> {
         return generate().toString();
     }
 
+    public float getStartInclusive() {
+        return startInclusive;
+    }
+
+    public float getEndExclusive() {
+        return endExclusive;
+    }
 
     public static class Builder {
 

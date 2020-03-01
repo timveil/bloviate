@@ -41,6 +41,14 @@ public class SqlTimeGenerator implements DataGenerator<Time> {
         return generate().toString();
     }
 
+    public Time getStartInclusive() {
+        return startInclusive;
+    }
+
+    public Time getEndExclusive() {
+        return endExclusive;
+    }
+
     public static class Builder {
 
         private Time startInclusive = new Time(Instant.EPOCH.toEpochMilli());

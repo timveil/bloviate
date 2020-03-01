@@ -41,6 +41,14 @@ public class DateGenerator implements DataGenerator<Date> {
         return generate().toString();
     }
 
+    public Date getStartInclusive() {
+        return startInclusive;
+    }
+
+    public Date getEndExclusive() {
+        return endExclusive;
+    }
+
     public static class Builder {
 
         private Date startInclusive = Date.from(Instant.EPOCH);

@@ -46,11 +46,17 @@ class FlatFileTest {
         definitions.add(new ColumnDefinition("sql_uuid_col", new UUIDGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("instant_col", new InstantGenerator.Builder().build()));
 
-        new FlatFile.Builder("target/csv-test").addAll(definitions).build().generate();
+        FlatFile csv = new FlatFile.Builder("target/csv-test").addAll(definitions).build();
+        csv.generate();
+        csv.yaml();
 
-        new FlatFile.Builder("target/tab-test").output(new TabDelimitedFile()).addAll(definitions).build().generate();
+        FlatFile tab = new FlatFile.Builder("target/tab-test").output(new TabDelimitedFile()).addAll(definitions).build();
+        tab.generate();
+        tab.yaml();
 
-        new FlatFile.Builder("target/pipe-test").output(new PipeDelimitedFile()).addAll(definitions).build().generate();
+        FlatFile pipe = new FlatFile.Builder("target/pipe-test").output(new PipeDelimitedFile()).addAll(definitions).build();
+        pipe.generate();
+        pipe.yaml();
 
         //new FlatFile.Builder("target/large-csv-test").output(new CsvFile()).addAll(definitions).rows(1000000).build().generate();
     }

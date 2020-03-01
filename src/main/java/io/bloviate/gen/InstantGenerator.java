@@ -40,6 +40,14 @@ public class InstantGenerator implements DataGenerator<Instant> {
         return generate().toString();
     }
 
+    public Instant getStartInclusive() {
+        return startInclusive;
+    }
+
+    public Instant getEndExclusive() {
+        return endExclusive;
+    }
+
     public static class Builder {
 
         private Instant startInclusive = Instant.EPOCH;

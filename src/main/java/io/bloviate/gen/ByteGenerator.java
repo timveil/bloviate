@@ -35,6 +35,9 @@ public class ByteGenerator implements DataGenerator<Byte[]> {
         return new String(ArrayUtils.toPrimitive(generate()), StandardCharsets.UTF_8);
     }
 
+    public int getSize() {
+        return size;
+    }
 
     public static class Builder {
 

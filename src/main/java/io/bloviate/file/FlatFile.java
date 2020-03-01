@@ -16,6 +16,10 @@
 
 package io.bloviate.file;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import io.bloviate.ColumnDefinition;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -23,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -32,6 +37,14 @@ import java.util.List;
 public class FlatFile implements FileGenerator {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
+
+
+    private static final YAMLFactory yamlFactory = new YAMLFactory()
+            .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
+            .disable(YAMLGenerator.Feature.USE_NATIVE_TYPE_ID);
+
+    private static final ObjectMapper mapper = new ObjectMapper(yamlFactory)
+            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
     private final String fileName;
     private final FileDefinition definition;
@@ -70,6 +83,35 @@ public class FlatFile implements FileGenerator {
 
     }
 
+    @Override
+    public void yaml() {
+        try {
+            mapper.writeValue(new File(fileName + ".yaml"), this);
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public FileDefinition getDefinition() {
+        return definition;
+    }
+
+    public boolean isCompress() {
+        return compress;
+    }
+
+    public List<ColumnDefinition> getColumnDefinitions() {
+        return columnDefinitions;
+    }
+
+    public long getRows() {
+        return rows;
+    }
+
     private CSVFormat getCsvFormat(FileType fileType) {
         CSVFormat format;
         switch (fileType) {
@@ -94,7 +136,6 @@ public class FlatFile implements FileGenerator {
         }
         csvPrinter.println();
     }
-
 
     public static class Builder {
 

@@ -34,6 +34,18 @@ public class SimpleStringGenerator implements DataGenerator<String> {
         return generate();
     }
 
+    public int getLength() {
+        return length;
+    }
+
+    public boolean isLetters() {
+        return letters;
+    }
+
+    public boolean isNumbers() {
+        return numbers;
+    }
+
     public static class Builder {
 
         private int length = 10;
