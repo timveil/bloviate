@@ -10,7 +10,7 @@ import java.util.List;
 class FlatFileTest {
 
     @Test
-    void generate() {
+    public void generate() {
 
         List<ColumnDefinition> definitions = new ArrayList<>();
 
