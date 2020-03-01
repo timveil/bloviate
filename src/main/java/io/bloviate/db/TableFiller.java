@@ -85,12 +85,13 @@ public class TableFiller implements DatabaseFiller {
                 int size = columns.getInt("COLUMN_SIZE");
                 int decimalDigits = columns.getInt("DECIMAL_DIGITS");
                 int radix = columns.getInt("NUM_PREC_RADIX");
+                String typeName = columns.getString("TYPE_NAME");
 
-                logger.debug("table [{}], column_name [{}], data_type [{}], column_size[{}], digits[{}], radix[{}]", tableName, name, sqlType, size, decimalDigits, radix);
+                logger.debug("table [{}], column_name [{}], data_type [{}], data_type [{}], column_size[{}], digits[{}], radix[{}]", tableName, name, sqlType, typeName, size, decimalDigits, radix);
 
                 JDBCType jdbcType = JDBCType.valueOf(sqlType);
 
-                definitions.add(new ColumnDefinition(name, getDataGenerator(jdbcType, size)));
+                definitions.add(new ColumnDefinition(name, getDataGenerator(jdbcType, typeName, size)));
 
             }
 
@@ -98,7 +99,7 @@ public class TableFiller implements DatabaseFiller {
         return definitions;
     }
 
-    private DataGenerator getDataGenerator(JDBCType jdbcType, int size) {
+    private DataGenerator getDataGenerator(JDBCType jdbcType, String typeName,  int size) {
         DataGenerator generator;
 
         switch (jdbcType) {
@@ -132,7 +133,7 @@ public class TableFiller implements DatabaseFiller {
             case NCHAR:
             case NVARCHAR:
             case LONGNVARCHAR:
-                generator = new SimpleStringGenerator.Builder().length(size).build();
+                generator = new SimpleStringGenerator.Builder().build();
                 break;
             case DATE:
                 generator = new SqlDateGenerator.Builder().build();
@@ -146,7 +147,7 @@ public class TableFiller implements DatabaseFiller {
             case BINARY:
             case VARBINARY:
             case LONGVARBINARY:
-                generator = new ByteGenerator.Builder().size(size).build();
+                generator = new ByteGenerator.Builder().build();
                 break;
             case BLOB:
                 generator = new SqlBlobGenerator.Builder().build();
@@ -162,8 +163,19 @@ public class TableFiller implements DatabaseFiller {
                 generator = new SqlArrayGenerator.Builder().build();
                 break;
             case BIT:
+                generator = new BitGenerator.Builder().build();
+                break;
             case BOOLEAN:
                 generator = new BooleanGenerator.Builder().build();
+                break;
+            case OTHER:
+                if ("uuid".equalsIgnoreCase(typeName)) {
+                    generator = new UUIDGenerator.Builder().build();
+                } else if ("varbit".equalsIgnoreCase(typeName)) {
+                    generator = new BitGenerator.Builder().build();
+                } else {
+                    throw new UnsupportedOperationException("Data Type [" + typeName + "] for OTHER not supported");
+                }
                 break;
             case TIME_WITH_TIMEZONE:
             case TIMESTAMP_WITH_TIMEZONE:
@@ -174,7 +186,6 @@ public class TableFiller implements DatabaseFiller {
             case ROWID:
             case SQLXML:
             case REF_CURSOR:
-            case OTHER:
             case NULL:
                 throw new UnsupportedOperationException("JDBCType [" + jdbcType + "] not supported");
             default:

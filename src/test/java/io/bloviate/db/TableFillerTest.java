@@ -67,7 +67,7 @@ class TableFillerTest {
             //new TableFiller.Builder(connection, "array_table").build().fill(); //docs no id
             new TableFiller.Builder(connection, "bit_table").build().fill(); //docs no id, cols xyz
             new TableFiller.Builder(connection, "bool_table").build().fill(); //docs int id
-            new TableFiller.Builder(connection, "bytes_table").build().fill(); //docs int id, no create with alias
+            //new TableFiller.Builder(connection, "bytes_table").build().fill(); //docs int id, no create with alias
             new TableFiller.Builder(connection, "date_table").build().fill(); //docs date as primary key?
             new TableFiller.Builder(connection, "decimal_table").build().fill(); //docs decimal as primary key?
             new TableFiller.Builder(connection, "float_table").build().fill(); //docs float as primary key?
