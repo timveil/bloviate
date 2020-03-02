@@ -1,3 +1,4 @@
+drop table if exists array_table;
 drop table if exists bit_table;
 drop table if exists bool_table;
 drop table if exists bytes_table;

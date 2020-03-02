@@ -1,3 +1,10 @@
+CREATE TABLE array_table
+(
+    id uuid PRIMARY KEY,
+    a  string array,
+    b  string[]
+);
+
 CREATE TABLE bit_table
 (
     id uuid PRIMARY KEY,
