@@ -92,13 +92,11 @@ public class TableFiller implements DatabaseFiller {
                 // digits to right of decimal point, can be null
                 Integer maxDigits = columns.getObject("DECIMAL_DIGITS", Integer.class);
 
-                int radix = columns.getInt("NUM_PREC_RADIX");
-
                 String typeName = columns.getString("TYPE_NAME");
 
                 JDBCType jdbcType = JDBCType.valueOf(sqlType);
 
-                logger.debug("tableName [{}], columnName [{}], jdbcType [{}], typeName [{}], maxSize[{}], maxDigits[{}], radix[{}]", tableName, columnName, jdbcType.getName(), typeName, maxSize, maxDigits, radix);
+                logger.debug("tableName [{}], columnName [{}], jdbcType [{}], typeName [{}], maxSize[{}], maxDigits[{}]", tableName, columnName, jdbcType.getName(), typeName, maxSize, maxDigits);
 
                 definitions.add(new ColumnDefinition(columnName, getDataGenerator(jdbcType, typeName, maxSize, maxDigits)));
 
