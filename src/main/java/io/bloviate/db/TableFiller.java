@@ -83,18 +83,24 @@ public class TableFiller implements DatabaseFiller {
         try (ResultSet columns = databaseMetaData.getColumns(catalog, schemaPattern, tableName, columnNamePattern)) {
 
             while (columns.next()) {
-                String name = columns.getString("COLUMN_NAME");
+                String columnName = columns.getString("COLUMN_NAME");
                 int sqlType = columns.getInt("DATA_TYPE");
-                int size = columns.getInt("COLUMN_SIZE");
-                int decimalDigits = columns.getInt("DECIMAL_DIGITS");
-                int radix = columns.getInt("NUM_PREC_RADIX");
-                String typeName = columns.getString("TYPE_NAME");
 
-                logger.debug("table [{}], column_name [{}], data_type [{}], data_type [{}], column_size[{}], digits[{}], radix[{}]", tableName, name, sqlType, typeName, size, decimalDigits, radix);
+                // either number of characters or total precision, can be null
+                Integer maxSize = columns.getObject("COLUMN_SIZE", Integer.class);
+
+                // digits to right of decimal point, can be null
+                Integer maxDigits = columns.getObject("DECIMAL_DIGITS", Integer.class);
+
+                int radix = columns.getInt("NUM_PREC_RADIX");
+
+                String typeName = columns.getString("TYPE_NAME");
 
                 JDBCType jdbcType = JDBCType.valueOf(sqlType);
 
-                definitions.add(new ColumnDefinition(name, getDataGenerator(jdbcType, typeName, size)));
+                logger.debug("tableName [{}], columnName [{}], jdbcType [{}], typeName [{}], maxSize[{}], maxDigits[{}], radix[{}]", tableName, columnName, jdbcType.getName(), typeName, maxSize, maxDigits, radix);
+
+                definitions.add(new ColumnDefinition(columnName, getDataGenerator(jdbcType, typeName, maxSize, maxDigits)));
 
             }
 
@@ -102,7 +108,7 @@ public class TableFiller implements DatabaseFiller {
         return definitions;
     }
 
-    private DataGenerator getDataGenerator(JDBCType jdbcType, String typeName,  int size) {
+    private DataGenerator getDataGenerator(JDBCType jdbcType, String typeName, Integer size, Integer maxDigits) {
         DataGenerator generator;
 
         switch (jdbcType) {
