@@ -2,7 +2,9 @@ CREATE TABLE array_table
 (
     id uuid PRIMARY KEY,
     a  string array,
-    b  string[]
+    b  string[],
+    c  int array,
+    d  int[]
 );
 
 CREATE TABLE bit_table
