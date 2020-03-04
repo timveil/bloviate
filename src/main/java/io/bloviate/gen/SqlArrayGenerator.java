@@ -16,13 +16,26 @@
 
 package io.bloviate.gen;
 
+import org.apache.commons.lang3.RandomStringUtils;
+
 import java.sql.Array;
 
 public class SqlArrayGenerator implements DataGenerator<Array> {
 
+    private final SqlArrayType arrayType;
+    private final int size;
 
     @Override
     public Array generate() {
+        if (arrayType.equals(SqlArrayType.STRING)) {
+            String[] random = new String[10];
+
+            for (int i =0; i < size; i++) {
+                random[i] = RandomStringUtils.random(10);
+            }
+
+            //return Connection.create;
+        }
         return null;
     }
 
@@ -33,12 +46,27 @@ public class SqlArrayGenerator implements DataGenerator<Array> {
 
     public static class Builder {
 
+        private SqlArrayType arrayType;
+
+        private int size = 10;
+
+        public Builder type(SqlArrayType arrayType) {
+            this.arrayType = arrayType;
+            return this;
+        }
+
+        public Builder size(int size) {
+            this.size = size;
+            return this;
+        }
+
         public SqlArrayGenerator build() {
             return new SqlArrayGenerator(this);
         }
     }
 
     private SqlArrayGenerator(Builder builder) {
-
+        this.arrayType = builder.arrayType;
+        this.size = builder.size;
     }
 }
