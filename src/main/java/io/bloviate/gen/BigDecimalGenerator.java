@@ -48,7 +48,7 @@ public class BigDecimalGenerator implements DataGenerator<BigDecimal> {
 
             String bigDecimalString = joiner.toString();
 
-            logger.debug("precision {}, scale {}, bd {}", precision, scale, bigDecimalString);
+            logger.trace("precision {}, scale {}, bd {}", precision, scale, bigDecimalString);
 
             return new BigDecimal(bigDecimalString);
         } else {
