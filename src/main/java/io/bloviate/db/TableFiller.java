@@ -202,7 +202,7 @@ public class TableFiller implements DatabaseFiller {
                 }
                 break;
             case BIT:
-                generator = new BitGenerator.Builder().length(maxSize).build();
+                generator = new BitGenerator.Builder().size(maxSize).build();
                 break;
             case BOOLEAN:
                 generator = new BooleanGenerator.Builder().build();
@@ -211,7 +211,7 @@ public class TableFiller implements DatabaseFiller {
                 if ("uuid".equalsIgnoreCase(typeName)) {
                     generator = new UUIDGenerator.Builder().build();
                 } else if ("varbit".equalsIgnoreCase(typeName)) {
-                    generator = new BitGenerator.Builder().length(maxSize).build();
+                    generator = new BitGenerator.Builder().size(maxSize).build();
                 } else if ("inet".equalsIgnoreCase(typeName)) {
                     generator = new InetGenerator.Builder().build();
                 } else {

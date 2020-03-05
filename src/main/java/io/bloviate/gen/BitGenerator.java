@@ -20,16 +20,16 @@ import org.apache.commons.lang3.RandomUtils;
 
 public class BitGenerator implements DataGenerator<String> {
 
-    private final int length;
+    private final int size;
 
     @Override
     public String generate() {
 
-        int maxLength = Math.min(length, 25);
+        int maxSize = Math.min(size, 25);
 
         StringBuilder builder = new StringBuilder();
 
-        for (int i = 0; i < maxLength; i++) {
+        for (int i = 0; i < maxSize; i++) {
             builder.append(RandomUtils.nextInt(0, 2));
         }
 
@@ -42,10 +42,10 @@ public class BitGenerator implements DataGenerator<String> {
     }
 
     public static class Builder {
-        private int length = 1;
+        private int size = 1;
 
-        public Builder length(int length) {
-            this.length = length;
+        public Builder size(int size) {
+            this.size = size;
             return this;
         }
 
@@ -55,6 +55,6 @@ public class BitGenerator implements DataGenerator<String> {
     }
 
     private BitGenerator(Builder builder) {
-        this.length = builder.length;
+        this.size = builder.size;
     }
 }
