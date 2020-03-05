@@ -33,14 +33,6 @@ public class LongGenerator implements DataGenerator<Long> {
         return generate().toString();
     }
 
-    public long getStartInclusive() {
-        return startInclusive;
-    }
-
-    public long getEndExclusive() {
-        return endExclusive;
-    }
-
     public static class Builder {
 
         private long startInclusive = 0;

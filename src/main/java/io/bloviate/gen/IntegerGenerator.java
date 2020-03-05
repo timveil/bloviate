@@ -33,14 +33,6 @@ public class IntegerGenerator implements DataGenerator<Integer> {
         return generate().toString();
     }
 
-    public int getStartInclusive() {
-        return startInclusive;
-    }
-
-    public int getEndExclusive() {
-        return endExclusive;
-    }
-
     public static class Builder {
 
         private int startInclusive = 0;

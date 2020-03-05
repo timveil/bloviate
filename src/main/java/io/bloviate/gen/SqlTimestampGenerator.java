@@ -41,13 +41,6 @@ public class SqlTimestampGenerator implements DataGenerator<Timestamp> {
         return generate().toString();
     }
 
-    public Timestamp getStartInclusive() {
-        return startInclusive;
-    }
-
-    public Timestamp getEndExclusive() {
-        return endExclusive;
-    }
 
     public static class Builder {
 

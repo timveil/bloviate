@@ -33,13 +33,6 @@ public class ShortGenerator implements DataGenerator<Short> {
         return generate().toString();
     }
 
-    public int getStartInclusive() {
-        return startInclusive;
-    }
-
-    public int getEndExclusive() {
-        return endExclusive;
-    }
 
     public static class Builder {
 

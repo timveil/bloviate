@@ -25,20 +25,13 @@ public class FloatGenerator implements DataGenerator<Float> {
 
     @Override
     public Float generate() {
+        // todo: need to understand this a bit better
         return RandomUtils.nextFloat(startInclusive, endExclusive);
     }
 
     @Override
     public String generateAsString() {
         return generate().toString();
-    }
-
-    public float getStartInclusive() {
-        return startInclusive;
-    }
-
-    public float getEndExclusive() {
-        return endExclusive;
     }
 
     public static class Builder {

@@ -42,14 +42,6 @@ public class SqlDateGenerator implements DataGenerator<Date> {
         return generate().toString();
     }
 
-    public Date getStartInclusive() {
-        return startInclusive;
-    }
-
-    public Date getEndExclusive() {
-        return endExclusive;
-    }
-
     public static class Builder {
 
         private Date startInclusive = new Date(Instant.EPOCH.toEpochMilli());

@@ -33,13 +33,6 @@ public class DoubleGenerator implements DataGenerator<Double> {
         return generate().toString();
     }
 
-    public double getStartInclusive() {
-        return startInclusive;
-    }
-
-    public double getEndExclusive() {
-        return endExclusive;
-    }
 
     public static class Builder {
 

@@ -26,7 +26,8 @@ public class SimpleStringGenerator implements DataGenerator<String> {
 
     @Override
     public String generate() {
-        return RandomStringUtils.random(length, letters, numbers);
+        int maxLength = Math.min(length, 2000);
+        return RandomStringUtils.random(maxLength, letters, numbers);
     }
 
     @Override
@@ -34,17 +35,6 @@ public class SimpleStringGenerator implements DataGenerator<String> {
         return generate();
     }
 
-    public int getLength() {
-        return length;
-    }
-
-    public boolean isLetters() {
-        return letters;
-    }
-
-    public boolean isNumbers() {
-        return numbers;
-    }
 
     public static class Builder {
 

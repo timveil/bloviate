@@ -16,43 +16,29 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 
-import java.util.Arrays;
-
-public class ByteGenerator implements DataGenerator<Byte[]> {
-
-    private final int size;
+public class InetGenerator implements DataGenerator<String> {
 
     @Override
-    public Byte[] generate() {
-
-        int maxLength = Math.min(size, 25);
-
-        return ArrayUtils.toObject(RandomUtils.nextBytes(maxLength));
+    public String generate() {
+        return RandomUtils.nextInt(1, 256) + "." + RandomUtils.nextInt(1, 256) + "." + RandomUtils.nextInt(1, 256) + "." + RandomUtils.nextInt(1, 256);
     }
 
     @Override
     public String generateAsString() {
-        return Arrays.toString(RandomUtils.nextBytes(size));
+        return generate();
     }
+
 
     public static class Builder {
 
-        private int size = 25;
-
-        public Builder size(int size) {
-            this.size = size;
-            return this;
-        }
-
-        public ByteGenerator build() {
-            return new ByteGenerator(this);
+        public InetGenerator build() {
+            return new InetGenerator(this);
         }
     }
 
-    private ByteGenerator(Builder builder) {
-        this.size = builder.size;
+    private InetGenerator(Builder builder) {
+
     }
 }
