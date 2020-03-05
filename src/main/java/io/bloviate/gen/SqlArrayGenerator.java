@@ -27,6 +27,7 @@ public class SqlArrayGenerator implements DataGenerator<Array> {
 
     @Override
     public Array generate() {
+        // todo: lots of work here
         if (arrayType.equals(SqlArrayType.STRING)) {
             String[] random = new String[10];
 
