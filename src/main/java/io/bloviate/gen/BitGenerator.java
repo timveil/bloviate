@@ -29,8 +29,8 @@ public class BitGenerator implements DataGenerator<String> {
 
         StringBuilder builder = new StringBuilder();
 
-        for (int i=0; i < maxLength; i++) {
-            builder.append(RandomUtils.nextInt(0,2));
+        for (int i = 0; i < maxLength; i++) {
+            builder.append(RandomUtils.nextInt(0, 2));
         }
 
         return builder.toString();
@@ -55,8 +55,6 @@ public class BitGenerator implements DataGenerator<String> {
     }
 
     private BitGenerator(Builder builder) {
-
         this.length = builder.length;
-
     }
 }
