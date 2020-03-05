@@ -20,14 +20,14 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 public class SimpleStringGenerator implements DataGenerator<String> {
 
-    private final int length;
+    private final int size;
     private final boolean letters;
     private final boolean numbers;
 
     @Override
     public String generate() {
-        int maxLength = Math.min(length, 2000);
-        return RandomStringUtils.random(maxLength, letters, numbers);
+        int maxSize = Math.min(size, 2000);
+        return RandomStringUtils.random(maxSize, letters, numbers);
     }
 
     @Override
@@ -38,14 +38,14 @@ public class SimpleStringGenerator implements DataGenerator<String> {
 
     public static class Builder {
 
-        private int length = 10;
+        private int size = 10;
 
         private boolean letters = true;
 
         private boolean numbers = false;
 
-        public Builder length(int length) {
-            this.length = length;
+        public Builder size(int size) {
+            this.size = size;
             return this;
         }
 
@@ -65,7 +65,7 @@ public class SimpleStringGenerator implements DataGenerator<String> {
     }
 
     private SimpleStringGenerator(Builder builder) {
-        this.length = builder.length;
+        this.size = builder.size;
         this.letters = builder.letters;
         this.numbers = builder.numbers;
     }

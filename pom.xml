@@ -114,6 +114,7 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- uses for ScriptRunner class only during test data load -->
         <dependency>
             <groupId>org.mybatis</groupId>
             <artifactId>mybatis</artifactId>

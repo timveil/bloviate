@@ -28,9 +28,9 @@ public class ByteGenerator implements DataGenerator<Byte[]> {
     @Override
     public Byte[] generate() {
 
-        int maxLength = Math.min(size, 25);
+        int maxSize = Math.min(size, 25);
 
-        return ArrayUtils.toObject(RandomUtils.nextBytes(maxLength));
+        return ArrayUtils.toObject(RandomUtils.nextBytes(maxSize));
     }
 
     @Override
