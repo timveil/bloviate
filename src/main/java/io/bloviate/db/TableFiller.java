@@ -18,6 +18,7 @@ package io.bloviate.db;
 
 import io.bloviate.ColumnDefinition;
 import io.bloviate.gen.*;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +63,12 @@ public class TableFiller implements DatabaseFiller {
 
                 int colCount = 1;
                 for (ColumnDefinition definition : definitions) {
-                    ps.setObject(colCount, definition.getDataGenerator().generate());
+                    if (definition.getDataGenerator() instanceof ByteGenerator) {
+                        // todo: this feels sort of gross
+                        ps.setBytes(colCount, ArrayUtils.toPrimitive(((ByteGenerator) definition.getDataGenerator()).generate()));
+                    } else {
+                        ps.setObject(colCount, definition.getDataGenerator().generate());
+                    }
                     colCount++;
                 }
                 ps.addBatch();
@@ -106,7 +112,7 @@ public class TableFiller implements DatabaseFiller {
         return definitions;
     }
 
-    private DataGenerator getDataGenerator(JDBCType jdbcType, String typeName, Integer size, Integer maxDigits) {
+    private DataGenerator getDataGenerator(JDBCType jdbcType, String typeName, Integer maxSize, Integer maxDigits) {
         DataGenerator generator;
 
         switch (jdbcType) {
@@ -154,7 +160,7 @@ public class TableFiller implements DatabaseFiller {
             case BINARY:
             case VARBINARY:
             case LONGVARBINARY:
-                generator = new ByteGenerator.Builder().build();
+                generator = new ByteGenerator.Builder().size(maxSize).build();
                 break;
             case BLOB:
                 generator = new SqlBlobGenerator.Builder().build();
@@ -181,7 +187,7 @@ public class TableFiller implements DatabaseFiller {
                 } else if ("varbit".equalsIgnoreCase(typeName)) {
                     generator = new BitGenerator.Builder().build();
                 } else if ("inet".equalsIgnoreCase(typeName)) {
-                    generator = new SimpleStringGenerator.Builder().build();
+                    generator = new InetGenerator.Builder().build();
                 } else {
                     throw new UnsupportedOperationException("Data Type [" + typeName + "] for OTHER not supported");
                 }

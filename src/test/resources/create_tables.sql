@@ -64,7 +64,7 @@ CREATE TABLE string_table
 (
     id uuid PRIMARY KEY,
     a  string,
-    b  string(4),
+    --b  string(4),
     c  text,
     d  varchar,
     e  char,
