@@ -30,8 +30,11 @@ class FlatFileTest {
 
         List<ColumnDefinition> definitions = new ArrayList<>();
 
+        definitions.add(new ColumnDefinition("big_decimal_col", new BigDecimalGenerator.Builder().build()));
+        definitions.add(new ColumnDefinition("bit_col", new BitGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("boolean_col", new BooleanGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("byte_col", new ByteGenerator.Builder().build()));
+        definitions.add(new ColumnDefinition("char_col", new CharacterGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("date_col", new DateGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("double_col", new DoubleGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("float_col", new FloatGenerator.Builder().build()));
