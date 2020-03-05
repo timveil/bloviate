@@ -44,6 +44,8 @@ public class TableFiller implements DatabaseFiller {
 
         DatabaseMetaData databaseMetaData = connection.getMetaData();
 
+        //printTypeInfo(databaseMetaData);
+
         List<ColumnDefinition> definitions = getColumnDefinitions(databaseMetaData);
 
         StringJoiner joiner = new StringJoiner(",");
@@ -83,7 +85,25 @@ public class TableFiller implements DatabaseFiller {
 
     }
 
+    private void printTypeInfo(DatabaseMetaData databaseMetaData) {
+
+        try (ResultSet columns = databaseMetaData.getTypeInfo()) {
+
+            while (columns.next()) {
+
+                String typeName = columns.getString("TYPE_NAME");
+                JDBCType jdbcType = JDBCType.valueOf(columns.getInt("DATA_TYPE"));
+                int precision = columns.getInt("PRECISION");
+
+                logger.debug("name [{}], jdbcType [{}], precision [{}]", typeName, jdbcType.getName(), precision);
+            }
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
     private List<ColumnDefinition> getColumnDefinitions(DatabaseMetaData databaseMetaData) throws SQLException {
+
         List<ColumnDefinition> definitions = new ArrayList<>();
 
         try (ResultSet columns = databaseMetaData.getColumns(catalog, schemaPattern, tableName, columnNamePattern)) {
@@ -138,7 +158,7 @@ public class TableFiller implements DatabaseFiller {
                 break;
             case NUMERIC:
             case DECIMAL:
-                generator = new BigDecimalGenerator.Builder().build();
+                generator = new BigDecimalGenerator.Builder().precision(maxSize).digits(maxDigits).build();
                 break;
             case CHAR:
             case VARCHAR:
@@ -146,7 +166,7 @@ public class TableFiller implements DatabaseFiller {
             case NCHAR:
             case NVARCHAR:
             case LONGNVARCHAR:
-                generator = new SimpleStringGenerator.Builder().build();
+                generator = new SimpleStringGenerator.Builder().size(maxSize).build();
                 break;
             case DATE:
                 generator = new SqlDateGenerator.Builder().build();
@@ -173,10 +193,16 @@ public class TableFiller implements DatabaseFiller {
                 generator = new SqlStructGenerator.Builder().build();
                 break;
             case ARRAY:
-                generator = new SqlArrayGenerator.Builder().build();
+                if ("_text".equalsIgnoreCase(typeName)) {
+                    generator = new SqlArrayGenerator.Builder().type(SqlArrayType.STRING).build();
+                } else if ("_int8".equalsIgnoreCase(typeName)) {
+                    generator = new SqlArrayGenerator.Builder().type(SqlArrayType.INT).build();
+                } else {
+                    throw new UnsupportedOperationException("Data Type [" + typeName + "] for ARRAY not supported");
+                }
                 break;
             case BIT:
-                generator = new BitGenerator.Builder().build();
+                generator = new BitGenerator.Builder().length(maxSize).build();
                 break;
             case BOOLEAN:
                 generator = new BooleanGenerator.Builder().build();
@@ -185,7 +211,7 @@ public class TableFiller implements DatabaseFiller {
                 if ("uuid".equalsIgnoreCase(typeName)) {
                     generator = new UUIDGenerator.Builder().build();
                 } else if ("varbit".equalsIgnoreCase(typeName)) {
-                    generator = new BitGenerator.Builder().build();
+                    generator = new BitGenerator.Builder().length(maxSize).build();
                 } else if ("inet".equalsIgnoreCase(typeName)) {
                     generator = new InetGenerator.Builder().build();
                 } else {
