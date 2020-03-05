@@ -31,7 +31,7 @@ public class SqlArrayGenerator implements DataGenerator<Array> {
         if (arrayType.equals(SqlArrayType.STRING)) {
             String[] random = new String[10];
 
-            for (int i =0; i < size; i++) {
+            for (int i = 0; i < size; i++) {
                 random[i] = RandomStringUtils.random(10);
             }
 

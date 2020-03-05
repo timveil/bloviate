@@ -40,7 +40,7 @@ public class ShortGenerator implements DataGenerator<Short> {
         private int endExclusive = Short.MAX_VALUE;
 
         public Builder start(int start) {
-            if  (start < Short.MIN_VALUE) {
+            if (start < Short.MIN_VALUE) {
                 throw new IllegalArgumentException("invalid start value.  Less than Short.MIN_VALUE.");
             }
             this.startInclusive = start;
@@ -48,7 +48,7 @@ public class ShortGenerator implements DataGenerator<Short> {
         }
 
         public Builder end(int end) {
-            if  (end > Short.MAX_VALUE) {
+            if (end > Short.MAX_VALUE) {
                 throw new IllegalArgumentException("invalid end value.  Greater than Short.MAX_VALUE.");
             }
 
