@@ -112,15 +112,20 @@ public class TableFiller implements DatabaseFiller {
                 String columnName = columns.getString("COLUMN_NAME");
                 int sqlType = columns.getInt("DATA_TYPE");
 
+                JDBCType jdbcType = JDBCType.valueOf(sqlType);
+
                 // either number of characters or total precision, can be null
                 Integer maxSize = columns.getObject("COLUMN_SIZE", Integer.class);
 
                 // digits to right of decimal point, can be null
-                Integer maxDigits = columns.getObject("DECIMAL_DIGITS", Integer.class);
+                Integer maxDigits = null;
+
+                if (jdbcType.equals(JDBCType.NUMERIC) || jdbcType.equals(JDBCType.DECIMAL)) {
+                    // only care if its one of these types
+                    maxDigits = columns.getObject("DECIMAL_DIGITS", Integer.class);
+                }
 
                 String typeName = columns.getString("TYPE_NAME");
-
-                JDBCType jdbcType = JDBCType.valueOf(sqlType);
 
                 logger.debug("tableName [{}], columnName [{}], jdbcType [{}], typeName [{}], maxSize[{}], maxDigits[{}]", tableName, columnName, jdbcType.getName(), typeName, maxSize, maxDigits);
 

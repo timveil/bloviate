@@ -41,9 +41,10 @@ CREATE TABLE decimal_table
 (
     id uuid PRIMARY KEY,
     a  decimal,
-    b  decimal(10, 5),
+    b  decimal(10, 2),
     c  numeric,
-    d  dec
+    d  numeric(10, 5),
+    e  dec
 );
 
 CREATE TABLE float_table

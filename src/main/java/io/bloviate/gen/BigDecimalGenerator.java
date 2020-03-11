@@ -17,6 +17,7 @@
 package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,19 +37,26 @@ public class BigDecimalGenerator implements DataGenerator<BigDecimal> {
         if (maxPrecision != null) {
 
             // maxPrecision can be enormous (131089 for CRDB) and not helpful for testing therefore we significantly reduce
-            int precision = Math.min(maxPrecision, 25);
-            int scale = (maxDigits != null ? maxDigits : 0);
+            int precision = Math.min(maxPrecision, 25) - (maxDigits != null ? maxDigits : 0);
 
             StringJoiner joiner = new StringJoiner(".");
-            joiner.add(RandomStringUtils.randomNumeric(1, (precision - scale) + 1));
 
-            if (scale > 0) {
-                joiner.add(RandomStringUtils.randomNumeric(1, scale + 1));
+            // generate random numeric string then strip leading zeros.  if this results in empty string, default to "1"
+            String stripped = StringUtils.stripStart(RandomStringUtils.randomNumeric(1, (precision) + 1), "0");
+
+            if (stripped.isEmpty()) {
+                stripped = "1";
+            }
+
+            joiner.add(stripped);
+
+            if (maxDigits != null) {
+                joiner.add(RandomStringUtils.randomNumeric(1, maxDigits + 1));
             }
 
             String bigDecimalString = joiner.toString();
 
-            logger.trace("precision {}, scale {}, bd {}", precision, scale, bigDecimalString);
+            logger.debug("maxPrecision [{}], adjustedPrecision [{}],  maxDigits [{}], bigDecimal [{}]", maxPrecision, precision, maxDigits, bigDecimalString);
 
             return new BigDecimal(bigDecimalString);
         } else {
