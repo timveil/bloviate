@@ -56,7 +56,7 @@ public class BigDecimalGenerator implements DataGenerator<BigDecimal> {
 
             String bigDecimalString = joiner.toString();
 
-            logger.debug("maxPrecision [{}], adjustedPrecision [{}],  maxDigits [{}], bigDecimal [{}]", maxPrecision, precision, maxDigits, bigDecimalString);
+            logger.trace("maxPrecision [{}], adjustedPrecision [{}],  maxDigits [{}], bigDecimal [{}]", maxPrecision, precision, maxDigits, bigDecimalString);
 
             return new BigDecimal(bigDecimalString);
         } else {
