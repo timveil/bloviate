@@ -177,9 +177,11 @@ public class TableFiller implements DatabaseFiller {
                 generator = new SqlDateGenerator.Builder().build();
                 break;
             case TIME:
+            case TIME_WITH_TIMEZONE:
                 generator = new SqlTimeGenerator.Builder().build();
                 break;
             case TIMESTAMP:
+            case TIMESTAMP_WITH_TIMEZONE:
                 generator = new SqlTimestampGenerator.Builder().build();
                 break;
             case BINARY:
@@ -223,8 +225,6 @@ public class TableFiller implements DatabaseFiller {
                     throw new UnsupportedOperationException("Data Type [" + typeName + "] for OTHER not supported");
                 }
                 break;
-            case TIME_WITH_TIMEZONE:
-            case TIMESTAMP_WITH_TIMEZONE:
             case JAVA_OBJECT:
             case DISTINCT:
             case REF:
