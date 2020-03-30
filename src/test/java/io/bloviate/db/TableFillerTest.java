@@ -44,7 +44,6 @@ class TableFillerTest {
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
             //Creating a reader object
-
             try (InputStream is = getClass().getResourceAsStream("/drop_tables.sql");
                  Reader reader = new InputStreamReader(is)) {
                 //Running the script
@@ -63,15 +62,8 @@ class TableFillerTest {
         }
     }
 
-    @AfterEach
-    void tearDown() {
-
-    }
-
     @Test
     void fill() {
-
-
         try (Connection connection = ds.getConnection()) {
             // todo interval, collate, jsonb
             new TableFiller.Builder(connection, "array_table").build().fill(); //docs no id
@@ -89,7 +81,5 @@ class TableFillerTest {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-
     }
 }

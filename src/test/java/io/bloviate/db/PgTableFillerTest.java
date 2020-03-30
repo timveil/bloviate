@@ -17,22 +17,21 @@
 package io.bloviate.db;
 
 import org.apache.ibatis.jdbc.ScriptRunner;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.Reader;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 
 class PgTableFillerTest {
 
-    @Test
-    void fill() {
+    private PGSimpleDataSource ds = new PGSimpleDataSource();
 
-        PGSimpleDataSource ds = new PGSimpleDataSource();
+    @BeforeEach
+    void setUp() throws IOException, SQLException {
+
         ds.setServerName("localhost");
         ds.setPortNumber(5432);
         ds.setDatabaseName("bloviate");
@@ -44,30 +43,30 @@ class PgTableFillerTest {
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
             //Creating a reader object
-            Reader reader = new BufferedReader(new FileReader("/Users/tv/dev/projects/bloviate/src/test/resources/pg_drop_tables.sql"));
-            //Running the script
-            sr.runScript(reader);
-        } catch (FileNotFoundException | SQLException e) {
-            e.printStackTrace();
+            try (InputStream is = getClass().getResourceAsStream("/pg_drop_tables.sql");
+                 Reader reader = new InputStreamReader(is)) {
+                //Running the script
+                sr.runScript(reader);
+            }
         }
 
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
             //Creating a reader object
-            Reader reader = new BufferedReader(new FileReader("/Users/tv/dev/projects/bloviate/src/test/resources/pg_create_tables.sql"));
-            //Running the script
-            sr.runScript(reader);
-        } catch (FileNotFoundException | SQLException e) {
-            e.printStackTrace();
+            try (InputStream is = getClass().getResourceAsStream("/pg_create_tables.sql");
+                 Reader reader = new InputStreamReader(is)) {
+                //Running the script
+                sr.runScript(reader);
+            }
         }
+    }
 
-
+    @Test
+    void fill() {
         try (Connection connection = ds.getConnection()) {
             new TableFiller.Builder(connection, "string_table").build().fill(); //docs inet as primary key?
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-
     }
 }
