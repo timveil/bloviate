@@ -68,6 +68,12 @@ public class TableFiller implements DatabaseFiller {
                     if (definition.getDataGenerator() instanceof ByteGenerator) {
                         // todo: this feels sort of gross
                         ps.setBytes(colCount, ArrayUtils.toPrimitive(((ByteGenerator) definition.getDataGenerator()).generate()));
+                    } else if (definition.getDataGenerator() instanceof StringArrayGenerator) {
+                        // type name from definition has leading _.  need to investigate would like this to be dynamic
+                        ps.setArray(colCount, connection.createArrayOf("text", ((StringArrayGenerator) definition.getDataGenerator()).generate()));
+                    } else if (definition.getDataGenerator() instanceof IntegerArrayGenerator) {
+                        // type name from definition has leading _.  need to investigate would like this to be dynamic
+                        ps.setArray(colCount, connection.createArrayOf("int8", ((IntegerArrayGenerator) definition.getDataGenerator()).generate()));
                     } else {
                         ps.setObject(colCount, definition.getDataGenerator().generate());
                     }
@@ -129,7 +135,7 @@ public class TableFiller implements DatabaseFiller {
 
                 logger.debug("tableName [{}], columnName [{}], jdbcType [{}], typeName [{}], maxSize[{}], maxDigits[{}]", tableName, columnName, jdbcType.getName(), typeName, maxSize, maxDigits);
 
-                definitions.add(new ColumnDefinition(columnName, getDataGenerator(jdbcType, typeName, maxSize, maxDigits)));
+                definitions.add(new ColumnDefinition(columnName, typeName, getDataGenerator(jdbcType, typeName, maxSize, maxDigits)));
 
             }
 
@@ -201,9 +207,9 @@ public class TableFiller implements DatabaseFiller {
                 break;
             case ARRAY:
                 if ("_text".equalsIgnoreCase(typeName)) {
-                    generator = new SqlArrayGenerator.Builder().type(SqlArrayType.STRING).build();
+                    generator = new StringArrayGenerator.Builder().build();
                 } else if ("_int8".equalsIgnoreCase(typeName)) {
-                    generator = new SqlArrayGenerator.Builder().type(SqlArrayType.INT).build();
+                    generator = new IntegerArrayGenerator.Builder().build();
                 } else {
                     throw new UnsupportedOperationException("Data Type [" + typeName + "] for ARRAY not supported");
                 }

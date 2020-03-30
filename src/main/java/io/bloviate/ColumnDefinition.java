@@ -23,13 +23,26 @@ public class ColumnDefinition {
     private final String header;
     private final DataGenerator dataGenerator;
 
+    private String typeName;
+
+    public ColumnDefinition(String header, String typeName, DataGenerator dataGenerator) {
+        this.header = header;
+        this.typeName = typeName;
+        this.dataGenerator = dataGenerator;
+    }
+
     public ColumnDefinition(String header, DataGenerator dataGenerator) {
         this.header = header;
         this.dataGenerator = dataGenerator;
     }
 
+
     public String getHeader() {
         return header;
+    }
+
+    public String getTypeName() {
+        return typeName;
     }
 
     public DataGenerator getDataGenerator() {
