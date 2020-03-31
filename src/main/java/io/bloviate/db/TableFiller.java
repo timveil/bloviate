@@ -19,6 +19,7 @@ package io.bloviate.db;
 import io.bloviate.ColumnDefinition;
 import io.bloviate.gen.*;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,10 +71,10 @@ public class TableFiller implements DatabaseFiller {
                         ps.setBytes(colCount, ArrayUtils.toPrimitive(((ByteGenerator) definition.getDataGenerator()).generate()));
                     } else if (definition.getDataGenerator() instanceof StringArrayGenerator) {
                         // type name from definition has leading _.  need to investigate would like this to be dynamic
-                        ps.setArray(colCount, connection.createArrayOf("text", ((StringArrayGenerator) definition.getDataGenerator()).generate()));
+                        ps.setArray(colCount, connection.createArrayOf(StringUtils.stripStart(definition.getTypeName(), "_"), ((StringArrayGenerator) definition.getDataGenerator()).generate()));
                     } else if (definition.getDataGenerator() instanceof IntegerArrayGenerator) {
                         // type name from definition has leading _.  need to investigate would like this to be dynamic
-                        ps.setArray(colCount, connection.createArrayOf("int8", ((IntegerArrayGenerator) definition.getDataGenerator()).generate()));
+                        ps.setArray(colCount, connection.createArrayOf(StringUtils.stripStart(definition.getTypeName(), "_"), ((IntegerArrayGenerator) definition.getDataGenerator()).generate()));
                     } else {
                         ps.setObject(colCount, definition.getDataGenerator().generate());
                     }

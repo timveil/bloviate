@@ -64,7 +64,20 @@ class PgTableFillerTest {
     @Test
     void fill() {
         try (Connection connection = ds.getConnection()) {
-            new TableFiller.Builder(connection, "string_table").build().fill(); //docs inet as primary key?
+            new TableFiller.Builder(connection, "array_table").build().fill();
+//            new TableFiller.Builder(connection, "bit_table").build().fill();
+//            new TableFiller.Builder(connection, "bool_table").build().fill();
+//            new TableFiller.Builder(connection, "bytes_table").build().fill();
+//            new TableFiller.Builder(connection, "date_table").build().fill();
+//            new TableFiller.Builder(connection, "decimal_table").build().fill();
+//            new TableFiller.Builder(connection, "float_table").build().fill();
+//            new TableFiller.Builder(connection, "inet_table").build().fill();
+//            new TableFiller.Builder(connection, "interval_table").build().fill();
+//            new TableFiller.Builder(connection, "int_table").build().fill();
+//            new TableFiller.Builder(connection, "string_table").build().fill();
+//            new TableFiller.Builder(connection, "time_table").build().fill();
+//            new TableFiller.Builder(connection, "timestamp_table").build().fill();
+//            new TableFiller.Builder(connection, "jsonb_table").build().fill();
         } catch (SQLException e) {
             e.printStackTrace();
         }
