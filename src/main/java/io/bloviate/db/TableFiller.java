@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 
-public class TableFiller implements DatabaseFiller {
+public class TableFiller implements Fillable {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 

@@ -18,7 +18,7 @@ package io.bloviate.db;
 
 import java.sql.SQLException;
 
-public interface DatabaseFiller {
+public interface Fillable {
 
     void fill() throws SQLException;
 }
