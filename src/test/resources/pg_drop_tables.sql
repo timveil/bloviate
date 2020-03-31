@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS date_table;
 DROP TABLE IF EXISTS decimal_table;
 DROP TABLE IF EXISTS float_table;
 DROP TABLE IF EXISTS inet_table;
+DROP TABLE IF EXISTS interval_table;
 DROP TABLE IF EXISTS string_table;
 DROP TABLE IF EXISTS int_table;
 DROP TABLE IF EXISTS time_table;

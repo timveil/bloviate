@@ -71,7 +71,7 @@ CREATE TABLE string_table
 (
     id uuid PRIMARY KEY,
     a  string,
-    --b  string(4),
+    --b  string(4), --string(n) is a problem for us as we don't report or respect length
     c  text,
     d  varchar,
     e  char,
