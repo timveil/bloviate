@@ -74,6 +74,7 @@ class TableFillerTest {
             new TableFiller.Builder(connection, "decimal_table").build().fill(); //docs decimal as primary key?
             new TableFiller.Builder(connection, "float_table").build().fill(); //docs float as primary key?
             new TableFiller.Builder(connection, "inet_table").build().fill(); //docs inet as primary key?
+            new TableFiller.Builder(connection, "interval_table").build().fill();
             new TableFiller.Builder(connection, "int_table").build().fill(); //docs inet as primary key?
             new TableFiller.Builder(connection, "string_table").build().fill(); //docs inet as primary key?
             new TableFiller.Builder(connection, "time_table").build().fill(); //docs inet as primary key?

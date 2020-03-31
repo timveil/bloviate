@@ -227,6 +227,8 @@ public class TableFiller implements DatabaseFiller {
                     generator = new BitGenerator.Builder().size(maxSize).build();
                 } else if ("inet".equalsIgnoreCase(typeName)) {
                     generator = new InetGenerator.Builder().build();
+                } else if ("interval".equalsIgnoreCase(typeName)) {
+                    generator = new IntervalGenerator.Builder().build();
                 } else {
                     throw new UnsupportedOperationException("Data Type [" + typeName + "] for OTHER not supported");
                 }

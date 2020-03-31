@@ -61,6 +61,12 @@ CREATE TABLE inet_table
     a  inet
 );
 
+CREATE TABLE interval_table
+(
+    id uuid PRIMARY KEY,
+    a  INTERVAL
+);
+
 CREATE TABLE string_table
 (
     id uuid PRIMARY KEY,
