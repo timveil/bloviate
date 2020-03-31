@@ -67,7 +67,7 @@ class TableFillerTest {
     @Test
     void fill() {
         try (Connection connection = ds.getConnection()) {
-            // todo interval, collate, jsonb
+            // todo: implement SERIAL datatype
             new TableFiller.Builder(connection, "array_table").build().fill(); //docs no id
             new TableFiller.Builder(connection, "bit_table").build().fill(); //docs no id, cols xyz
             new TableFiller.Builder(connection, "bool_table").build().fill(); //docs int id
