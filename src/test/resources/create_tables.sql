@@ -103,3 +103,9 @@ CREATE TABLE timestamp_table
     a  timestamp,
     b  timestamptz
 );
+
+CREATE TABLE jsonb_table
+(
+    id uuid PRIMARY KEY,
+    a  jsonb
+);

@@ -229,6 +229,8 @@ public class TableFiller implements DatabaseFiller {
                     generator = new InetGenerator.Builder().build();
                 } else if ("interval".equalsIgnoreCase(typeName)) {
                     generator = new IntervalGenerator.Builder().build();
+                } else if ("jsonb".equalsIgnoreCase(typeName)) {
+                    generator = new JsonbGenerator.Builder().build();
                 } else {
                     throw new UnsupportedOperationException("Data Type [" + typeName + "] for OTHER not supported");
                 }

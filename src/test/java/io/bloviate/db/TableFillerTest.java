@@ -79,6 +79,7 @@ class TableFillerTest {
             new TableFiller.Builder(connection, "string_table").build().fill(); //docs inet as primary key?
             new TableFiller.Builder(connection, "time_table").build().fill(); //docs inet as primary key?
             new TableFiller.Builder(connection, "timestamp_table").build().fill(); //docs inet as primary key?
+            new TableFiller.Builder(connection, "jsonb_table").build().fill();
         } catch (SQLException e) {
             e.printStackTrace();
         }
