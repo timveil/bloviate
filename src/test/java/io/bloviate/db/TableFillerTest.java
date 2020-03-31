@@ -30,7 +30,7 @@ import java.sql.SQLException;
 
 class TableFillerTest {
 
-    private PGSimpleDataSource ds = new PGSimpleDataSource();
+    private final PGSimpleDataSource ds = new PGSimpleDataSource();
 
     @BeforeEach
     void setUp() throws SQLException, IOException {

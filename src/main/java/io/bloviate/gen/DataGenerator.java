@@ -18,7 +18,7 @@ package io.bloviate.gen;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "type")
 public interface DataGenerator<T> {
     T generate();
 

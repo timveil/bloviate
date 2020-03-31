@@ -27,7 +27,7 @@ import java.sql.SQLException;
 
 class PgTableFillerTest {
 
-    private PGSimpleDataSource ds = new PGSimpleDataSource();
+    private final PGSimpleDataSource ds = new PGSimpleDataSource();
 
     @BeforeEach
     void setUp() throws IOException, SQLException {
