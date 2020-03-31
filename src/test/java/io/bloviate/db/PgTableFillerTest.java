@@ -32,8 +32,8 @@ class PgTableFillerTest {
     @BeforeEach
     void setUp() throws IOException, SQLException {
 
-        ds.setServerName("localhost");
-        ds.setPortNumber(5432);
+        ds.setServerNames(new String[]{"localhost"});
+        ds.setPortNumbers(new int[]{5432});
         ds.setDatabaseName("bloviate");
         ds.setUser("admin");
         ds.setPassword("password");

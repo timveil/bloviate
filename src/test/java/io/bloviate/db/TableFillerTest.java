@@ -17,12 +17,14 @@
 package io.bloviate.db;
 
 import org.apache.ibatis.jdbc.ScriptRunner;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -33,8 +35,8 @@ class TableFillerTest {
     @BeforeEach
     void setUp() throws SQLException, IOException {
 
-        ds.setServerName("localhost");
-        ds.setPortNumber(26257);
+        ds.setServerNames(new String[]{"localhost"});
+        ds.setPortNumbers(new int[]{26257});
         ds.setDatabaseName("bloviate");
         ds.setUser("root");
         ds.setPassword(null);
