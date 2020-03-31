@@ -45,8 +45,6 @@ public class TableFiller implements Fillable {
 
         DatabaseMetaData databaseMetaData = connection.getMetaData();
 
-        //printTypeInfo(databaseMetaData);
-
         List<ColumnDefinition> definitions = getColumnDefinitions(databaseMetaData);
 
         StringJoiner joiner = new StringJoiner(",");
@@ -92,23 +90,6 @@ public class TableFiller implements Fillable {
 
     }
 
-    private void printTypeInfo(DatabaseMetaData databaseMetaData) {
-
-        try (ResultSet columns = databaseMetaData.getTypeInfo()) {
-
-            while (columns.next()) {
-
-                String typeName = columns.getString("TYPE_NAME");
-                JDBCType jdbcType = JDBCType.valueOf(columns.getInt("DATA_TYPE"));
-                int precision = columns.getInt("PRECISION");
-
-                logger.debug("name [{}], jdbcType [{}], precision [{}]", typeName, jdbcType.getName(), precision);
-            }
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
     private List<ColumnDefinition> getColumnDefinitions(DatabaseMetaData databaseMetaData) throws SQLException {
 
         List<ColumnDefinition> definitions = new ArrayList<>();
@@ -144,8 +125,8 @@ public class TableFiller implements Fillable {
         return definitions;
     }
 
-    private DataGenerator getDataGenerator(JDBCType jdbcType, String typeName, Integer maxSize, Integer maxDigits) {
-        DataGenerator generator;
+    private DataGenerator<?> getDataGenerator(JDBCType jdbcType, String typeName, Integer maxSize, Integer maxDigits) {
+        DataGenerator<?> generator;
 
         switch (jdbcType) {
 

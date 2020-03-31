@@ -18,8 +18,6 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
-import java.sql.Array;
-
 public class StringArrayGenerator implements DataGenerator<String[]> {
 
     private final int length;

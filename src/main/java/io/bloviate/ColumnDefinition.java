@@ -21,17 +21,17 @@ import io.bloviate.gen.DataGenerator;
 public class ColumnDefinition {
 
     private final String header;
-    private final DataGenerator dataGenerator;
+    private final DataGenerator<?> dataGenerator;
 
     private String typeName;
 
-    public ColumnDefinition(String header, String typeName, DataGenerator dataGenerator) {
+    public ColumnDefinition(String header, String typeName, DataGenerator<?> dataGenerator) {
         this.header = header;
         this.typeName = typeName;
         this.dataGenerator = dataGenerator;
     }
 
-    public ColumnDefinition(String header, DataGenerator dataGenerator) {
+    public ColumnDefinition(String header, DataGenerator<?> dataGenerator) {
         this.header = header;
         this.dataGenerator = dataGenerator;
     }
@@ -45,7 +45,7 @@ public class ColumnDefinition {
         return typeName;
     }
 
-    public DataGenerator getDataGenerator() {
+    public DataGenerator<?> getDataGenerator() {
         return dataGenerator;
     }
 }
