@@ -22,16 +22,13 @@ import java.util.Date;
 
 public class DateGenerator implements DataGenerator<Date> {
 
-    private final Date startInclusive;
-    private final Date endExclusive;
+
+    private final LongGenerator longGenerator;
 
     @Override
     public Date generate() {
 
-        Long randomTime = new LongGenerator.Builder()
-                .start(startInclusive.getTime())
-                .end(endExclusive.getTime())
-                .build().generate();
+        Long randomTime = longGenerator.generate();
 
         return new Date(randomTime);
     }
@@ -62,7 +59,10 @@ public class DateGenerator implements DataGenerator<Date> {
     }
 
     private DateGenerator(Builder builder) {
-        this.startInclusive = builder.startInclusive;
-        this.endExclusive = builder.endExclusive;
+
+        this.longGenerator = new LongGenerator.Builder()
+                .start(builder.startInclusive.getTime())
+                .end(builder.endExclusive.getTime())
+                .build();
     }
 }

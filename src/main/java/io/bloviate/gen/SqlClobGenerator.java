@@ -19,7 +19,7 @@ package io.bloviate.gen;
 import java.sql.Clob;
 
 public class SqlClobGenerator implements DataGenerator<Clob> {
-
+    //todo
 
     @Override
     public Clob generate() {

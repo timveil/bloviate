@@ -18,9 +18,24 @@ package io.bloviate.gen;
 
 public class IntervalGenerator implements DataGenerator<String> {
 
+    private final IntegerGenerator yearGenerator;
+    private final IntegerGenerator monthGenerator;
+    private final IntegerGenerator dayGenerator;
+    private final IntegerGenerator hourGenerator;
+    private final IntegerGenerator minuteGenerator;
+    private final IntegerGenerator secondGenerator;
+
     @Override
     public String generate() {
-        return null;
+
+        return String.format("%d-%d %d %d:%d:%d",
+                yearGenerator.generate(),
+                monthGenerator.generate(),
+                dayGenerator.generate(),
+                hourGenerator.generate(),
+                minuteGenerator.generate(),
+                secondGenerator.generate()
+        );
     }
 
     @Override
@@ -28,15 +43,18 @@ public class IntervalGenerator implements DataGenerator<String> {
         return generate();
     }
 
-
     public static class Builder {
-
         public IntervalGenerator build() {
             return new IntervalGenerator(this);
         }
     }
 
     private IntervalGenerator(Builder builder) {
-
+        this.yearGenerator = new IntegerGenerator.Builder().start(1).end(10).build();
+        this.monthGenerator = new IntegerGenerator.Builder().start(1).end(12).build();
+        this.dayGenerator = new IntegerGenerator.Builder().start(1).end(30).build();
+        this.hourGenerator = new IntegerGenerator.Builder().start(1).end(24).build();
+        this.minuteGenerator = new IntegerGenerator.Builder().start(1).end(60).build();
+        this.secondGenerator = new IntegerGenerator.Builder().start(1).end(60).build();
     }
 }

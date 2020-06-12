@@ -21,16 +21,12 @@ import java.time.temporal.ChronoUnit;
 
 public class InstantGenerator implements DataGenerator<Instant> {
 
-    private final Instant startInclusive;
-    private final Instant endExclusive;
+    private final LongGenerator longGenerator;
 
     @Override
     public Instant generate() {
 
-        Long randomTime = new LongGenerator.Builder()
-                .start(startInclusive.toEpochMilli())
-                .end(endExclusive.toEpochMilli())
-                .build().generate();
+        Long randomTime = longGenerator.generate();
 
         return Instant.ofEpochMilli(randomTime);
     }
@@ -62,7 +58,10 @@ public class InstantGenerator implements DataGenerator<Instant> {
     }
 
     private InstantGenerator(Builder builder) {
-        this.startInclusive = builder.startInclusive;
-        this.endExclusive = builder.endExclusive;
+
+        this.longGenerator = new LongGenerator.Builder()
+                .start(builder.startInclusive.toEpochMilli())
+                .end(builder.endExclusive.toEpochMilli())
+                .build();
     }
 }

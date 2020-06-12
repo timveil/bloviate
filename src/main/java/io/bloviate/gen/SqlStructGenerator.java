@@ -19,7 +19,7 @@ package io.bloviate.gen;
 import java.sql.Struct;
 
 public class SqlStructGenerator implements DataGenerator<Struct> {
-
+    //todo
 
     @Override
     public Struct generate() {

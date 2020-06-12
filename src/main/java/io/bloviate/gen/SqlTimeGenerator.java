@@ -22,16 +22,12 @@ import java.time.temporal.ChronoUnit;
 
 public class SqlTimeGenerator implements DataGenerator<Time> {
 
-    private final Time startInclusive;
-    private final Time endExclusive;
+    private final LongGenerator longGenerator;
 
     @Override
     public Time generate() {
 
-        Long randomTime = new LongGenerator.Builder()
-                .start(startInclusive.getTime())
-                .end(endExclusive.getTime())
-                .build().generate();
+        Long randomTime = longGenerator.generate();
 
         return new Time(randomTime);
     }
@@ -63,7 +59,10 @@ public class SqlTimeGenerator implements DataGenerator<Time> {
     }
 
     private SqlTimeGenerator(Builder builder) {
-        this.startInclusive = builder.startInclusive;
-        this.endExclusive = builder.endExclusive;
+
+        this.longGenerator = new LongGenerator.Builder()
+                .start(builder.startInclusive.getTime())
+                .end(builder.endExclusive.getTime())
+                .build();
     }
 }
