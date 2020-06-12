@@ -139,7 +139,8 @@ public class FlatFile implements FileGenerator {
 
     public static class Builder {
 
-        private String fileName;
+        private final String fileName;
+
         private FileDefinition definition = new CsvFile();
         private boolean compress;
         private List<ColumnDefinition> columnDefinitions = new ArrayList<>();
