@@ -27,7 +27,6 @@ public class IntervalGenerator implements DataGenerator<String> {
 
     @Override
     public String generate() {
-
         return String.format("%d-%d %d %d:%d:%d",
                 yearGenerator.generate(),
                 monthGenerator.generate(),
