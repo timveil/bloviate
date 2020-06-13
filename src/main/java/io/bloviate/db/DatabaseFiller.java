@@ -29,7 +29,6 @@ public class DatabaseFiller implements Fillable {
     final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Connection connection;
-    private final String columnNamePattern;
     private final int rows;
     private final int batchSize;
 
@@ -47,7 +46,6 @@ public class DatabaseFiller implements Fillable {
                 new TableFiller.Builder(connection, tableName)
                         .catalog(catalog)
                         .schemaPattern(schema)
-                        .columnNamePattern(columnNamePattern)
                         .batchSize(batchSize)
                         .rows(rows)
                         .build().fill();
@@ -60,17 +58,11 @@ public class DatabaseFiller implements Fillable {
 
         private final Connection connection;
 
-        private String columnNamePattern = null;
         private int rows = 1000;
         private int batchSize = 128;
 
         public Builder(Connection connection) {
             this.connection = connection;
-        }
-
-        public Builder columnNamePattern(String columnNamePattern) {
-            this.columnNamePattern = columnNamePattern;
-            return this;
         }
 
         public Builder rows(int rows) {
@@ -90,7 +82,6 @@ public class DatabaseFiller implements Fillable {
 
     private DatabaseFiller(Builder builder) {
         this.connection = builder.connection;
-        this.columnNamePattern = builder.columnNamePattern;
         this.rows = builder.rows;
         this.batchSize = builder.batchSize;
     }

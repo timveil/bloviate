@@ -36,7 +36,6 @@ public class TableFiller implements Fillable {
     private final String tableName;
     private final String catalog;
     private final String schemaPattern;
-    private final String columnNamePattern;
     private final int rows;
     private final int batchSize;
 
@@ -97,7 +96,7 @@ public class TableFiller implements Fillable {
 
         List<ColumnDefinition> definitions = new ArrayList<>();
 
-        try (ResultSet columns = databaseMetaData.getColumns(catalog, schemaPattern, tableName, columnNamePattern)) {
+        try (ResultSet columns = databaseMetaData.getColumns(catalog, schemaPattern, tableName, null)) {
 
             while (columns.next()) {
                 String columnName = columns.getString("COLUMN_NAME");
@@ -259,7 +258,6 @@ public class TableFiller implements Fillable {
 
         private String catalog = null;
         private String schemaPattern = null;
-        private String columnNamePattern = null;
         private int rows = 1000;
         private int batchSize = 128;
 
@@ -275,11 +273,6 @@ public class TableFiller implements Fillable {
 
         public Builder schemaPattern(String schemaPattern) {
             this.schemaPattern = schemaPattern;
-            return this;
-        }
-
-        public Builder columnNamePattern(String columnNamePattern) {
-            this.columnNamePattern = columnNamePattern;
             return this;
         }
 
@@ -303,7 +296,6 @@ public class TableFiller implements Fillable {
         this.tableName = builder.tableName;
         this.catalog = builder.catalog;
         this.schemaPattern = builder.schemaPattern;
-        this.columnNamePattern = builder.columnNamePattern;
         this.rows = builder.rows;
         this.batchSize = builder.batchSize;
     }
