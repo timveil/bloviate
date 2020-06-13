@@ -1,5 +1,4 @@
-CREATE TABLE array_table
-(
+CREATE TABLE array_table (
     id uuid PRIMARY KEY,
     a  string array,
     b  string[],
@@ -7,8 +6,7 @@ CREATE TABLE array_table
     d  int[]
 );
 
-CREATE TABLE bit_table
-(
+CREATE TABLE bit_table (
     id uuid PRIMARY KEY,
     a  bit,
     b  bit(3),
@@ -16,29 +14,25 @@ CREATE TABLE bit_table
     d  varbit(3)
 );
 
-CREATE TABLE bool_table
-(
+CREATE TABLE bool_table (
     id uuid PRIMARY KEY,
     a  bool,
     b  boolean
 );
 
-CREATE TABLE bytes_table
-(
+CREATE TABLE bytes_table (
     id uuid PRIMARY KEY,
     a  bytes,
     b  bytea,
     c  blob
 );
 
-CREATE TABLE date_table
-(
+CREATE TABLE date_table (
     id uuid PRIMARY KEY,
     a  date
 );
 
-CREATE TABLE decimal_table
-(
+CREATE TABLE decimal_table (
     id uuid PRIMARY KEY,
     a  decimal,
     b  decimal(10, 2),
@@ -47,28 +41,24 @@ CREATE TABLE decimal_table
     e  dec
 );
 
-CREATE TABLE float_table
-(
+CREATE TABLE float_table (
     id uuid PRIMARY KEY,
     a  float,
     b  real,
     c  double precision
 );
 
-CREATE TABLE inet_table
-(
+CREATE TABLE inet_table (
     id uuid PRIMARY KEY,
     a  inet
 );
 
-CREATE TABLE interval_table
-(
+CREATE TABLE interval_table (
     id uuid PRIMARY KEY,
-    a  INTERVAL
+    a  interval
 );
 
-CREATE TABLE string_table
-(
+CREATE TABLE string_table (
     id uuid PRIMARY KEY,
     a  string,
     --b  string(4), --string(n) is a problem for us as we don't report or respect length
@@ -80,8 +70,7 @@ CREATE TABLE string_table
     h  varchar(100)
 );
 
-CREATE TABLE int_table
-(
+CREATE TABLE int_table (
     id uuid PRIMARY KEY,
     a  int,
     b  smallint,
@@ -90,22 +79,26 @@ CREATE TABLE int_table
     e  bigint
 );
 
-CREATE TABLE time_table
-(
+CREATE TABLE time_table (
     id uuid PRIMARY KEY,
     a  time,
     b  time WITHOUT TIME ZONE
 );
 
-CREATE TABLE timestamp_table
-(
+CREATE TABLE timestamp_table (
     id uuid PRIMARY KEY,
     a  timestamp,
     b  timestamptz
 );
 
-CREATE TABLE jsonb_table
-(
+CREATE TABLE jsonb_table (
     id uuid PRIMARY KEY,
     a  jsonb
 );
+
+CREATE TABLE identity_table (
+    id serial PRIMARY KEY,
+    a  string
+);
+
+

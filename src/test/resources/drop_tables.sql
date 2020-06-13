@@ -12,3 +12,4 @@ DROP TABLE IF EXISTS int_table;
 DROP TABLE IF EXISTS time_table;
 DROP TABLE IF EXISTS timestamp_table;
 DROP TABLE IF EXISTS jsonb_table;
+DROP TABLE IF EXISTS identity_table;

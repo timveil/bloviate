@@ -132,7 +132,7 @@ public class FlatFile implements FileGenerator {
 
     private void printHeader(CSVPrinter csvPrinter) throws IOException {
         for (ColumnDefinition columnDefinition : columnDefinitions) {
-            csvPrinter.print(columnDefinition.getHeader());
+            csvPrinter.print(columnDefinition.getName());
         }
         csvPrinter.println();
     }

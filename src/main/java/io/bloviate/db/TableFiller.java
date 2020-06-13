@@ -47,13 +47,16 @@ public class TableFiller implements Fillable {
 
         List<ColumnDefinition> definitions = getColumnDefinitions(databaseMetaData);
 
-        StringJoiner joiner = new StringJoiner(",");
-        for (int i = 0; i < definitions.size(); i++) {
-            joiner.add("?");
+        StringJoiner nameJoiner = new StringJoiner(",");
+        StringJoiner valueJoiner = new StringJoiner(",");
+        for (ColumnDefinition definition : definitions) {
+            nameJoiner.add(definition.getName());
+            valueJoiner.add("?");
         }
-        String valuesString = joiner.toString();
+        String valueString = valueJoiner.toString();
+        String nameString = nameJoiner.toString();
 
-        String sql = String.format("insert into %s values (%s)", tableName, valuesString);
+        String sql = String.format("insert into %s (%s) values (%s)", tableName, nameString, valueString);
 
         logger.debug(sql);
 
@@ -115,9 +118,25 @@ public class TableFiller implements Fillable {
 
                 String typeName = columns.getString("TYPE_NAME");
 
-                logger.debug("tableName [{}], columnName [{}], jdbcType [{}], typeName [{}], maxSize[{}], maxDigits[{}]", tableName, columnName, jdbcType.getName(), typeName, maxSize, maxDigits);
+                String autoIncrementString = columns.getString("IS_AUTOINCREMENT");
 
-                definitions.add(new ColumnDefinition(columnName, typeName, getDataGenerator(jdbcType, typeName, maxSize, maxDigits)));
+                Boolean autoIncrement = null;
+
+                if ("YES".equalsIgnoreCase(autoIncrementString)) {
+                    autoIncrement = Boolean.TRUE;
+                } else if ("NO".equalsIgnoreCase(autoIncrementString)) {
+                    autoIncrement = Boolean.FALSE;
+                }
+
+                String defaultValue = columns.getString("COLUMN_DEF");
+
+                logger.debug("tableName [{}], columnName [{}], jdbcType [{}], typeName [{}], maxSize[{}], maxDigits[{}], autoIncrement[{}], defaultValue[{}]", tableName, columnName, jdbcType.getName(), typeName, maxSize, maxDigits, autoIncrement, defaultValue);
+
+                if (defaultValue != null || Boolean.TRUE.equals(autoIncrement)) {
+                    logger.debug("skipping column [{}]", columnName);
+                } else {
+                    definitions.add(new ColumnDefinition(columnName, getDataGenerator(jdbcType, typeName, maxSize, maxDigits), typeName));
+                }
 
             }
 
@@ -239,7 +258,7 @@ public class TableFiller implements Fillable {
         private final String tableName;
 
         private String catalog = null;
-        private String schemaPattern = "public";
+        private String schemaPattern = null;
         private String columnNamePattern = null;
         private int rows = 1000;
         private int batchSize = 128;

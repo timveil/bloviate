@@ -21,7 +21,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -64,20 +67,30 @@ class PgTableFillerTest {
     @Test
     void fill() {
         try (Connection connection = ds.getConnection()) {
-            new TableFiller.Builder(connection, "array_table").build().fill();
-//            new TableFiller.Builder(connection, "bit_table").build().fill();
-//            new TableFiller.Builder(connection, "bool_table").build().fill();
-//            new TableFiller.Builder(connection, "bytes_table").build().fill();
-//            new TableFiller.Builder(connection, "date_table").build().fill();
-//            new TableFiller.Builder(connection, "decimal_table").build().fill();
-//            new TableFiller.Builder(connection, "float_table").build().fill();
-//            new TableFiller.Builder(connection, "inet_table").build().fill();
-//            new TableFiller.Builder(connection, "interval_table").build().fill();
-//            new TableFiller.Builder(connection, "int_table").build().fill();
-//            new TableFiller.Builder(connection, "string_table").build().fill();
-//            new TableFiller.Builder(connection, "time_table").build().fill();
-//            new TableFiller.Builder(connection, "timestamp_table").build().fill();
-//            new TableFiller.Builder(connection, "jsonb_table").build().fill();
+            //new TableFiller.Builder(connection, "array_table").build().fill();
+
+            // https://github.com/pgjdbc/pgjdbc/issues/908
+            // column "a" is of type bit but expression is of type character varying
+            //new TableFiller.Builder(connection, "bit_table").build().fill();
+
+            // column "a" is of type boolean but expression is of type character varying
+            //new TableFiller.Builder(connection, "bool_table").build().fill();
+            new TableFiller.Builder(connection, "bytes_table").build().fill();
+            new TableFiller.Builder(connection, "date_table").build().fill();
+            new TableFiller.Builder(connection, "decimal_table").build().fill();
+            new TableFiller.Builder(connection, "float_table").build().fill();
+
+            // column "a" is of type inet but expression is of type character varying
+            //new TableFiller.Builder(connection, "inet_table").build().fill();
+
+            // column "a" is of type interval but expression is of type character varying
+            //new TableFiller.Builder(connection, "interval_table").build().fill();
+            new TableFiller.Builder(connection, "int_table").build().fill();
+            new TableFiller.Builder(connection, "string_table").build().fill();
+            new TableFiller.Builder(connection, "time_table").build().fill();
+            new TableFiller.Builder(connection, "timestamp_table").build().fill();
+            new TableFiller.Builder(connection, "jsonb_table").build().fill();
+            new TableFiller.Builder(connection, "identity_table").build().fill();
         } catch (SQLException e) {
             e.printStackTrace();
         }

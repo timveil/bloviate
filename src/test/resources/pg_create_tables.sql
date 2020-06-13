@@ -1,12 +1,11 @@
-CREATE TABLE array_table
-(
+CREATE TABLE array_table (
     id uuid PRIMARY KEY,
     c  int array,
     d  int[]
 );
 
-CREATE TABLE bit_table
-(
+-- https://github.com/pgjdbc/pgjdbc/issues/908
+CREATE TABLE bit_table (
     id uuid PRIMARY KEY,
     a  bit,
     b  bit(3),
@@ -14,27 +13,23 @@ CREATE TABLE bit_table
     d  varbit(3)
 );
 
-CREATE TABLE bool_table
-(
+CREATE TABLE bool_table (
     id uuid PRIMARY KEY,
     a  bool,
     b  boolean
 );
 
-CREATE TABLE bytes_table
-(
+CREATE TABLE bytes_table (
     id uuid PRIMARY KEY,
     b  bytea
 );
 
-CREATE TABLE date_table
-(
+CREATE TABLE date_table (
     id uuid PRIMARY KEY,
     a  date
 );
 
-CREATE TABLE decimal_table
-(
+CREATE TABLE decimal_table (
     id uuid PRIMARY KEY,
     a  decimal,
     b  decimal(10, 5),
@@ -42,28 +37,24 @@ CREATE TABLE decimal_table
     d  dec
 );
 
-CREATE TABLE float_table
-(
+CREATE TABLE float_table (
     id uuid PRIMARY KEY,
     a  float,
     b  real,
     c  double precision
 );
 
-CREATE TABLE inet_table
-(
+CREATE TABLE inet_table (
     id uuid PRIMARY KEY,
     a  inet
 );
 
-CREATE TABLE interval_table
-(
+CREATE TABLE interval_table (
     id uuid PRIMARY KEY,
-    a  INTERVAL
+    a  interval
 );
 
-CREATE TABLE string_table
-(
+CREATE TABLE string_table (
     id uuid PRIMARY KEY,
     c  text,
     d  varchar,
@@ -73,8 +64,7 @@ CREATE TABLE string_table
     h  varchar(100)
 );
 
-CREATE TABLE int_table
-(
+CREATE TABLE int_table (
     id uuid PRIMARY KEY,
     a  int,
     b  smallint,
@@ -83,16 +73,24 @@ CREATE TABLE int_table
     e  bigint
 );
 
-CREATE TABLE time_table
-(
+CREATE TABLE time_table (
     id uuid PRIMARY KEY,
     a  time,
     b  time WITHOUT TIME ZONE
 );
 
-CREATE TABLE timestamp_table
-(
+CREATE TABLE timestamp_table (
     id uuid PRIMARY KEY,
     a  timestamp,
     b  timestamptz
+);
+
+CREATE TABLE jsonb_table (
+    id uuid PRIMARY KEY,
+    a  jsonb
+);
+
+CREATE TABLE identity_table (
+    id serial PRIMARY KEY,
+    a  text
 );

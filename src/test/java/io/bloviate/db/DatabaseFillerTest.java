@@ -28,7 +28,7 @@ import java.io.Reader;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-class TableFillerTest {
+class DatabaseFillerTest {
 
     private final PGSimpleDataSource ds = new PGSimpleDataSource();
 
@@ -46,7 +46,7 @@ class TableFillerTest {
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
             //Creating a reader object
-            try (InputStream is = getClass().getResourceAsStream("/drop_tables.sql");
+            try (InputStream is = getClass().getResourceAsStream("/drop_tpcc.sql");
                  Reader reader = new InputStreamReader(is)) {
                 //Running the script
                 sr.runScript(reader);
@@ -56,7 +56,7 @@ class TableFillerTest {
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
             //Creating a reader object
-            try (InputStream is = getClass().getResourceAsStream("/create_tables.sql");
+            try (InputStream is = getClass().getResourceAsStream("/create_tpcc.sql");
                  Reader reader = new InputStreamReader(is)) {
                 //Running the script
                 sr.runScript(reader);
@@ -67,22 +67,7 @@ class TableFillerTest {
     @Test
     void fill() {
         try (Connection connection = ds.getConnection()) {
-            // todo: implement SERIAL datatype
-            new TableFiller.Builder(connection, "array_table").build().fill(); //docs no id
-            new TableFiller.Builder(connection, "bit_table").build().fill(); //docs no id, cols xyz
-            new TableFiller.Builder(connection, "bool_table").build().fill(); //docs int id
-            new TableFiller.Builder(connection, "bytes_table").build().fill(); //docs int id, no create with alias
-            new TableFiller.Builder(connection, "date_table").build().fill(); //docs date as primary key?
-            new TableFiller.Builder(connection, "decimal_table").build().fill(); //docs decimal as primary key?
-            new TableFiller.Builder(connection, "float_table").build().fill(); //docs float as primary key?
-            new TableFiller.Builder(connection, "inet_table").build().fill(); //docs inet as primary key?
-            new TableFiller.Builder(connection, "interval_table").build().fill();
-            new TableFiller.Builder(connection, "int_table").build().fill(); //docs inet as primary key?
-            new TableFiller.Builder(connection, "string_table").build().fill(); //docs inet as primary key?
-            new TableFiller.Builder(connection, "time_table").build().fill(); //docs inet as primary key?
-            new TableFiller.Builder(connection, "timestamp_table").build().fill(); //docs inet as primary key?
-            new TableFiller.Builder(connection, "jsonb_table").build().fill();
-            new TableFiller.Builder(connection, "identity_table").build().fill();
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
