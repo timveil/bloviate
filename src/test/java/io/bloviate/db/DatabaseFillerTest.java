@@ -46,7 +46,7 @@ class DatabaseFillerTest {
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
             //Creating a reader object
-            try (InputStream is = getClass().getResourceAsStream("/drop_tpcc.sql");
+            try (InputStream is = getClass().getResourceAsStream("/drop_tables.sql");
                  Reader reader = new InputStreamReader(is)) {
                 //Running the script
                 sr.runScript(reader);
@@ -56,7 +56,7 @@ class DatabaseFillerTest {
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
             //Creating a reader object
-            try (InputStream is = getClass().getResourceAsStream("/create_tpcc.sql");
+            try (InputStream is = getClass().getResourceAsStream("/create_tables.sql");
                  Reader reader = new InputStreamReader(is)) {
                 //Running the script
                 sr.runScript(reader);
@@ -67,6 +67,8 @@ class DatabaseFillerTest {
     @Test
     void fill() {
         try (Connection connection = ds.getConnection()) {
+
+            new DatabaseFiller.Builder(connection).build().fill();
 
         } catch (SQLException e) {
             e.printStackTrace();
