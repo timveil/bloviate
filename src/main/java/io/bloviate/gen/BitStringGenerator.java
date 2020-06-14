@@ -22,30 +22,48 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class BitGenerator extends AbstractDataGenerator<Integer> {
+public class BitStringGenerator extends AbstractDataGenerator<String> {
+
+    private final int size;
 
     @Override
-    public Integer generate() {
-       return RandomUtils.nextInt(0, 2);
+    public String generate() {
+
+        int maxSize = Math.min(size, 25);
+
+        StringBuilder builder = new StringBuilder();
+
+        for (int i = 0; i < maxSize; i++) {
+            builder.append(RandomUtils.nextInt(0, 2));
+        }
+
+        return builder.toString();
     }
 
     @Override
     public String generateAsString() {
-        return generate().toString();
+        return generate();
     }
 
     @Override
     public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
-        statement.setInt(parameterIndex, generate());
+        statement.setString(parameterIndex, generate());
     }
 
     public static class Builder {
-        public BitGenerator build() {
-            return new BitGenerator(this);
+        private int size = 1;
+
+        public Builder size(int size) {
+            this.size = size;
+            return this;
+        }
+
+        public BitStringGenerator build() {
+            return new BitStringGenerator(this);
         }
     }
 
-    private BitGenerator(Builder builder) {
-
+    private BitStringGenerator(Builder builder) {
+        this.size = builder.size;
     }
 }

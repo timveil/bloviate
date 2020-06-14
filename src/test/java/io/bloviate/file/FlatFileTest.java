@@ -32,6 +32,7 @@ class FlatFileTest {
 
         definitions.add(new ColumnDefinition("big_decimal_col", new BigDecimalGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("bit_col", new BitGenerator.Builder().build()));
+        definitions.add(new ColumnDefinition("varbit_col", new BitStringGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("boolean_col", new BooleanGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("byte_col", new ByteGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("char_col", new CharacterGenerator.Builder().build()));
@@ -47,6 +48,8 @@ class FlatFileTest {
         definitions.add(new ColumnDefinition("sql_timestamp_col", new SqlTimestampGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("sql_uuid_col", new UUIDGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("instant_col", new InstantGenerator.Builder().build()));
+        definitions.add(new ColumnDefinition("interval_col", new IntervalGenerator.Builder().build()));
+        definitions.add(new ColumnDefinition("jsonb_col", new JsonbGenerator.Builder().build()));
 
         FlatFile csv = new FlatFile.Builder("target/csv-test").addAll(definitions).build();
         csv.generate();

@@ -21,8 +21,8 @@ public class DatabaseUtils {
         String catalog = connection.getCatalog();
         String schema = connection.getSchema();
 
-        Map<String,  Map<String, Column>> tableColumnMap = new HashMap<>();
-        Map<String,  List<PrimaryKey>> tableKeyMap = new HashMap<>();
+        Map<String, Map<String, Column>> tableColumnMap = new HashMap<>();
+        Map<String, List<PrimaryKey>> tableKeyMap = new HashMap<>();
 
         DatabaseMetaData metaData = connection.getMetaData();
         try (ResultSet tablesResultSet = metaData.getTables(catalog, schema, null, new String[]{"TABLE"})) {
@@ -79,7 +79,7 @@ public class DatabaseUtils {
                     while (primaryKeyResultSet.next()) {
                         String columnName = primaryKeyResultSet.getString("COLUMN_NAME");
 
-                       primaryKeys.add(new PrimaryKey(columnMap.get(columnName)));
+                        primaryKeys.add(new PrimaryKey(columnMap.get(columnName)));
                     }
                 }
 
@@ -88,7 +88,7 @@ public class DatabaseUtils {
             }
         }
 
-        Map<String,  List<ForeignKey>> foreignKeyMap = new HashMap<>();
+        Map<String, List<ForeignKey>> foreignKeyMap = new HashMap<>();
 
         for (String tableName : tableColumnMap.keySet()) {
 
@@ -204,14 +204,18 @@ public class DatabaseUtils {
             case ARRAY:
                 if ("_text".equalsIgnoreCase(typeName)) {
                     generator = new StringArrayGenerator.Builder().build();
-                } else if ("_int8".equalsIgnoreCase(typeName)) {
+                } else if ("_int8".equalsIgnoreCase(typeName) || "_int4".equalsIgnoreCase(typeName)) {
                     generator = new IntegerArrayGenerator.Builder().build();
                 } else {
                     throw new UnsupportedOperationException("Data Type [" + typeName + "] for ARRAY not supported");
                 }
                 break;
             case BIT:
-                generator = new BitGenerator.Builder().size(maxSize).build();
+                if (1 == maxSize) {
+                    generator = new BitGenerator.Builder().build();
+                } else {
+                    generator = new BitStringGenerator.Builder().size(maxSize).build();
+                }
                 break;
             case BOOLEAN:
                 generator = new BooleanGenerator.Builder().build();
@@ -220,7 +224,7 @@ public class DatabaseUtils {
                 if ("uuid".equalsIgnoreCase(typeName)) {
                     generator = new UUIDGenerator.Builder().build();
                 } else if ("varbit".equalsIgnoreCase(typeName)) {
-                    generator = new BitGenerator.Builder().size(maxSize).build();
+                    generator = new BitStringGenerator.Builder().size(maxSize).build();
                 } else if ("inet".equalsIgnoreCase(typeName)) {
                     generator = new InetGenerator.Builder().build();
                 } else if ("interval".equalsIgnoreCase(typeName)) {

@@ -71,24 +71,24 @@ class PgTableFillerTest {
 
             Database database = DatabaseUtils.getMetadata(connection);
 
-            //new TableFiller.Builder(connection, "array_table").build().fill();
+            //new TableFiller.Builder(connection,  database.getTable("array_table")).build().fill();
 
             // https://github.com/pgjdbc/pgjdbc/issues/908
             // column "a" is of type bit but expression is of type character varying
-            //new TableFiller.Builder(connection, "bit_table").build().fill();
+            //new TableFiller.Builder(connection, database.getTable("bit_table")).build().fill();
 
             // column "a" is of type boolean but expression is of type character varying
-            //new TableFiller.Builder(connection, "bool_table").build().fill();
+            //new TableFiller.Builder(connection, database.getTable("bool_table")).build().fill();
             new TableFiller.Builder(connection, database.getTable("bytes_table")).build().fill();
             new TableFiller.Builder(connection, database.getTable("date_table")).build().fill();
             new TableFiller.Builder(connection, database.getTable("decimal_table")).build().fill();
             new TableFiller.Builder(connection, database.getTable("float_table")).build().fill();
 
             // column "a" is of type inet but expression is of type character varying
-            //new TableFiller.Builder(connection, "inet_table").build().fill();
+            //new TableFiller.Builder(connection, database.getTable("inet_table")).build().fill();
 
             // column "a" is of type interval but expression is of type character varying
-            //new TableFiller.Builder(connection, "interval_table").build().fill();
+            //new TableFiller.Builder(connection, database.getTable("interval_table")).build().fill();
             new TableFiller.Builder(connection, database.getTable("int_table")).build().fill();
             new TableFiller.Builder(connection, database.getTable("string_table")).build().fill();
             new TableFiller.Builder(connection, database.getTable("time_table")).build().fill();
