@@ -58,9 +58,7 @@ public class TableFiller implements Fillable {
                 int colCount = 1;
                 for (Column column : table.getColumns()) {
 
-                    DataGenerator<?> dataGenerator = column.getDataGenerator();
-
-                    dataGenerator.generateAndSet(connection, ps, colCount);
+                    column.getDataGenerator().generateAndSet(connection, ps, colCount);
 
                     colCount++;
                 }
