@@ -18,7 +18,11 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomUtils;
 
-public class ShortGenerator implements DataGenerator<Short> {
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class ShortGenerator extends AbstractDataGenerator<Short> {
 
     private final int startInclusive;
     private final int endExclusive;
@@ -33,6 +37,10 @@ public class ShortGenerator implements DataGenerator<Short> {
         return generate().toString();
     }
 
+    @Override
+    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        statement.setShort(parameterIndex, generate());
+    }
 
     public static class Builder {
 

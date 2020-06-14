@@ -18,7 +18,11 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomUtils;
 
-public class FloatGenerator implements DataGenerator<Float> {
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class FloatGenerator extends AbstractDataGenerator<Float> {
 
     private final float startInclusive;
     private final float endExclusive;
@@ -32,6 +36,11 @@ public class FloatGenerator implements DataGenerator<Float> {
     @Override
     public String generateAsString() {
         return generate().toString();
+    }
+
+    @Override
+    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        statement.setFloat(parameterIndex, generate());
     }
 
     public static class Builder {

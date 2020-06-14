@@ -18,7 +18,11 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
-public class SimpleStringGenerator implements DataGenerator<String> {
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class SimpleStringGenerator extends AbstractDataGenerator<String> {
 
     private final int size;
     private final boolean letters;
@@ -35,6 +39,10 @@ public class SimpleStringGenerator implements DataGenerator<String> {
         return generate();
     }
 
+    @Override
+    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        statement.setString(parameterIndex, generate());
+    }
 
     public static class Builder {
 

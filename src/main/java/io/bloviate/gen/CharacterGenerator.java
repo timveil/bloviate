@@ -18,7 +18,7 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomUtils;
 
-public class CharacterGenerator implements DataGenerator<Character> {
+public class CharacterGenerator extends AbstractDataGenerator<Character> {
 
     @Override
     public Character generate() {

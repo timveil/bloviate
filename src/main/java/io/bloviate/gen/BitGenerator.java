@@ -18,7 +18,11 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomUtils;
 
-public class BitGenerator implements DataGenerator<String> {
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class BitGenerator extends AbstractDataGenerator<String> {
 
     private final int size;
 

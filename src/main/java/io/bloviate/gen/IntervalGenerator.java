@@ -16,7 +16,7 @@
 
 package io.bloviate.gen;
 
-public class IntervalGenerator implements DataGenerator<String> {
+public class IntervalGenerator extends AbstractDataGenerator<String> {
 
     private final IntegerGenerator yearGenerator;
     private final IntegerGenerator monthGenerator;

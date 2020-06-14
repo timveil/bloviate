@@ -16,7 +16,7 @@
 
 package io.bloviate.gen;
 
-public class JsonbGenerator implements DataGenerator<String> {
+public class JsonbGenerator extends AbstractDataGenerator<String> {
     // todo
 
     @Override

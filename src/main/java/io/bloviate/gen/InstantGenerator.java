@@ -19,7 +19,7 @@ package io.bloviate.gen;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-public class InstantGenerator implements DataGenerator<Instant> {
+public class InstantGenerator extends AbstractDataGenerator<Instant> {
 
     private final LongGenerator longGenerator;
 

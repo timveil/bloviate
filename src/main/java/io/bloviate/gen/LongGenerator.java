@@ -18,7 +18,11 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomUtils;
 
-public class LongGenerator implements DataGenerator<Long> {
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class LongGenerator extends AbstractDataGenerator<Long> {
 
     private final long startInclusive;
     private final long endExclusive;
@@ -31,6 +35,11 @@ public class LongGenerator implements DataGenerator<Long> {
     @Override
     public String generateAsString() {
         return generate().toString();
+    }
+
+    @Override
+    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        statement.setLong(parameterIndex, generate());
     }
 
     public static class Builder {

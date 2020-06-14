@@ -16,9 +16,12 @@
 
 package io.bloviate.gen;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Struct;
 
-public class SqlStructGenerator implements DataGenerator<Struct> {
+public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
     //todo
 
     @Override
@@ -32,7 +35,6 @@ public class SqlStructGenerator implements DataGenerator<Struct> {
     }
 
     public static class Builder {
-
         public SqlStructGenerator build() {
             return new SqlStructGenerator(this);
         }

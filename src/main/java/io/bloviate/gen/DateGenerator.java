@@ -20,7 +20,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
-public class DateGenerator implements DataGenerator<Date> {
+public class DateGenerator extends AbstractDataGenerator<Date> {
 
 
     private final LongGenerator longGenerator;

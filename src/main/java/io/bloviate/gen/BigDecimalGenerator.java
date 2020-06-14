@@ -22,9 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.StringJoiner;
 
-public class BigDecimalGenerator implements DataGenerator<BigDecimal> {
+public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -68,6 +71,11 @@ public class BigDecimalGenerator implements DataGenerator<BigDecimal> {
     @Override
     public String generateAsString() {
         return generate().toString();
+    }
+
+    @Override
+    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        statement.setBigDecimal(parameterIndex, generate());
     }
 
     public static class Builder {

@@ -19,9 +19,12 @@ package io.bloviate.gen;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Arrays;
 
-public class ByteGenerator implements DataGenerator<Byte[]> {
+public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
 
     private final int size;
 
@@ -36,6 +39,11 @@ public class ByteGenerator implements DataGenerator<Byte[]> {
     @Override
     public String generateAsString() {
         return Arrays.toString(RandomUtils.nextBytes(size));
+    }
+
+    @Override
+    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        statement.setBytes(parameterIndex, ArrayUtils.toPrimitive(generate()));
     }
 
     public static class Builder {

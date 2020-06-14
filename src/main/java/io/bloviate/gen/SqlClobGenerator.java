@@ -17,8 +17,11 @@
 package io.bloviate.gen;
 
 import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
-public class SqlClobGenerator implements DataGenerator<Clob> {
+public class SqlClobGenerator extends AbstractDataGenerator<Clob> {
     //todo
 
     @Override
@@ -31,8 +34,12 @@ public class SqlClobGenerator implements DataGenerator<Clob> {
         return null;
     }
 
-    public static class Builder {
+    @Override
+    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        statement.setClob(parameterIndex, generate());
+    }
 
+    public static class Builder {
         public SqlClobGenerator build() {
             return new SqlClobGenerator(this);
         }

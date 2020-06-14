@@ -18,7 +18,7 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomUtils;
 
-public class InetGenerator implements DataGenerator<String> {
+public class InetGenerator extends AbstractDataGenerator<String> {
 
     @Override
     public String generate() {
@@ -32,7 +32,6 @@ public class InetGenerator implements DataGenerator<String> {
 
 
     public static class Builder {
-
         public InetGenerator build() {
             return new InetGenerator(this);
         }

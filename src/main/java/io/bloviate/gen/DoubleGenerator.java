@@ -18,7 +18,11 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomUtils;
 
-public class DoubleGenerator implements DataGenerator<Double> {
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class DoubleGenerator extends AbstractDataGenerator<Double> {
 
     private final double startInclusive;
     private final double endExclusive;
@@ -33,6 +37,10 @@ public class DoubleGenerator implements DataGenerator<Double> {
         return generate().toString();
     }
 
+    @Override
+    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        statement.setDouble(parameterIndex, generate());
+    }
 
     public static class Builder {
 

@@ -17,8 +17,14 @@
 package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 
-public class StringArrayGenerator implements DataGenerator<String[]> {
+import java.sql.Connection;
+import java.sql.JDBCType;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
 
     private final int length;
     private final int elementLength;
@@ -43,6 +49,11 @@ public class StringArrayGenerator implements DataGenerator<String[]> {
     @Override
     public String generateAsString() {
         return null;
+    }
+
+    @Override
+    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        statement.setArray(parameterIndex, connection.createArrayOf(JDBCType.VARCHAR.getName(), generate()));
     }
 
     public static class Builder {

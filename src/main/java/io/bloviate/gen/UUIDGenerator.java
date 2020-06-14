@@ -18,7 +18,7 @@ package io.bloviate.gen;
 
 import java.util.UUID;
 
-public class UUIDGenerator implements DataGenerator<UUID> {
+public class UUIDGenerator extends AbstractDataGenerator<UUID> {
 
     @Override
     public UUID generate() {

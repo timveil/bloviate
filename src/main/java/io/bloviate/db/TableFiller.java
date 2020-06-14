@@ -16,11 +16,7 @@
 
 package io.bloviate.db;
 
-import io.bloviate.gen.ByteGenerator;
-import io.bloviate.gen.IntegerArrayGenerator;
-import io.bloviate.gen.StringArrayGenerator;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
+import io.bloviate.gen.DataGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,18 +57,11 @@ public class TableFiller implements Fillable {
 
                 int colCount = 1;
                 for (Column column : table.getColumns()) {
-                    if (column.getDataGenerator() instanceof ByteGenerator) {
-                        // todo: this feels sort of gross
-                        ps.setBytes(colCount, ArrayUtils.toPrimitive(((ByteGenerator) column.getDataGenerator()).generate()));
-                    } else if (column.getDataGenerator() instanceof StringArrayGenerator) {
-                        // type name from definition has leading _.  need to investigate would like this to be dynamic
-                        ps.setArray(colCount, connection.createArrayOf(StringUtils.stripStart(column.getTypeName(), "_"), ((StringArrayGenerator) column.getDataGenerator()).generate()));
-                    } else if (column.getDataGenerator() instanceof IntegerArrayGenerator) {
-                        // type name from definition has leading _.  need to investigate would like this to be dynamic
-                        ps.setArray(colCount, connection.createArrayOf(StringUtils.stripStart(column.getTypeName(), "_"), ((IntegerArrayGenerator) column.getDataGenerator()).generate()));
-                    } else {
-                        ps.setObject(colCount, column.getDataGenerator().generate());
-                    }
+
+                    DataGenerator<?> dataGenerator = column.getDataGenerator();
+
+                    dataGenerator.generateAndSet(connection, ps, colCount);
+
                     colCount++;
                 }
                 ps.addBatch();
