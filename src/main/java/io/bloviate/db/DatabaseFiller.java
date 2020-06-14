@@ -23,6 +23,8 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DatabaseFiller implements Fillable {
 
@@ -35,22 +37,34 @@ public class DatabaseFiller implements Fillable {
     @Override
     public void fill() throws SQLException {
 
-        DatabaseMetaData databaseMetaData = connection.getMetaData();
 
-        String catalog = connection.getCatalog();
-        String schema = connection.getSchema();
+        Database database = DatabaseUtils.getMetadata(connection);
 
-        try (ResultSet tables = databaseMetaData.getTables(catalog, schema, null, new String[]{"TABLE"})) {
-            while (tables.next()) {
-                String tableName = tables.getString("TABLE_NAME");
-                new TableFiller.Builder(connection, tableName)
-                        .catalog(catalog)
-                        .schemaPattern(schema)
-                        .batchSize(batchSize)
-                        .rows(rows)
-                        .build().fill();
+        List<Table> unorderedTables = new ArrayList<>();
+        List<Table> orderedTables = new ArrayList<>();
+
+        for (Table table : database.getTables()) {
+            if (table.getForeignKeys() == null || table.getForeignKeys().isEmpty()) {
+                unorderedTables.add(table);
+            } else {
+                orderedTables.add(table);
             }
         }
+
+        for (Table table : orderedTables) {
+
+        }
+
+
+        logger.debug("true");
+
+
+        /*new TableFiller.Builder(connection, tableName)
+                .catalog(catalog)
+                .schemaPattern(schema)
+                .batchSize(batchSize)
+                .rows(rows)
+                .build().fill();*/
 
     }
 
