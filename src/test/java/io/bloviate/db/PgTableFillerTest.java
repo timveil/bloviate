@@ -28,6 +28,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 class PgTableFillerTest {
 
@@ -44,13 +45,12 @@ class PgTableFillerTest {
         ds.setReWriteBatchedInserts(true);
         ds.setApplicationName("FillTest");
 
-        try (Connection connection = ds.getConnection()) {
-            ScriptRunner sr = new ScriptRunner(connection);
-            //Creating a reader object
-            try (InputStream is = getClass().getResourceAsStream("/pg_drop_tables.sql");
-                 Reader reader = new InputStreamReader(is)) {
-                //Running the script
-                sr.runScript(reader);
+        Database db = DatabaseUtils.getMetadata(ds);
+
+        for (Table table : db.getTables()) {
+            try (Connection connection = ds.getConnection();
+                 Statement stmt = connection.createStatement()) {
+                stmt.execute(String.format("drop table %s cascade", table.getName()));
             }
         }
 
