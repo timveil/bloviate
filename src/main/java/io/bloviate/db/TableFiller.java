@@ -19,9 +19,7 @@ package io.bloviate.db;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.StringJoiner;
 
 public class TableFiller implements Fillable {
@@ -38,10 +36,12 @@ public class TableFiller implements Fillable {
 
         StringJoiner nameJoiner = new StringJoiner(",");
         StringJoiner valueJoiner = new StringJoiner(",");
+
         for (Column column : table.getColumns()) {
             nameJoiner.add(column.getName());
             valueJoiner.add("?");
         }
+
         String valueString = valueJoiner.toString();
         String nameString = nameJoiner.toString();
 
@@ -60,10 +60,28 @@ public class TableFiller implements Fillable {
                     ForeignKey fk = table.getForeignKey(column);
 
                     if (fk != null) {
-                        logger.debug("column is foreign key: {}", fk);
-                    }
 
-                    column.getDataGenerator().generateAndSet(connection, ps, colCount);
+                        Column fkColumn = fk.getForeignKey();
+                        String fkSql = String.format("select %s from %s limit 1", fkColumn.getName(), fk.getForeignTable());
+
+                        Object fkValue = null;
+                        try (Statement statement = connection.createStatement();
+                             ResultSet rs = statement.executeQuery(fkSql)) {
+
+                            if (rs.next()) {
+                                fkValue = fkColumn.getDataGenerator().get(rs, 1);
+                            }
+                        }
+
+                        logger.debug("setting column {} on table {} to value {} from column {} on table {}", column.getName(), table.getName(), fkValue, fkColumn.getName(), fk.getForeignTable());
+
+                        column.getDataGenerator().set(connection, ps, colCount, fkValue);
+
+                    } else {
+
+                        column.getDataGenerator().generateAndSet(connection, ps, colCount);
+
+                    }
 
                     colCount++;
                 }

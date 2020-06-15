@@ -20,6 +20,7 @@ import org.apache.commons.lang3.RandomUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class BitStringGenerator extends AbstractDataGenerator<String> {
@@ -41,13 +42,8 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate();
-    }
-
-    @Override
-    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
-        statement.setString(parameterIndex, generate());
+    public String get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getString(columnIndex);
     }
 
     public static class Builder {

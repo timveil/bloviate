@@ -16,6 +16,9 @@
 
 package io.bloviate.gen;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 public class JsonbGenerator extends AbstractDataGenerator<String> {
     // todo
 
@@ -25,10 +28,9 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate();
+    public String get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return null;
     }
-
 
     public static class Builder {
 

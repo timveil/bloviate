@@ -24,11 +24,10 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
-
-    final Logger logger = LoggerFactory.getLogger(getClass());
 
     // this is the number of digits on both sides of the decimal point, can be null
     private final Integer maxPrecision;
@@ -81,13 +80,14 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setBigDecimal(parameterIndex, (BigDecimal) value);
     }
 
+
     @Override
-    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
-        statement.setBigDecimal(parameterIndex, generate());
+    public BigDecimal get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getBigDecimal(columnIndex);
     }
 
     public static class Builder {

@@ -18,6 +18,9 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomUtils;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 public class CharacterGenerator extends AbstractDataGenerator<Character> {
 
     @Override
@@ -26,10 +29,20 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
-    }
+    public Character get(ResultSet resultSet, int columnIndex) throws SQLException {
+        String character = resultSet.getString(columnIndex);
 
+        if (character != null) {
+
+            if (character.length() > 1) {
+                throw  new IllegalArgumentException("character length is greater than 1");
+            }
+
+            return character.charAt(0);
+        }
+
+        return null;
+    }
 
     public static class Builder {
         public CharacterGenerator build() {

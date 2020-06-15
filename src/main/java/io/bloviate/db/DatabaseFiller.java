@@ -62,6 +62,7 @@ public class DatabaseFiller implements Fillable {
 
         }
 
+
         List<Table> ordered = new ArrayList<>();
 
         Iterator<Table> toi = new TopologicalOrderIterator<>(g);

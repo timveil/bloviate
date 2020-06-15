@@ -18,6 +18,9 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomUtils;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 public class InetGenerator extends AbstractDataGenerator<String> {
 
     @Override
@@ -30,6 +33,10 @@ public class InetGenerator extends AbstractDataGenerator<String> {
         return generate();
     }
 
+    @Override
+    public String get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getString(columnIndex);
+    }
 
     public static class Builder {
         public InetGenerator build() {

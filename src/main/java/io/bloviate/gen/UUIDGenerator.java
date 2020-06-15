@@ -16,6 +16,8 @@
 
 package io.bloviate.gen;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.UUID;
 
 public class UUIDGenerator extends AbstractDataGenerator<UUID> {
@@ -26,8 +28,14 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public UUID get(ResultSet resultSet, int columnIndex) throws SQLException {
+        String string = resultSet.getString(columnIndex);
+
+        if (string != null) {
+            return UUID.fromString(string);
+        }
+
+        return null;
     }
 
     public static class Builder {

@@ -18,10 +18,7 @@ package io.bloviate.gen;
 
 import org.apache.commons.lang3.RandomUtils;
 
-import java.sql.Connection;
-import java.sql.JDBCType;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
 
@@ -45,13 +42,13 @@ public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
     }
 
     @Override
-    public String generateAsString() {
-        return null;
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setArray(parameterIndex, connection.createArrayOf(JDBCType.INTEGER.getName(), (Integer[]) value));
     }
 
     @Override
-    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
-        statement.setArray(parameterIndex, connection.createArrayOf(JDBCType.INTEGER.getName(), generate()));
+    public Integer[] get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return null;
     }
 
     public static class Builder {

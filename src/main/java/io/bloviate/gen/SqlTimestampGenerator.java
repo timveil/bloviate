@@ -16,10 +16,7 @@
 
 package io.bloviate.gen;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -36,13 +33,13 @@ public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setTimestamp(parameterIndex, (Timestamp) value);
     }
 
     @Override
-    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
-        statement.setTimestamp(parameterIndex, generate());
+    public Timestamp get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getTimestamp(columnIndex);
     }
 
     public static class Builder {

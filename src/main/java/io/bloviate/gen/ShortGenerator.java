@@ -20,6 +20,7 @@ import org.apache.commons.lang3.RandomUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class ShortGenerator extends AbstractDataGenerator<Short> {
@@ -33,13 +34,13 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setShort(parameterIndex, (Short) value);
     }
 
     @Override
-    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
-        statement.setShort(parameterIndex, generate());
+    public Short get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getShort(columnIndex);
     }
 
     public static class Builder {

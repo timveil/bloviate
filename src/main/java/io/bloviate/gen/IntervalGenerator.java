@@ -16,6 +16,9 @@
 
 package io.bloviate.gen;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 public class IntervalGenerator extends AbstractDataGenerator<String> {
 
     private final IntegerGenerator yearGenerator;
@@ -38,8 +41,8 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate();
+    public String get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getString(columnIndex);
     }
 
     public static class Builder {

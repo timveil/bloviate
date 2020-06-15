@@ -16,6 +16,8 @@
 
 package io.bloviate.gen;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Struct;
 
 public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
@@ -28,6 +30,11 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
 
     @Override
     public String generateAsString() {
+        return null;
+    }
+
+    @Override
+    public Struct get(ResultSet resultSet, int columnIndex) throws SQLException {
         return null;
     }
 

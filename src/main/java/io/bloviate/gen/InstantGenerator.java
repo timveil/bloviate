@@ -16,6 +16,8 @@
 
 package io.bloviate.gen;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -32,10 +34,9 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public Instant get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return null;
     }
-
 
     public static class Builder {
 

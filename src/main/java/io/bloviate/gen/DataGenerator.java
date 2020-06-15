@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "type")
@@ -29,4 +30,8 @@ public interface DataGenerator<T> {
     String generateAsString();
 
     void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException;
+
+    void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException;
+
+    T get(ResultSet resultSet, int columnIndex) throws SQLException;
 }

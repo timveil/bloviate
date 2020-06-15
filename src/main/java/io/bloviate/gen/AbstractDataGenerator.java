@@ -1,13 +1,29 @@
 package io.bloviate.gen;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
 
+    final Logger logger = LoggerFactory.getLogger(getClass());
+
     @Override
-    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
-        statement.setObject(parameterIndex, generate());
+    public final void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        set(connection, statement, parameterIndex, generate());
     }
+
+    @Override
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setObject(parameterIndex, value);
+    }
+
+    @Override
+    public String generateAsString() {
+        return generate().toString();
+    }
+
 }

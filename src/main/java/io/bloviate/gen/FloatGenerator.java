@@ -20,6 +20,7 @@ import org.apache.commons.lang3.RandomUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class FloatGenerator extends AbstractDataGenerator<Float> {
@@ -34,13 +35,13 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setFloat(parameterIndex, (Float) value);
     }
 
     @Override
-    public void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
-        statement.setFloat(parameterIndex, generate());
+    public Float get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getFloat(columnIndex);
     }
 
     public static class Builder {
