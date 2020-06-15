@@ -34,7 +34,7 @@ public class PrimaryKey {
     @Override
     public String toString() {
         return "PrimaryKey{" +
-                "column=" + column +
+                "column=" + column.getName() +
                 '}';
     }
 }

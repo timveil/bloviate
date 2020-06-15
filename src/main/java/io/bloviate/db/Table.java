@@ -33,6 +33,22 @@ public class Table {
         return foreignKeys;
     }
 
+    boolean isForeignKey(Column column) {
+        if (foreignKeys != null) {
+            return foreignKeys.contains(column);
+        }
+
+        return false;
+    }
+
+    boolean isPrimaryKey(Column column) {
+        if (primaryKeys != null) {
+            return primaryKeys.contains(column);
+        }
+
+        return false;
+    }
+
     public Column getColumn(String name) {
         for (Column column : columns) {
             if (column.getName().equalsIgnoreCase(name)) {

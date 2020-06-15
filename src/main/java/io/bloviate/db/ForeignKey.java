@@ -49,9 +49,9 @@ public class ForeignKey {
     @Override
     public String toString() {
         return "ForeignKey{" +
-                "column=" + column +
+                "column=" + column.getName() +
                 ", foreignTable='" + foreignTable + '\'' +
-                ", foreignKey=" + foreignKey +
+                ", foreignKey=" + foreignKey.getName() +
                 '}';
     }
 }

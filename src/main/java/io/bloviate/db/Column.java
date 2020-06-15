@@ -17,9 +17,6 @@ public class Column {
     private final Integer ordinalPosition;
     private final DataGenerator<?> dataGenerator;
 
-    private boolean primaryKey;
-    private Column foreignKey;
-
     public Column(String name, JDBCType jdbcType, Integer maxSize, Integer maxDigits, String typeName, Boolean autoIncrement, String defaultValue, Integer ordinalPosition, DataGenerator<?> dataGenerator) {
         this.name = name;
         this.jdbcType = jdbcType;
@@ -68,22 +65,6 @@ public class Column {
         return dataGenerator;
     }
 
-    public boolean isPrimaryKey() {
-        return primaryKey;
-    }
-
-    public void setPrimaryKey(boolean primaryKey) {
-        this.primaryKey = primaryKey;
-    }
-
-    public Column getForeignKey() {
-        return foreignKey;
-    }
-
-    public void setForeignKey(Column foreignKey) {
-        this.foreignKey = foreignKey;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -119,9 +100,6 @@ public class Column {
                 ", autoIncrement=" + autoIncrement +
                 ", defaultValue='" + defaultValue + '\'' +
                 ", ordinalPosition=" + ordinalPosition +
-                ", dataGenerator=" + dataGenerator +
-                ", primaryKey=" + primaryKey +
-                ", foreignKey=" + foreignKey +
                 '}';
     }
 }
