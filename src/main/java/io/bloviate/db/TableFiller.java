@@ -57,8 +57,10 @@ public class TableFiller implements Fillable {
                 int colCount = 1;
                 for (Column column : table.getColumns()) {
 
-                    if (table.isForeignKey(column)) {
-                        logger.debug("column is foreign key: {}", column);
+                    ForeignKey fk = table.getForeignKey(column);
+
+                    if (fk != null) {
+                        logger.debug("column is foreign key: {}", fk);
                     }
 
                     column.getDataGenerator().generateAndSet(connection, ps, colCount);

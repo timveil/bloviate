@@ -33,20 +33,36 @@ public class Table {
         return foreignKeys;
     }
 
-    boolean isForeignKey(Column column) {
-        if (foreignKeys != null) {
-            return foreignKeys.contains(column);
-        }
-
-        return false;
+    public boolean isForeignKey(Column column) {
+        return getForeignKey(column) != null;
     }
 
-    boolean isPrimaryKey(Column column) {
-        if (primaryKeys != null) {
-            return primaryKeys.contains(column);
+    public ForeignKey getForeignKey(Column column) {
+        if (foreignKeys != null) {
+            for (ForeignKey foreignKey : foreignKeys) {
+                if (foreignKey.getColumn().equals(column)) {
+                    return foreignKey;
+                }
+            }
         }
 
-        return false;
+        return null;
+    }
+
+    public boolean isPrimaryKey(Column column) {
+        return getPrimaryKey(column) != null;
+    }
+
+    public PrimaryKey getPrimaryKey(Column column) {
+        if (primaryKeys != null) {
+            for (PrimaryKey primaryKey : primaryKeys) {
+                if (primaryKey.getColumn().equals(column)) {
+                    return primaryKey;
+                }
+            }
+        }
+
+        return null;
     }
 
     public Column getColumn(String name) {
