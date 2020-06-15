@@ -40,10 +40,11 @@ public class DatabaseUtils {
 
                         JDBCType jdbcType = JDBCType.valueOf(sqlType);
 
-                        // either number of characters or total precision, can be null
+                        // either number of characters or total precision, can be null.  in a decimal
+                        // this is the number of digits on both sides of the decimal point
                         Integer maxSize = columnsResultSet.getObject("COLUMN_SIZE", Integer.class);
 
-                        // digits to right of decimal point, can be null
+                        // digits to right of decimal point (fractional digits), can be null
                         Integer maxDigits = null;
 
                         if (jdbcType.equals(JDBCType.NUMERIC) || jdbcType.equals(JDBCType.DECIMAL)) {

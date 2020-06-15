@@ -31,7 +31,10 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
+    // this is the number of digits on both sides of the decimal point, can be null
     private final Integer maxPrecision;
+
+    // digits to right of decimal point (fractional digits), can be null
     private final Integer maxDigits;
 
     @Override
@@ -40,28 +43,38 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
         if (maxPrecision != null) {
 
             // maxPrecision can be enormous (131089 for CRDB) and not helpful for testing therefore we significantly reduce
-            int precision = Math.min(maxPrecision, 25) - (maxDigits != null ? maxDigits : 0);
+            int minMaxPrecision = Math.min(maxPrecision, 25);
 
-            StringJoiner joiner = new StringJoiner(".");
+            if (maxDigits != null && maxDigits > maxPrecision) {
+                throw new IllegalArgumentException("max digits cannot be larger than max precision");
+            } else if (maxDigits != null && maxDigits.equals(maxPrecision)) {
+                // if these are equal then all digits are to the right of the decimal place
+                String bigDecimalString = "." + RandomStringUtils.randomNumeric(1, maxDigits + 1);
 
-            // generate random numeric string then strip leading zeros.  if this results in empty string, default to "1"
-            String stripped = StringUtils.stripStart(RandomStringUtils.randomNumeric(1, (precision) + 1), "0");
+                return new BigDecimal(bigDecimalString);
+            } else {
 
-            if (stripped.isEmpty()) {
-                stripped = "1";
+                if (maxDigits != null) {
+
+                    int adjustedPrecision = minMaxPrecision - maxDigits;
+
+                    // generate random numeric string then strip leading zeros.  if this results in empty string, default to "1"
+                    String left = StringUtils.stripStart(RandomStringUtils.randomNumeric(1, (adjustedPrecision) + 1), "0");
+
+                    if (left.isEmpty()) {
+                        left = "1";
+                    }
+
+                    String right = RandomStringUtils.randomNumeric(1, maxDigits + 1);
+
+                    String bigDecimalString = left + "." + right;
+
+                    return new BigDecimal(bigDecimalString);
+                } else {
+                    return new BigDecimal(RandomStringUtils.randomNumeric(1, minMaxPrecision + 1));
+                }
             }
 
-            joiner.add(stripped);
-
-            if (maxDigits != null) {
-                joiner.add(RandomStringUtils.randomNumeric(1, maxDigits + 1));
-            }
-
-            String bigDecimalString = joiner.toString();
-
-            logger.trace("maxPrecision [{}], adjustedPrecision [{}],  maxDigits [{}], bigDecimal [{}]", maxPrecision, precision, maxDigits, bigDecimalString);
-
-            return new BigDecimal(bigDecimalString);
         } else {
             return BigDecimal.valueOf(new DoubleGenerator.Builder().build().generate());
         }
