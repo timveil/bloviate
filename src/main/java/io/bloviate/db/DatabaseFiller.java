@@ -41,7 +41,6 @@ public class DatabaseFiller implements Fillable {
     @Override
     public void fill() throws SQLException {
 
-
         Database database = DatabaseUtils.getMetadata(connection);
 
         Graph<Table, DefaultEdge> g = new DefaultDirectedGraph<>(DefaultEdge.class);
