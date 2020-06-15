@@ -16,9 +16,6 @@
 
 package io.bloviate.gen;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.Struct;
 
 public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
