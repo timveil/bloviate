@@ -51,15 +51,15 @@ class FlatFileTest {
         definitions.add(new ColumnDefinition("interval_col", new IntervalGenerator.Builder().build()));
         definitions.add(new ColumnDefinition("jsonb_col", new JsonbGenerator.Builder().build()));
 
-        FlatFile csv = new FlatFile.Builder("target/csv-test").addAll(definitions).build();
+        FlatFileGenerator csv = new FlatFileGenerator.Builder("target/csv-test").addAll(definitions).build();
         csv.generate();
         csv.yaml();
 
-        FlatFile tab = new FlatFile.Builder("target/tab-test").output(new TabDelimitedFile()).addAll(definitions).build();
+        FlatFileGenerator tab = new FlatFileGenerator.Builder("target/tab-test").output(new TabDelimitedFile()).addAll(definitions).build();
         tab.generate();
         tab.yaml();
 
-        FlatFile pipe = new FlatFile.Builder("target/pipe-test").output(new PipeDelimitedFile()).addAll(definitions).build();
+        FlatFileGenerator pipe = new FlatFileGenerator.Builder("target/pipe-test").output(new PipeDelimitedFile()).addAll(definitions).build();
         pipe.generate();
         pipe.yaml();
 
