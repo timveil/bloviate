@@ -16,14 +16,18 @@
 
 package io.bloviate.db;
 
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 public class DatabaseFiller implements Fillable {
@@ -40,24 +44,37 @@ public class DatabaseFiller implements Fillable {
 
         Database database = DatabaseUtils.getMetadata(connection);
 
-        List<Table> unorderedTables = new ArrayList<>();
-        List<Table> orderedTables = new ArrayList<>();
-
+        Graph<Table, DefaultEdge> g = new DefaultDirectedGraph<>(DefaultEdge.class);
         for (Table table : database.getTables()) {
-            if (table.getForeignKeys() == null || table.getForeignKeys().isEmpty()) {
-                unorderedTables.add(table);
-            } else {
-                orderedTables.add(table);
+
+            List<ForeignKey> foreignKeys = table.getForeignKeys();
+
+            g.addVertex(table);
+
+            if (foreignKeys != null && !foreignKeys.isEmpty()) {
+                for (ForeignKey key : foreignKeys) {
+                    Table referencedTable = database.getTable(key.getForeignTable());
+                    if (!g.containsVertex(referencedTable)) {
+                        g.addVertex(referencedTable);
+                    }
+                    g.addEdge(table, referencedTable);
+                }
             }
-        }
-
-        for (Table table : orderedTables) {
 
         }
 
+        List<Table> ordered = new ArrayList<>();
 
-        logger.debug("true");
+        Iterator<Table> toi = new TopologicalOrderIterator<>(g);
+        while (toi.hasNext()) {
+            ordered.add(toi.next());
+        }
 
+        Collections.reverse(ordered);
+
+        for (Table table : ordered) {
+            logger.debug(table.getName());
+        }
 
         /*new TableFiller.Builder(connection, tableName)
                 .catalog(catalog)

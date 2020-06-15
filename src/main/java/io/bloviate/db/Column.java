@@ -107,4 +107,21 @@ public class Column {
     public int hashCode() {
         return Objects.hash(name, jdbcType, maxSize, maxDigits, typeName, autoIncrement, defaultValue, ordinalPosition);
     }
+
+    @Override
+    public String toString() {
+        return "Column{" +
+                "name='" + name + '\'' +
+                ", jdbcType=" + jdbcType +
+                ", maxSize=" + maxSize +
+                ", maxDigits=" + maxDigits +
+                ", typeName='" + typeName + '\'' +
+                ", autoIncrement=" + autoIncrement +
+                ", defaultValue='" + defaultValue + '\'' +
+                ", ordinalPosition=" + ordinalPosition +
+                ", dataGenerator=" + dataGenerator +
+                ", primaryKey=" + primaryKey +
+                ", foreignKey=" + foreignKey +
+                '}';
+    }
 }

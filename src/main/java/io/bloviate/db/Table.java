@@ -62,4 +62,14 @@ public class Table {
     public int hashCode() {
         return Objects.hash(name, columns, primaryKeys, foreignKeys);
     }
+
+    @Override
+    public String toString() {
+        return "Table{" +
+                "name='" + name + '\'' +
+                ", columns=" + columns +
+                ", primaryKeys=" + primaryKeys +
+                ", foreignKeys=" + foreignKeys +
+                '}';
+    }
 }
