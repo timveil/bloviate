@@ -70,30 +70,30 @@ class PgTableFillerTest {
 
             Database database = DatabaseUtils.getMetadata(connection);
 
-            //new TableFiller.Builder(connection,  database.getTable("array_table")).build().fill();
+            //new TableFiller.Builder(connection, database, "array_table").build().fill();
 
             // https://github.com/pgjdbc/pgjdbc/issues/908
             // column "a" is of type bit but expression is of type character varying
-            //new TableFiller.Builder(connection, database.getTable("bit_table")).build().fill();
+            //new TableFiller.Builder(connection, database,"bit_table").build().fill();
 
             // column "a" is of type boolean but expression is of type character varying
-            //new TableFiller.Builder(connection, database.getTable("bool_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("bytes_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("date_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("decimal_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("float_table")).build().fill();
+            //new TableFiller.Builder(connection, database,"bool_table").build().fill();
+            new TableFiller.Builder(connection, database,"bytes_table").build().fill();
+            new TableFiller.Builder(connection, database,"date_table").build().fill();
+            new TableFiller.Builder(connection, database,"decimal_table").build().fill();
+            new TableFiller.Builder(connection, database,"float_table").build().fill();
 
             // column "a" is of type inet but expression is of type character varying
-            //new TableFiller.Builder(connection, database.getTable("inet_table")).build().fill();
+            //new TableFiller.Builder(connection, database,"inet_table").build().fill();
 
             // column "a" is of type interval but expression is of type character varying
-            //new TableFiller.Builder(connection, database.getTable("interval_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("int_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("string_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("time_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("timestamp_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("jsonb_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("identity_table")).build().fill();
+            //new TableFiller.Builder(connection, database,"interval_table").build().fill();
+            new TableFiller.Builder(connection, database,"int_table").build().fill();
+            new TableFiller.Builder(connection, database,"string_table").build().fill();
+            new TableFiller.Builder(connection, database,"time_table").build().fill();
+            new TableFiller.Builder(connection, database,"timestamp_table").build().fill();
+            new TableFiller.Builder(connection, database,"jsonb_table").build().fill();
+            new TableFiller.Builder(connection, database,"identity_table").build().fill();
         } catch (SQLException e) {
             e.printStackTrace();
         }

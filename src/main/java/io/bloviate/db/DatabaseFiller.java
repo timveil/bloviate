@@ -25,10 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class DatabaseFiller implements Fillable {
 
@@ -43,20 +40,20 @@ public class DatabaseFiller implements Fillable {
 
         Database database = DatabaseUtils.getMetadata(connection);
 
-        Graph<Table, DefaultEdge> g = new DefaultDirectedGraph<>(DefaultEdge.class);
+        Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
         for (Table table : database.getTables()) {
 
             List<ForeignKey> foreignKeys = table.getForeignKeys();
 
-            g.addVertex(table);
+            graph.addVertex(table);
 
             if (foreignKeys != null && !foreignKeys.isEmpty()) {
                 for (ForeignKey key : foreignKeys) {
                     Table referencedTable = database.getTable(key.getForeignTable());
-                    if (!g.containsVertex(referencedTable)) {
-                        g.addVertex(referencedTable);
+                    if (!graph.containsVertex(referencedTable)) {
+                        graph.addVertex(referencedTable);
                     }
-                    g.addEdge(table, referencedTable);
+                    graph.addEdge(table, referencedTable);
                 }
             }
 
@@ -65,7 +62,7 @@ public class DatabaseFiller implements Fillable {
 
         List<Table> ordered = new ArrayList<>();
 
-        Iterator<Table> toi = new TopologicalOrderIterator<>(g);
+        Iterator<Table> toi = new TopologicalOrderIterator<>(graph);
         while (toi.hasNext()) {
             ordered.add(toi.next());
         }
@@ -74,12 +71,11 @@ public class DatabaseFiller implements Fillable {
 
         for (Table table : ordered) {
             logger.debug(table.getName());
-            new TableFiller.Builder(connection, table)
+            new TableFiller.Builder(connection, database, table.getName())
                     .batchSize(batchSize)
                     .rows(rows)
                     .build().fill();
         }
-
 
     }
 

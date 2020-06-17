@@ -70,21 +70,21 @@ class TableFillerTest {
         try (Connection connection = ds.getConnection()) {
             Database database = DatabaseUtils.getMetadata(connection);
 
-            new TableFiller.Builder(connection, database.getTable("array_table")).build().fill(); //docs no id
-            new TableFiller.Builder(connection, database.getTable("bit_table")).build().fill(); //docs no id, cols xyz
-            new TableFiller.Builder(connection, database.getTable("bool_table")).build().fill(); //docs int id
-            new TableFiller.Builder(connection, database.getTable("bytes_table")).build().fill(); //docs int id, no create with alias
-            new TableFiller.Builder(connection, database.getTable("date_table")).build().fill(); //docs date as primary key?
-            new TableFiller.Builder(connection, database.getTable("decimal_table")).build().fill(); //docs decimal as primary key?
-            new TableFiller.Builder(connection, database.getTable("float_table")).build().fill(); //docs float as primary key?
-            new TableFiller.Builder(connection, database.getTable("inet_table")).build().fill(); //docs inet as primary key?
-            new TableFiller.Builder(connection, database.getTable("interval_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("int_table")).build().fill(); //docs inet as primary key?
-            new TableFiller.Builder(connection, database.getTable("string_table")).build().fill(); //docs inet as primary key?
-            new TableFiller.Builder(connection, database.getTable("time_table")).build().fill(); //docs inet as primary key?
-            new TableFiller.Builder(connection, database.getTable("timestamp_table")).build().fill(); //docs inet as primary key?
-            new TableFiller.Builder(connection, database.getTable("jsonb_table")).build().fill();
-            new TableFiller.Builder(connection, database.getTable("identity_table")).build().fill();
+            new TableFiller.Builder(connection, database, "array_table").build().fill(); //docs no id
+            new TableFiller.Builder(connection, database, "bit_table").build().fill(); //docs no id, cols xyz
+            new TableFiller.Builder(connection, database, "bool_table").build().fill(); //docs int id
+            new TableFiller.Builder(connection, database, "bytes_table").build().fill(); //docs int id, no create with alias
+            new TableFiller.Builder(connection, database, "date_table").build().fill(); //docs date as primary key?
+            new TableFiller.Builder(connection, database, "decimal_table").build().fill(); //docs decimal as primary key?
+            new TableFiller.Builder(connection, database, "float_table").build().fill(); //docs float as primary key?
+            new TableFiller.Builder(connection, database, "inet_table").build().fill(); //docs inet as primary key?
+            new TableFiller.Builder(connection, database, "interval_table").build().fill();
+            new TableFiller.Builder(connection, database, "int_table").build().fill(); //docs inet as primary key?
+            new TableFiller.Builder(connection, database, "string_table").build().fill(); //docs inet as primary key?
+            new TableFiller.Builder(connection, database, "time_table").build().fill(); //docs inet as primary key?
+            new TableFiller.Builder(connection, database, "timestamp_table").build().fill(); //docs inet as primary key?
+            new TableFiller.Builder(connection, database, "jsonb_table").build().fill();
+            new TableFiller.Builder(connection, database, "identity_table").build().fill();
         } catch (SQLException e) {
             e.printStackTrace();
         }

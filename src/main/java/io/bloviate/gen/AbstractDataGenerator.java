@@ -12,8 +12,10 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
     final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public final void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
-        set(connection, statement, parameterIndex, generate());
+    public final T generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
+        T generated = generate();
+        set(connection, statement, parameterIndex, generated);
+        return generated;
     }
 
     @Override

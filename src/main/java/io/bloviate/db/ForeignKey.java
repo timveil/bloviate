@@ -4,8 +4,15 @@ import java.util.Objects;
 
 public class ForeignKey {
 
+    // FOREIGN KEY (COLUMN_A) REFERENCES TABLE_B (COLUMN_B)
+
+    // the column on the current table: COLUMN_A
     private final Column column;
+
+    // the table referenced by the key: TABLE_B
     private final String foreignTable;
+
+    // the column on the referenced table: COLUMN_B
     private final Column foreignKey;
 
 

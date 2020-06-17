@@ -20,19 +20,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.StringJoiner;
+import java.util.*;
 
 public class TableFiller implements Fillable {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Connection connection;
-    private final Table table;
+    private final Database database;
+    private final String tableName;
     private final int rows;
     private final int batchSize;
 
     @Override
     public void fill() throws SQLException {
+
+        Table table = database.getTable(tableName);
 
         StringJoiner nameJoiner = new StringJoiner(",");
         StringJoiner valueJoiner = new StringJoiner(",");
@@ -58,24 +61,22 @@ public class TableFiller implements Fillable {
                 for (Column column : table.getColumns()) {
 
                     ForeignKey fk = table.getForeignKey(column);
+                    PrimaryKey pk = table.getPrimaryKey(column);
+
+                    // problem is that some kys are both pk & fk.  either i need to populate key cache again or recursively link back to source
 
                     if (fk != null) {
 
-                        Column fkColumn = fk.getForeignKey();
-                        String fkSql = String.format("select %s from %s limit 1", fkColumn.getName(), fk.getForeignTable());
+                        PrimaryKey referencedPk = database.getRootPrimaryKey(fk.getForeignTable(), fk.getForeignKey());
+                        //Table referencedTable = database.getTable(fk.getForeignTable());
+                        //PrimaryKey referencedPk = referencedTable.getPrimaryKey(fk.getForeignKey());
 
-                        Object fkValue = null;
-                        try (Statement statement = connection.createStatement();
-                             ResultSet rs = statement.executeQuery(fkSql)) {
+                        column.getDataGenerator().set(connection, ps, colCount, referencedPk.getRandomKey());
 
-                            if (rs.next()) {
-                                fkValue = fkColumn.getDataGenerator().get(rs, 1);
-                            }
-                        }
+                    } else if (pk != null) {
+                        Object pkValue = column.getDataGenerator().generateAndSet(connection, ps, colCount);
 
-                        logger.debug("setting column {} on table {} to value {} from column {} on table {}", column.getName(), table.getName(), fkValue, fkColumn.getName(), fk.getForeignTable());
-
-                        column.getDataGenerator().set(connection, ps, colCount, fkValue);
+                        pk.addKey(pkValue);
 
                     } else {
 
@@ -85,6 +86,7 @@ public class TableFiller implements Fillable {
 
                     colCount++;
                 }
+
                 ps.addBatch();
 
                 if (++rowCount % batchSize == 0) {
@@ -95,20 +97,23 @@ public class TableFiller implements Fillable {
             ps.executeBatch();
         }
 
+
     }
 
 
     public static class Builder {
 
         private final Connection connection;
-        private final Table table;
+        private final Database database;
+        private final String tableName;
 
         private int rows = 1000;
         private int batchSize = 128;
 
-        public Builder(Connection connection, Table table) {
+        public Builder(Connection connection, Database database, String tableName) {
             this.connection = connection;
-            this.table = table;
+            this.database = database;
+            this.tableName = tableName;
         }
 
 
@@ -129,7 +134,8 @@ public class TableFiller implements Fillable {
 
     private TableFiller(Builder builder) {
         this.connection = builder.connection;
-        this.table = builder.table;
+        this.tableName = builder.tableName;
+        this.database = builder.database;
         this.rows = builder.rows;
         this.batchSize = builder.batchSize;
     }

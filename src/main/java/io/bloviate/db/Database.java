@@ -27,6 +27,20 @@ public class Database {
         return tables;
     }
 
+    // recrse to root primary key
+    public PrimaryKey getRootPrimaryKey(String tableName, Column foreignKeyColumn) {
+        Table table = getTable(tableName);
+        PrimaryKey referencedPk = table.getPrimaryKey(foreignKeyColumn);
+
+        ForeignKey fk = table.getForeignKey(foreignKeyColumn);
+        if (fk != null) {
+            return getRootPrimaryKey(fk.getForeignTable(), fk.getForeignKey());
+        } else {
+            return referencedPk;
+        }
+
+    }
+
     public Table getTable(String tableName) {
         for (Table table : tables) {
             if (table.getName().equalsIgnoreCase(tableName)) {
