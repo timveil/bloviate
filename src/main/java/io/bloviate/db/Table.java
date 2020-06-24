@@ -3,6 +3,7 @@ package io.bloviate.db;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 public class Table {
 
@@ -24,6 +25,24 @@ public class Table {
 
     public List<Column> getColumns() {
         return columns;
+    }
+
+    public String insertString() {
+        StringJoiner nameJoiner = new StringJoiner(",");
+        StringJoiner valueJoiner = new StringJoiner(",");
+
+        for (Column column : columns) {
+
+            if (column.getAutoIncrement() || column.getDefaultValue() != null) {
+                // skip and rely on database to populate
+            } else {
+                nameJoiner.add(column.getName());
+                valueJoiner.add("?");
+            }
+        }
+
+        return String.format("insert into %s (%s) values (%s)", name, nameJoiner.toString(), valueJoiner.toString());
+
     }
 
     public List<Column> filterColumns(boolean excludeAutoIncrement) {

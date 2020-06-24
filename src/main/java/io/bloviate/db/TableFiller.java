@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.StringJoiner;
 
 public class TableFiller implements Fillable {
 
@@ -41,18 +40,7 @@ public class TableFiller implements Fillable {
 
         Table table = database.getTable(tableName);
 
-        StringJoiner nameJoiner = new StringJoiner(",");
-        StringJoiner valueJoiner = new StringJoiner(",");
-
-        for (Column column : table.getColumns()) {
-            nameJoiner.add(column.getName());
-            valueJoiner.add("?");
-        }
-
-        String valueString = valueJoiner.toString();
-        String nameString = nameJoiner.toString();
-
-        String sql = String.format("insert into %s (%s) values (%s)", table.getName(), nameString, valueString);
+        String sql = table.insertString();
 
         logger.debug(sql);
 
