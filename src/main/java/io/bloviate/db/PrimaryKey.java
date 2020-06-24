@@ -1,47 +1,25 @@
 package io.bloviate.db;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
-import java.util.concurrent.locks.ReentrantLock;
+
 
 public class PrimaryKey {
 
-    private static final Random RANDOM = new Random();
+    private final String tableName;
+    private final List<KeyColumn> keyColumns;
 
-    private static final ReentrantLock LOCK = new ReentrantLock();
-
-    private final Column column;
-
-    private final List<Object> keyValues = new ArrayList<>();
-
-    public PrimaryKey(Column column) {
-        this.column = column;
+    public PrimaryKey(String tableName, List<KeyColumn> keyColumns) {
+        this.tableName = tableName;
+        this.keyColumns = keyColumns;
     }
 
-    public Column getColumn() {
-        return column;
+    public String getTableName() {
+        return tableName;
     }
 
-    public void addKey(Object key) {
-        LOCK.lock();
-        try {
-            keyValues.add(key);
-        } finally {
-            LOCK.unlock();
-        }
-    }
-
-    public Object getRandomKey() {
-        LOCK.lock();
-        try {
-            int size = keyValues.size();
-            int randomIndex = RANDOM.nextInt(size);
-            return keyValues.get(randomIndex);
-        } finally {
-            LOCK.unlock();
-        }
+    public List<KeyColumn> getKeyColumns() {
+        return keyColumns;
     }
 
     @Override
@@ -53,18 +31,20 @@ public class PrimaryKey {
             return false;
         }
         PrimaryKey that = (PrimaryKey) o;
-        return Objects.equals(column, that.column);
+        return Objects.equals(tableName, that.tableName) &&
+                Objects.equals(keyColumns, that.keyColumns);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(column);
+        return Objects.hash(tableName, keyColumns);
     }
 
     @Override
     public String toString() {
         return "PrimaryKey{" +
-                "column=" + column.getName() +
+                "tableName='" + tableName + '\'' +
+                ", keyColumns=" + keyColumns +
                 '}';
     }
 }

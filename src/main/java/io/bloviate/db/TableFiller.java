@@ -19,8 +19,10 @@ package io.bloviate.db;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.StringJoiner;
 
 public class TableFiller implements Fillable {
 
@@ -34,6 +36,8 @@ public class TableFiller implements Fillable {
 
     @Override
     public void fill() throws SQLException {
+
+        // first fill keys then tables;
 
         Table table = database.getTable(tableName);
 
@@ -60,29 +64,27 @@ public class TableFiller implements Fillable {
                 int colCount = 1;
                 for (Column column : table.getColumns()) {
 
-                    ForeignKey fk = table.getForeignKey(column);
-                    PrimaryKey pk = table.getPrimaryKey(column);
+                    boolean isPK = table.partOfPrimaryKey(column);
+                    boolean isFK = table.partOfForeignKeys(column);
 
                     // problem is that some kys are both pk & fk.  either i need to populate key cache again or recursively link back to source
 
-                    if (fk != null) {
 
-                        PrimaryKey referencedPk = database.getRootPrimaryKey(fk.getForeignTable(), fk.getForeignKey());
-                        //Table referencedTable = database.getTable(fk.getForeignTable());
-                        //PrimaryKey referencedPk = referencedTable.getPrimaryKey(fk.getForeignKey());
+                    if (isFK) {
 
-                        column.getDataGenerator().set(connection, ps, colCount, referencedPk.getRandomKey());
+                        // need to grab from elsewhere
 
-                    } else if (pk != null) {
-                        Object pkValue = column.getDataGenerator().generateAndSet(connection, ps, colCount);
+                    } else if (isPK) {
 
-                        pk.addKey(pkValue);
+                        // need to generate but might need to store
 
                     } else {
 
-                        column.getDataGenerator().generateAndSet(connection, ps, colCount);
+
 
                     }
+
+                    column.getDataGenerator().generateAndSet(connection, ps, colCount);
 
                     colCount++;
                 }

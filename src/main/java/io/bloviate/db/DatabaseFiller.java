@@ -25,7 +25,10 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public class DatabaseFiller implements Fillable {
 
@@ -49,7 +52,7 @@ public class DatabaseFiller implements Fillable {
 
             if (foreignKeys != null && !foreignKeys.isEmpty()) {
                 for (ForeignKey key : foreignKeys) {
-                    Table referencedTable = database.getTable(key.getForeignTable());
+                    Table referencedTable = database.getTable(key.getPrimaryKey().getTableName());
                     if (!graph.containsVertex(referencedTable)) {
                         graph.addVertex(referencedTable);
                     }
@@ -70,7 +73,7 @@ public class DatabaseFiller implements Fillable {
         Collections.reverse(ordered);
 
         for (Table table : ordered) {
-            logger.debug(table.getName());
+            logger.debug("filling table [{}]", table.getName());
             new TableFiller.Builder(connection, database, table.getName())
                     .batchSize(batchSize)
                     .rows(rows)
