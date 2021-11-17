@@ -29,6 +29,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+@Deprecated // see TableFillerTest instead
 class PgTableFillerTest {
 
     private final PGSimpleDataSource ds = new PGSimpleDataSource();
@@ -37,12 +38,12 @@ class PgTableFillerTest {
     void setUp() throws IOException, SQLException {
 
         ds.setServerNames(new String[]{"localhost"});
-        ds.setPortNumbers(new int[]{5432});
+        ds.setPortNumbers(new int[]{26257});
         ds.setDatabaseName("bloviate");
-        ds.setUser("admin");
-        ds.setPassword("password");
+        ds.setUser("root");
+        ds.setPassword(null);
         ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("FillTest");
+        ds.setApplicationName("PgTableFillerTest");
 
         Database db = DatabaseUtils.getMetadata(ds);
 

@@ -44,7 +44,7 @@ class TableFillerTest {
         ds.setUser("root");
         ds.setPassword(null);
         ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("FillTest");
+        ds.setApplicationName("TableFillerTest");
 
         Database db = DatabaseUtils.getMetadata(ds);
 
@@ -141,6 +141,7 @@ class TableFillerTest {
     void fillIdentity() throws SQLException {
         fill("identity_table");
     }
+
 
     private void fill(String tableName) throws SQLException {
         try (Connection connection = ds.getConnection()) {

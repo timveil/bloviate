@@ -42,7 +42,7 @@ class DatabaseFillerTest {
         ds.setUser("root");
         ds.setPassword(null);
         ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("FillTest");
+        ds.setApplicationName("DatabaseFillerTest");
 
         Database db = DatabaseUtils.getMetadata(ds);
 

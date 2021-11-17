@@ -25,7 +25,7 @@ import java.sql.SQLException;
 
 public class TableFiller implements Fillable {
 
-    final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Connection connection;
     private final Database database;

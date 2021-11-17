@@ -32,7 +32,7 @@ import java.util.List;
 
 public class DatabaseFiller implements Fillable {
 
-    final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Connection connection;
     private final int rows;
@@ -59,9 +59,7 @@ public class DatabaseFiller implements Fillable {
                     graph.addEdge(table, referencedTable);
                 }
             }
-
         }
-
 
         List<Table> ordered = new ArrayList<>();
 
