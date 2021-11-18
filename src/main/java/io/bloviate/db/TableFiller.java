@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class TableFiller implements Fillable {
 
@@ -29,16 +30,15 @@ public class TableFiller implements Fillable {
 
     private final Connection connection;
     private final Database database;
-    private final String tableName;
+    private final Table table;
     private final int rows;
     private final int batchSize;
+    private final Random random;
 
     @Override
     public void fill() throws SQLException {
 
         // first fill keys then tables;
-
-        Table table = database.getTable(tableName);
 
         String sql = table.insertString();
 
@@ -62,7 +62,7 @@ public class TableFiller implements Fillable {
                     boolean isPK = table.partOfPrimaryKey(column);
                     boolean isFK = table.partOfForeignKeys(column);
 
-                    // problem is that some kys are both pk & fk.  either i need to populate key cache again or recursively link back to source
+                    // problem is that some keys are both pk & fk.  either i need to populate key cache again or recursively link back to source
 
 
                     if (isFK) {
@@ -102,20 +102,28 @@ public class TableFiller implements Fillable {
 
         private final Connection connection;
         private final Database database;
-        private final String tableName;
 
+        private Table table;
         private int rows = 1000;
         private int batchSize = 128;
 
-        public Builder(Connection connection, Database database, String tableName) {
+        public Builder(Connection connection, Database database) {
             this.connection = connection;
             this.database = database;
-            this.tableName = tableName;
         }
-
 
         public Builder rows(int rows) {
             this.rows = rows;
+            return this;
+        }
+
+        public Builder table(String tableName) {
+            this.table = database.getTable(tableName);
+            return this;
+        }
+
+        public Builder table(Table table) {
+            this.table = table;
             return this;
         }
 
@@ -131,9 +139,10 @@ public class TableFiller implements Fillable {
 
     private TableFiller(Builder builder) {
         this.connection = builder.connection;
-        this.tableName = builder.tableName;
+        this.table = builder.table;
         this.database = builder.database;
         this.rows = builder.rows;
         this.batchSize = builder.batchSize;
+        this.random = new Random(table.hashCode());
     }
 }

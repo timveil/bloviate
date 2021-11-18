@@ -29,7 +29,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-class DatabaseFillerTest {
+class ManualTableFillerTest {
 
     private final PGSimpleDataSource ds = new PGSimpleDataSource();
 
@@ -42,7 +42,7 @@ class DatabaseFillerTest {
         ds.setUser("root");
         ds.setPassword(null);
         ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("DatabaseFillerTest");
+        ds.setApplicationName("ManualTableFillerTest");
 
         Database db = DatabaseUtils.getMetadata(ds);
 
@@ -67,11 +67,14 @@ class DatabaseFillerTest {
     }
 
     @Test
-    void fillDatabase() {
+    void fill() throws SQLException {
         try (Connection connection = ds.getConnection()) {
-            new DatabaseFiller.Builder(connection).build().fill();
-        } catch (SQLException e) {
-            e.printStackTrace();
+            Database database = DatabaseUtils.getMetadata(connection);
+
+            new TableFiller.Builder(connection, database).table(database.getTable("warehouse")).rows(100).build().fill();
+            new TableFiller.Builder(connection, database).table(database.getTable("item")).rows(100000).build().fill();
+            new TableFiller.Builder(connection, database).table(database.getTable("stock")).rows(1000).build().fill();
         }
+
     }
 }

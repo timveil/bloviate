@@ -72,7 +72,8 @@ public class DatabaseFiller implements Fillable {
 
         for (Table table : ordered) {
             logger.debug("filling table [{}]", table.getName());
-            new TableFiller.Builder(connection, database, table.getName())
+            new TableFiller.Builder(connection, database)
+                    .table(table)
                     .batchSize(batchSize)
                     .rows(rows)
                     .build().fill();

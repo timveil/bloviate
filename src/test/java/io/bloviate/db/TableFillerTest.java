@@ -33,8 +33,6 @@ class TableFillerTest {
 
     private static final PGSimpleDataSource ds = new PGSimpleDataSource();
 
-
-
     @BeforeAll
     static void setUp() throws SQLException, IOException {
 
@@ -142,11 +140,11 @@ class TableFillerTest {
         fill("identity_table");
     }
 
-
     private void fill(String tableName) throws SQLException {
         try (Connection connection = ds.getConnection()) {
             Database database = DatabaseUtils.getMetadata(connection);
-            new TableFiller.Builder(connection, database, tableName).build().fill();
+            Table table = database.getTable(tableName);
+            new TableFiller.Builder(connection, database).table(table).build().fill();
         }
     }
 }
