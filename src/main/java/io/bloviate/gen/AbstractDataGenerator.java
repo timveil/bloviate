@@ -13,9 +13,9 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
 
     @Override
     public final T generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
-        T generated = generate();
-        set(connection, statement, parameterIndex, generated);
-        return generated;
+        T value = generate();
+        set(connection, statement, parameterIndex, value);
+        return value;
     }
 
     @Override
@@ -25,7 +25,13 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
 
     @Override
     public String generateAsString() {
-        return generate().toString();
+        T value = generate();
+
+        if (value != null) {
+            return value.toString();
+        }
+
+        return null;
     }
 
 }
