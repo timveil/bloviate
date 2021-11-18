@@ -56,11 +56,12 @@ class TableFillerTest {
 
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
-            //Creating a reader object
-            try (InputStream is = TableFillerTest.class.getResourceAsStream("/create_tables.sql");
-                 Reader reader = new InputStreamReader(is)) {
-                //Running the script
-                sr.runScript(reader);
+            try (InputStream is = TableFillerTest.class.getResourceAsStream("/create_tables.sql")) {
+                if (is != null) {
+                    try (Reader reader = new InputStreamReader(is)) {
+                        sr.runScript(reader);
+                    }
+                }
             }
         }
     }
