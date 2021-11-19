@@ -189,18 +189,35 @@ public class DatabaseUtils {
     }
 
     // get the primary key column (column on other table) for the associated foreign key column (on this table)
-    public static Column getAssociatedPrimaryKeyColumn(Table table, Column foreignKeyColumn) {
+    public static Column getAssociatedPrimaryKeyColumn(Database database, Table table, Column foreignKeyColumn) {
 
+        // get this tables foreign keys
         List<ForeignKey> foreignKeys = table.getForeignKeys();
 
         if (foreignKeys != null && !foreignKeys.isEmpty()) {
             for (ForeignKey foreignKey : foreignKeys) {
+
+                // get the columns on this table specified in the foreign key
                 List<KeyColumn> keyColumns = foreignKey.getForeignKeyColumns();
+
                 for (KeyColumn keyColumn : keyColumns) {
                     int keyColumnSequence = keyColumn.getSequence();
-                    if (keyColumn.getColumn().equals(foreignKeyColumn)) {
+
+                    // this is a column on this table
+                    Column column = keyColumn.getColumn();
+
+                    if (column.equals(foreignKeyColumn)) {
+
+                        // for the column on this table that is a foreign key, grab the associated column the another table where it is the primary key
                         PrimaryKey primaryKey = foreignKey.getPrimaryKey();
+
+                        // for the primary key grab its full table data
+                        Table primaryTable = database.getTable(primaryKey.getTableName());
+                        // todo: go get the root primary key
+
+
                         for (KeyColumn primaryKeyColumn : primaryKey.getKeyColumns()) {
+
                             int primaryKeyColumnSequence = primaryKeyColumn.getSequence();
                             if (primaryKeyColumnSequence == keyColumnSequence) {
                                 return primaryKeyColumn.getColumn();

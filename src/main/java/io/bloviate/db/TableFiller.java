@@ -62,7 +62,7 @@ public class TableFiller implements Fillable {
 
             Random random;
 
-            Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(table, column);
+            Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(database, table, column);
 
             if (associatedPrimaryKeyColumn != null) {
                 random = new Random(associatedPrimaryKeyColumn.hashCode());
