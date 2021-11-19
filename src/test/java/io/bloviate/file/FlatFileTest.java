@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 class FlatFileTest {
 
@@ -30,25 +31,27 @@ class FlatFileTest {
 
         List<ColumnDefinition> definitions = new ArrayList<>();
 
-        definitions.add(new ColumnDefinition("big_decimal_col", new BigDecimalGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("bit_col", new BitGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("varbit_col", new BitStringGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("boolean_col", new BooleanGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("byte_col", new ByteGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("char_col", new CharacterGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("date_col", new DateGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("double_col", new DoubleGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("float_col", new FloatGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("integer_col", new IntegerGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("long_col", new LongGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("short_col", new ShortGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("string_col", new SimpleStringGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("sql_date_col", new SqlDateGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("sql_time_col", new SqlTimeGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("sql_timestamp_col", new SqlTimestampGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("sql_uuid_col", new UUIDGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("instant_col", new InstantGenerator.Builder().build()));
-        definitions.add(new ColumnDefinition("interval_col", new IntervalGenerator.Builder().build()));
+        Random random = new Random();
+
+        definitions.add(new ColumnDefinition("big_decimal_col", new BigDecimalGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("bit_col", new BitGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("varbit_col", new BitStringGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("boolean_col", new BooleanGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("byte_col", new ByteGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("char_col", new CharacterGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("date_col", new DateGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("double_col", new DoubleGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("float_col", new FloatGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("integer_col", new IntegerGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("long_col", new LongGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("short_col", new ShortGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("string_col", new SimpleStringGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("sql_date_col", new SqlDateGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("sql_time_col", new SqlTimeGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("sql_timestamp_col", new SqlTimestampGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("sql_uuid_col", new UUIDGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("instant_col", new InstantGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("interval_col", new IntervalGenerator.Builder(random).build()));
 
         // need to implement as JsonbGenerator still returns null
         //definitions.add(new ColumnDefinition("jsonb_col", new JsonbGenerator.Builder().build()));

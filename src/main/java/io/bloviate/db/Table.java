@@ -52,60 +52,6 @@ public class Table {
         return filtered;
     }
 
-
-    public boolean partOfPrimaryKey(Column column) {
-        if (primaryKey != null) {
-            for (KeyColumn kc : primaryKey.getKeyColumns()) {
-                if (kc.getColumn().equals(column)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    public KeyColumn primaryKeyColumn(Column column) {
-        if (primaryKey != null) {
-            for (KeyColumn kc : primaryKey.getKeyColumns()) {
-                if (kc.getColumn().equals(column)) {
-                    return kc;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    public boolean partOfForeignKey(Column column) {
-        if (foreignKeys != null) {
-            for (ForeignKey fk : foreignKeys) {
-                for (KeyColumn kc : fk.getForeignKeyColumns()) {
-                    if (kc.getColumn().equals(column)) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
-    public KeyColumn foreignKeyColumn(Column column) {
-        if (foreignKeys != null) {
-            for (ForeignKey fk : foreignKeys) {
-                for (KeyColumn kc : fk.getForeignKeyColumns()) {
-                    if (kc.getColumn().equals(column)) {
-                        return kc;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-
     public PrimaryKey getPrimaryKey() {
         return primaryKey;
     }

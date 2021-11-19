@@ -16,16 +16,18 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class CharacterGenerator extends AbstractDataGenerator<Character> {
 
+    private final IntegerGenerator integerGenerator;
+
+
     @Override
     public Character generate() {
-        return (char) (RandomUtils.nextInt(0, 26) + 'a');
+        return (char) (integerGenerator.generate() + 'a');
     }
 
     @Override
@@ -35,7 +37,7 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
         if (character != null) {
 
             if (character.length() > 1) {
-                throw  new IllegalArgumentException("character length is greater than 1");
+                throw new IllegalArgumentException("character length is greater than 1");
             }
 
             return character.charAt(0);
@@ -44,13 +46,21 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
         return null;
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
+        public Builder(Random random) {
+            super(random);
+        }
+
+        @Override
         public CharacterGenerator build() {
             return new CharacterGenerator(this);
         }
     }
 
     private CharacterGenerator(Builder builder) {
+        super(builder.random);
+
+        this.integerGenerator = new IntegerGenerator.Builder(random).start(0).end(26).build();
 
     }
 }

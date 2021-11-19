@@ -1,18 +1,15 @@
 package io.bloviate.db;
 
 import java.util.Objects;
-import java.util.Random;
 
 public class KeyColumn {
 
     private final int sequence;
     private final Column column;
-    private final Random random;
 
     public KeyColumn(int sequence, Column column) {
         this.sequence = sequence;
         this.column = column;
-        this.random = new Random(column.hashCode());
     }
 
     public int getSequence() {
@@ -21,14 +18,6 @@ public class KeyColumn {
 
     public Column getColumn() {
         return column;
-    }
-
-    public Random getRandom() {
-        return random;
-    }
-
-    public void resetSeed() {
-        random.setSeed(column.hashCode());
     }
 
     @Override
@@ -41,11 +30,19 @@ public class KeyColumn {
         }
         KeyColumn keyColumn = (KeyColumn) o;
         return sequence == keyColumn.sequence &&
-                Objects.equals(column, keyColumn.column);
+               Objects.equals(column, keyColumn.column);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(sequence, column);
+    }
+
+    @Override
+    public String toString() {
+        return "KeyColumn{" +
+               "sequence=" + sequence +
+               ", column=" + column +
+               '}';
     }
 }

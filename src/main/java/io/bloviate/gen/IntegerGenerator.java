@@ -16,12 +16,11 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class IntegerGenerator extends AbstractDataGenerator<Integer> {
 
@@ -30,7 +29,8 @@ public class IntegerGenerator extends AbstractDataGenerator<Integer> {
 
     @Override
     public Integer generate() {
-        return RandomUtils.nextInt(startInclusive, endExclusive);
+        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
+        return randomUtils.nextInt(startInclusive, endExclusive);
     }
 
     @Override
@@ -43,10 +43,14 @@ public class IntegerGenerator extends AbstractDataGenerator<Integer> {
         return resultSet.getInt(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private int startInclusive = 0;
         private int endExclusive = Integer.MAX_VALUE;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(int start) {
             this.startInclusive = start;
@@ -58,12 +62,14 @@ public class IntegerGenerator extends AbstractDataGenerator<Integer> {
             return this;
         }
 
+        @Override
         public IntegerGenerator build() {
             return new IntegerGenerator(this);
         }
     }
 
     private IntegerGenerator(Builder builder) {
+        super(builder.random);
         this.startInclusive = builder.startInclusive;
         this.endExclusive = builder.endExclusive;
     }

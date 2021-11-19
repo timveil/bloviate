@@ -6,10 +6,17 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Random;
 
 public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
+
+    protected final Random random;
+
+    public AbstractDataGenerator(Random random) {
+        this.random = random;
+    }
 
     @Override
     public final T generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {

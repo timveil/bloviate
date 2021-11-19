@@ -48,21 +48,30 @@ public class TableFiller implements Fillable {
         logger.debug(sql);
 
         // case 1 - simple case
-            // a - table has no foreign keys, simple primary key is not auto generated
-            // b - table has no foreign keys, simple primary key is auto generated
-            // c - table has no foreign keys, compound primary key is not auto generated
-            // d - table has no foreign keys, compound primary key is auto generated
+        // a - table has no foreign keys, simple primary key is not auto generated
+        // b - table has no foreign keys, simple primary key is auto generated
+        // c - table has no foreign keys, compound primary key is not auto generated
+        // d - table has no foreign keys, compound primary key is auto generated
+
 
         Map<Column, DataGenerator<?>> generatorMap = new HashMap<>();
 
         List<Column> filteredColumns = table.filteredColumns();
 
         for (Column column : filteredColumns) {
-            generatorMap.put(column, DatabaseUtils.getDataGenerator(column));
+
+            Random random;
+
+            Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(table, column);
+
+            if (associatedPrimaryKeyColumn != null) {
+                random = new Random(associatedPrimaryKeyColumn.hashCode());
+            } else {
+                random = new Random(column.hashCode());
+            }
+
+            generatorMap.put(column, DatabaseUtils.getDataGenerator(column, random));
         }
-
-        PrimaryKey primaryKey = table.getPrimaryKey();
-
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
@@ -72,31 +81,9 @@ public class TableFiller implements Fillable {
                 int colCount = 1;
                 for (Column column : filteredColumns) {
 
-                    boolean partOfPrimaryKey = table.partOfPrimaryKey(column);
-                    boolean partOfForeignKey = table.partOfForeignKey(column);
-
                     DataGenerator<?> dataGenerator = generatorMap.get(column);
 
-                    // problem is that some keys are both pk & fk.  either i need to populate key cache again or recursively link back to source
-
-
-                    if (partOfForeignKey) {
-
-                        // need to grab from elsewhere
-
-                    } else if (partOfPrimaryKey) {
-                        KeyColumn keyColumn = table.primaryKeyColumn(column);
-                        Random random = keyColumn.getRandom();
-
-                        dataGenerator.generateAndSet(connection, ps, colCount);
-                        // need to generate but might need to store
-
-                    } else {
-
-                        dataGenerator.generateAndSet(connection, ps, colCount);
-
-                    }
-
+                    dataGenerator.generateAndSet(connection, ps, colCount);
 
                     colCount++;
                 }

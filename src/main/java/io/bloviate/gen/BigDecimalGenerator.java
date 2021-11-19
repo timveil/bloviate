@@ -16,16 +16,14 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
 
@@ -40,6 +38,8 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
 
         if (maxPrecision != null) {
 
+            SeededRandomUtils randomUtils = new SeededRandomUtils(random);
+
             // maxPrecision can be enormous (131089 for CRDB) and not helpful for testing therefore we significantly reduce
             int minMaxPrecision = Math.min(maxPrecision, 25);
 
@@ -47,7 +47,7 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
                 throw new IllegalArgumentException("max digits cannot be larger than max precision");
             } else if (maxDigits != null && maxDigits.equals(maxPrecision)) {
                 // if these are equal then all digits are to the right of the decimal place
-                String bigDecimalString = "." + RandomStringUtils.randomNumeric(1, maxDigits + 1);
+                String bigDecimalString = "." + randomUtils.randomNumeric(1, maxDigits + 1);
 
                 return new BigDecimal(bigDecimalString);
             } else {
@@ -57,24 +57,24 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
                     int adjustedPrecision = minMaxPrecision - maxDigits;
 
                     // generate random numeric string then strip leading zeros.  if this results in empty string, default to "1"
-                    String left = StringUtils.stripStart(RandomStringUtils.randomNumeric(1, (adjustedPrecision) + 1), "0");
+                    String left = StringUtils.stripStart(randomUtils.randomNumeric(1, (adjustedPrecision) + 1), "0");
 
                     if (left.isEmpty()) {
                         left = "1";
                     }
 
-                    String right = RandomStringUtils.randomNumeric(1, maxDigits + 1);
+                    String right = randomUtils.randomNumeric(1, maxDigits + 1);
 
                     String bigDecimalString = left + "." + right;
 
                     return new BigDecimal(bigDecimalString);
                 } else {
-                    return new BigDecimal(RandomStringUtils.randomNumeric(1, minMaxPrecision + 1));
+                    return new BigDecimal(randomUtils.randomNumeric(1, minMaxPrecision + 1));
                 }
             }
 
         } else {
-            return BigDecimal.valueOf(new DoubleGenerator.Builder().build().generate());
+            return BigDecimal.valueOf(new DoubleGenerator.Builder(random).build().generate());
         }
 
     }
@@ -90,10 +90,14 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
         return resultSet.getBigDecimal(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private Integer maxPrecision;
         private Integer maxDigits;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder precision(Integer maxPrecision) {
             this.maxPrecision = maxPrecision;
@@ -105,12 +109,14 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
             return this;
         }
 
+        @Override
         public BigDecimalGenerator build() {
             return new BigDecimalGenerator(this);
         }
     }
 
     private BigDecimalGenerator(Builder builder) {
+        super(builder.random);
         this.maxDigits = builder.maxDigits;
         this.maxPrecision = builder.maxPrecision;
     }

@@ -16,12 +16,9 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomStringUtils;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class SimpleStringGenerator extends AbstractDataGenerator<String> {
 
@@ -32,7 +29,8 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
     @Override
     public String generate() {
         int maxSize = Math.min(size, 2000);
-        return RandomStringUtils.random(maxSize, letters, numbers);
+        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
+        return randomUtils.random(maxSize, letters, numbers);
     }
 
     @Override
@@ -40,13 +38,17 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private int size = 10;
 
         private boolean letters = true;
 
         private boolean numbers = false;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder size(int size) {
             this.size = size;
@@ -63,12 +65,14 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
             return this;
         }
 
+        @Override
         public SimpleStringGenerator build() {
             return new SimpleStringGenerator(this);
         }
     }
 
     private SimpleStringGenerator(Builder builder) {
+        super(builder.random);
         this.size = builder.size;
         this.letters = builder.letters;
         this.numbers = builder.numbers;

@@ -16,12 +16,11 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class FloatGenerator extends AbstractDataGenerator<Float> {
 
@@ -30,8 +29,8 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
 
     @Override
     public Float generate() {
-        // todo: need to understand this a bit better
-        return RandomUtils.nextFloat(startInclusive, endExclusive);
+        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
+        return randomUtils.nextFloat(startInclusive, endExclusive);
     }
 
     @Override
@@ -44,10 +43,14 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
         return resultSet.getFloat(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private float startInclusive = 0;
         private float endExclusive = Float.MAX_VALUE;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(float start) {
             this.startInclusive = start;
@@ -59,12 +62,14 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
             return this;
         }
 
+        @Override
         public FloatGenerator build() {
             return new FloatGenerator(this);
         }
     }
 
     private FloatGenerator(Builder builder) {
+        super(builder.random);
         this.startInclusive = builder.startInclusive;
         this.endExclusive = builder.endExclusive;
     }

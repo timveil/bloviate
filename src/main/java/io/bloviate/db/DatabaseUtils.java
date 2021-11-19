@@ -188,102 +188,107 @@ public class DatabaseUtils {
         return new Column(columnName, tableName, schema, catalog, jdbcType, maxSize, maxDigits, typeName, autoIncrement, nullable, defaultValue, ordinalPosition);
     }
 
-    public static DataGenerator<?> getDataGenerator(Column column) {
-        DataGenerator<?> generator;
+    // get the primary key column (column on other table) for the associated foreign key column (on this table)
+    public static Column getAssociatedPrimaryKeyColumn(Table table, Column foreignKeyColumn) {
+
+        List<ForeignKey> foreignKeys = table.getForeignKeys();
+
+        if (foreignKeys != null && !foreignKeys.isEmpty()) {
+            for (ForeignKey foreignKey : foreignKeys) {
+                List<KeyColumn> keyColumns = foreignKey.getForeignKeyColumns();
+                for (KeyColumn keyColumn : keyColumns) {
+                    int keyColumnSequence = keyColumn.getSequence();
+                    if (keyColumn.getColumn().equals(foreignKeyColumn)) {
+                        PrimaryKey primaryKey = foreignKey.getPrimaryKey();
+                        for (KeyColumn primaryKeyColumn : primaryKey.getKeyColumns()) {
+                            int primaryKeyColumnSequence = primaryKeyColumn.getSequence();
+                            if (primaryKeyColumnSequence == keyColumnSequence) {
+                                return primaryKeyColumn.getColumn();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public static DataGenerator<?> getDataGenerator(Column column, Random random) {
 
         switch (column.getJdbcType()) {
-
             case TINYINT:
-                generator = new ShortGenerator.Builder().start(0).end(255).build();
-                break;
+                return new ShortGenerator.Builder(random).start(0).end(255).build();
             case SMALLINT:
-                generator = new ShortGenerator.Builder().build();
-                break;
+                return new ShortGenerator.Builder(random).build();
             case INTEGER:
-                generator = new IntegerGenerator.Builder().build();
-                break;
+                return new IntegerGenerator.Builder(random).build();
             case BIGINT:
-                generator = new LongGenerator.Builder().build();
-                break;
+                return new LongGenerator.Builder(random).build();
             case FLOAT:
             case REAL:
-                generator = new FloatGenerator.Builder().build();
-                break;
+                return new FloatGenerator.Builder(random).build();
             case DOUBLE:
-                generator = new DoubleGenerator.Builder().build();
-                break;
+                return new DoubleGenerator.Builder(random).build();
             case NUMERIC:
             case DECIMAL:
-                generator = new BigDecimalGenerator.Builder().precision(column.getMaxSize()).digits(column.getMaxDigits()).build();
-                break;
+                return new BigDecimalGenerator.Builder(random).precision(column.getMaxSize()).digits(column.getMaxDigits()).build();
             case CHAR:
             case VARCHAR:
             case LONGVARCHAR:
             case NCHAR:
             case NVARCHAR:
             case LONGNVARCHAR:
-                generator = new SimpleStringGenerator.Builder().size(column.getMaxSize()).build();
-                break;
+                return new SimpleStringGenerator.Builder(random).size(column.getMaxSize()).build();
             case DATE:
-                generator = new SqlDateGenerator.Builder().build();
-                break;
+                return new SqlDateGenerator.Builder(random).build();
             case TIME:
             case TIME_WITH_TIMEZONE:
-                generator = new SqlTimeGenerator.Builder().build();
-                break;
+                return new SqlTimeGenerator.Builder(random).build();
             case TIMESTAMP:
             case TIMESTAMP_WITH_TIMEZONE:
-                generator = new SqlTimestampGenerator.Builder().build();
-                break;
+                return new SqlTimestampGenerator.Builder(random).build();
             case BINARY:
             case VARBINARY:
             case LONGVARBINARY:
-                generator = new ByteGenerator.Builder().size(column.getMaxSize()).build();
-                break;
+                return new ByteGenerator.Builder(random).size(column.getMaxSize()).build();
             case BLOB:
-                generator = new SqlBlobGenerator.Builder().build();
-                break;
+                return new SqlBlobGenerator.Builder(random).build();
             case CLOB:
             case NCLOB:
-                generator = new SqlClobGenerator.Builder().build();
-                break;
+                return new SqlClobGenerator.Builder(random).build();
             case STRUCT:
-                generator = new SqlStructGenerator.Builder().build();
-                break;
+                return new SqlStructGenerator.Builder(random).build();
             case ARRAY:
                 if ("_text".equalsIgnoreCase(column.getTypeName())) {
-                    generator = new StringArrayGenerator.Builder().build();
+                    return new StringArrayGenerator.Builder(random).build();
                 } else if ("_int8".equalsIgnoreCase(column.getTypeName()) || "_int4".equalsIgnoreCase(column.getTypeName())) {
-                    generator = new IntegerArrayGenerator.Builder().build();
+                    return new IntegerArrayGenerator.Builder(random).build();
                 } else {
                     throw new UnsupportedOperationException("Data Type [" + column.getTypeName() + "] for ARRAY not supported");
                 }
-                break;
             case BIT:
                 if (1 == column.getMaxSize()) {
-                    generator = new BitGenerator.Builder().build();
+                    return new BitGenerator.Builder(random).build();
                 } else {
-                    generator = new BitStringGenerator.Builder().size(column.getMaxSize()).build();
+                    return new BitStringGenerator.Builder(random).size(column.getMaxSize()).build();
                 }
-                break;
             case BOOLEAN:
-                generator = new BooleanGenerator.Builder().build();
-                break;
+                return new BooleanGenerator.Builder(random).build();
             case OTHER:
                 if ("uuid".equalsIgnoreCase(column.getTypeName())) {
-                    generator = new UUIDGenerator.Builder().build();
+                    return new UUIDGenerator.Builder(random).build();
                 } else if ("varbit".equalsIgnoreCase(column.getTypeName())) {
-                    generator = new BitStringGenerator.Builder().size(column.getMaxSize()).build();
+                    return new BitStringGenerator.Builder(random).size(column.getMaxSize()).build();
                 } else if ("inet".equalsIgnoreCase(column.getTypeName())) {
-                    generator = new InetGenerator.Builder().build();
+                    return new InetGenerator.Builder(random).build();
                 } else if ("interval".equalsIgnoreCase(column.getTypeName())) {
-                    generator = new IntervalGenerator.Builder().build();
+                    return new IntervalGenerator.Builder(random).build();
                 } else if ("jsonb".equalsIgnoreCase(column.getTypeName())) {
-                    generator = new JsonbGenerator.Builder().build();
+                    return new JsonbGenerator.Builder(random).build();
                 } else {
                     throw new UnsupportedOperationException("Data Type [" + column.getTypeName() + "] for OTHER not supported");
                 }
-                break;
             case JAVA_OBJECT:
             case DISTINCT:
             case REF:
@@ -297,6 +302,5 @@ public class DatabaseUtils {
                 throw new IllegalStateException("Unexpected value [" + column.getJdbcType() + "]");
         }
 
-        return generator;
     }
 }
