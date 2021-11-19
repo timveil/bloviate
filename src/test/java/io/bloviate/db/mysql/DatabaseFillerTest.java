@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package io.bloviate.db;
+package io.bloviate.db.mysql;
 
-import io.bloviate.ext.CockroachDBSupport;
+import com.mysql.cj.jdbc.MysqlDataSource;
+import io.bloviate.db.Database;
+import io.bloviate.db.DatabaseFiller;
+import io.bloviate.db.Table;
+import io.bloviate.ext.MySQLSupport;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.ScriptRunner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.postgresql.ds.PGSimpleDataSource;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,20 +34,18 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-class ManualTableFillerTest {
+class DatabaseFillerTest {
 
-    private final PGSimpleDataSource ds = new PGSimpleDataSource();
+    private final MysqlDataSource ds = new MysqlDataSource();
 
     @BeforeEach
     void setUp() throws SQLException, IOException {
 
-        ds.setServerNames(new String[]{"localhost"});
-        ds.setPortNumbers(new int[]{26257});
+        ds.setServerName("localhost");
+        ds.setPortNumber(3306);
         ds.setDatabaseName("bloviate");
         ds.setUser("root");
-        ds.setPassword(null);
-        ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("ManualTableFillerTest");
+        ds.setPassword("password");
 
         Database db = DatabaseUtils.getMetadata(ds);
 
@@ -59,7 +60,7 @@ class ManualTableFillerTest {
 
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
-            try (InputStream is = getClass().getResourceAsStream("/create_tpcc.cockroachdb.sql")) {
+            try (InputStream is = getClass().getResourceAsStream("/create_tpcc.mysql.sql")) {
                 if (is != null) {
                     try (Reader reader = new InputStreamReader(is)) {
                         sr.runScript(reader);
@@ -70,15 +71,9 @@ class ManualTableFillerTest {
     }
 
     @Test
-    void fill() throws SQLException {
+    void fillDatabase() throws SQLException {
         try (Connection connection = ds.getConnection()) {
-            Database database = DatabaseUtils.getMetadata(connection);
-            CockroachDBSupport support = new CockroachDBSupport();
-
-            new TableFiller.Builder(connection, database, support).table(database.getTable("warehouse")).rows(100).build().fill();
-            new TableFiller.Builder(connection, database, support).table(database.getTable("item")).rows(100000).build().fill();
-            new TableFiller.Builder(connection, database, support).table(database.getTable("stock")).rows(1000).build().fill();
+            new DatabaseFiller.Builder(connection).databaseSupport(new MySQLSupport()).build().fill();
         }
-
     }
 }

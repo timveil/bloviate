@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-package io.bloviate.db;
+package io.bloviate.db.cockroach;
 
+import io.bloviate.db.Database;
+import io.bloviate.db.Table;
+import io.bloviate.db.TableFiller;
 import io.bloviate.ext.CockroachDBSupport;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.ScriptRunner;
@@ -31,7 +34,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-class CockroachFillerTest {
+class ManualTableFillerTest {
 
     private final PGSimpleDataSource ds = new PGSimpleDataSource();
 
@@ -44,7 +47,7 @@ class CockroachFillerTest {
         ds.setUser("root");
         ds.setPassword(null);
         ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("CockroachFillerTest");
+        ds.setApplicationName("ManualTableFillerTest");
 
         Database db = DatabaseUtils.getMetadata(ds);
 
@@ -70,9 +73,15 @@ class CockroachFillerTest {
     }
 
     @Test
-    void fillDatabase() throws SQLException {
+    void fill() throws SQLException {
         try (Connection connection = ds.getConnection()) {
-            new DatabaseFiller.Builder(connection).databaseSupport(new CockroachDBSupport()).build().fill();
+            Database database = DatabaseUtils.getMetadata(connection);
+            CockroachDBSupport support = new CockroachDBSupport();
+
+            new TableFiller.Builder(connection, database, support).table(database.getTable("warehouse")).rows(100).build().fill();
+            new TableFiller.Builder(connection, database, support).table(database.getTable("item")).rows(100000).build().fill();
+            new TableFiller.Builder(connection, database, support).table(database.getTable("stock")).rows(1000).build().fill();
         }
+
     }
 }

@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-package io.bloviate.db;
+package io.bloviate.db.cockroach;
 
+import io.bloviate.db.Database;
+import io.bloviate.db.Table;
+import io.bloviate.db.TableFiller;
 import io.bloviate.ext.CockroachDBSupport;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.ScriptRunner;

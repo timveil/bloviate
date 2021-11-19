@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package io.bloviate.db;
+package io.bloviate.db.cockroach;
 
-import io.bloviate.ext.PostgresSupport;
+import io.bloviate.db.Database;
+import io.bloviate.db.DatabaseFiller;
+import io.bloviate.db.Table;
+import io.bloviate.ext.CockroachDBSupport;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.ScriptRunner;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +34,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-class PostgresFillerTest {
+class DatabaseFillerTest {
 
     private final PGSimpleDataSource ds = new PGSimpleDataSource();
 
@@ -39,12 +42,12 @@ class PostgresFillerTest {
     void setUp() throws SQLException, IOException {
 
         ds.setServerNames(new String[]{"localhost"});
-        ds.setPortNumbers(new int[]{5432});
+        ds.setPortNumbers(new int[]{26257});
         ds.setDatabaseName("bloviate");
-        ds.setUser("admin");
-        ds.setPassword("password");
+        ds.setUser("root");
+        ds.setPassword(null);
         ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("PostgresFillerTest");
+        ds.setApplicationName("DatabaseFillerTest");
 
         Database db = DatabaseUtils.getMetadata(ds);
 
@@ -59,7 +62,7 @@ class PostgresFillerTest {
 
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
-            try (InputStream is = getClass().getResourceAsStream("/create_tpcc.postgres.sql")) {
+            try (InputStream is = getClass().getResourceAsStream("/create_tpcc.cockroachdb.sql")) {
                 if (is != null) {
                     try (Reader reader = new InputStreamReader(is)) {
                         sr.runScript(reader);
@@ -72,7 +75,7 @@ class PostgresFillerTest {
     @Test
     void fillDatabase() throws SQLException {
         try (Connection connection = ds.getConnection()) {
-            new DatabaseFiller.Builder(connection).databaseSupport(new PostgresSupport()).build().fill();
+            new DatabaseFiller.Builder(connection).databaseSupport(new CockroachDBSupport()).build().fill();
         }
     }
 }
