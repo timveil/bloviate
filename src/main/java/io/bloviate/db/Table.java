@@ -23,7 +23,7 @@ public class Table {
         return name;
     }
 
-    public List<Column> getColumns() {
+    protected List<Column> getColumns() {
         return columns;
     }
 
@@ -31,29 +31,20 @@ public class Table {
         StringJoiner nameJoiner = new StringJoiner(",");
         StringJoiner valueJoiner = new StringJoiner(",");
 
-        for (Column column : columns) {
-
-            if (column.getAutoIncrement() || column.getDefaultValue() != null) {
-                // skip and rely on database to populate
-            } else {
-                nameJoiner.add(column.getName());
-                valueJoiner.add("?");
-            }
+        for (Column column : filteredColumns()) {
+            nameJoiner.add(column.getName());
+            valueJoiner.add("?");
         }
 
-        return String.format("insert into %s (%s) values (%s)", name, nameJoiner.toString(), valueJoiner.toString());
+        return String.format("insert into %s (%s) values (%s)", name, nameJoiner, valueJoiner);
 
     }
 
-    public List<Column> filterColumns(boolean excludeAutoIncrement) {
+    public List<Column> filteredColumns() {
         List<Column> filtered = new ArrayList<>();
 
         for (Column column : columns) {
-            if (excludeAutoIncrement) {
-                if (!column.getAutoIncrement()) {
-                    filtered.add(column);
-                }
-            } else {
+            if (!column.getAutoIncrement()) {
                 filtered.add(column);
             }
         }
@@ -74,7 +65,19 @@ public class Table {
         return false;
     }
 
-    public boolean partOfForeignKeys(Column column) {
+    public KeyColumn primaryKeyColumn(Column column) {
+        if (primaryKey != null) {
+            for (KeyColumn kc : primaryKey.getKeyColumns()) {
+                if (kc.getColumn().equals(column)) {
+                    return kc;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public boolean partOfForeignKey(Column column) {
         if (foreignKeys != null) {
             for (ForeignKey fk : foreignKeys) {
                 for (KeyColumn kc : fk.getForeignKeyColumns()) {
@@ -86,6 +89,20 @@ public class Table {
         }
 
         return false;
+    }
+
+    public KeyColumn foreignKeyColumn(Column column) {
+        if (foreignKeys != null) {
+            for (ForeignKey fk : foreignKeys) {
+                for (KeyColumn kc : fk.getForeignKeyColumns()) {
+                    if (kc.getColumn().equals(column)) {
+                        return kc;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
 
@@ -117,9 +134,9 @@ public class Table {
         }
         Table table = (Table) o;
         return Objects.equals(name, table.name) &&
-                Objects.equals(columns, table.columns) &&
-                Objects.equals(primaryKey, table.primaryKey) &&
-                Objects.equals(foreignKeys, table.foreignKeys);
+               Objects.equals(columns, table.columns) &&
+               Objects.equals(primaryKey, table.primaryKey) &&
+               Objects.equals(foreignKeys, table.foreignKeys);
     }
 
     @Override
@@ -130,10 +147,10 @@ public class Table {
     @Override
     public String toString() {
         return "Table{" +
-                "name='" + name + '\'' +
-                ", columns=" + columns +
-                ", primaryKey=" + primaryKey +
-                ", foreignKeys=" + foreignKeys +
-                '}';
+               "name='" + name + '\'' +
+               ", columns=" + columns +
+               ", primaryKey=" + primaryKey +
+               ", foreignKeys=" + foreignKeys +
+               '}';
     }
 }

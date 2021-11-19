@@ -185,13 +185,13 @@ public class DatabaseUtils {
 
         int ordinalPosition = columnsResultSet.getInt("ORDINAL_POSITION");
 
-        return new Column(columnName, tableName, schema, catalog, jdbcType, maxSize, maxDigits, typeName, autoIncrement, nullable, defaultValue, ordinalPosition, getDataGenerator(jdbcType, typeName, maxSize, maxDigits));
+        return new Column(columnName, tableName, schema, catalog, jdbcType, maxSize, maxDigits, typeName, autoIncrement, nullable, defaultValue, ordinalPosition);
     }
 
-    private static DataGenerator<?> getDataGenerator(JDBCType jdbcType, String typeName, Integer maxSize, Integer maxDigits) {
+    public static DataGenerator<?> getDataGenerator(Column column) {
         DataGenerator<?> generator;
 
-        switch (jdbcType) {
+        switch (column.getJdbcType()) {
 
             case TINYINT:
                 generator = new ShortGenerator.Builder().start(0).end(255).build();
@@ -214,7 +214,7 @@ public class DatabaseUtils {
                 break;
             case NUMERIC:
             case DECIMAL:
-                generator = new BigDecimalGenerator.Builder().precision(maxSize).digits(maxDigits).build();
+                generator = new BigDecimalGenerator.Builder().precision(column.getMaxSize()).digits(column.getMaxDigits()).build();
                 break;
             case CHAR:
             case VARCHAR:
@@ -222,7 +222,7 @@ public class DatabaseUtils {
             case NCHAR:
             case NVARCHAR:
             case LONGNVARCHAR:
-                generator = new SimpleStringGenerator.Builder().size(maxSize).build();
+                generator = new SimpleStringGenerator.Builder().size(column.getMaxSize()).build();
                 break;
             case DATE:
                 generator = new SqlDateGenerator.Builder().build();
@@ -238,7 +238,7 @@ public class DatabaseUtils {
             case BINARY:
             case VARBINARY:
             case LONGVARBINARY:
-                generator = new ByteGenerator.Builder().size(maxSize).build();
+                generator = new ByteGenerator.Builder().size(column.getMaxSize()).build();
                 break;
             case BLOB:
                 generator = new SqlBlobGenerator.Builder().build();
@@ -251,37 +251,37 @@ public class DatabaseUtils {
                 generator = new SqlStructGenerator.Builder().build();
                 break;
             case ARRAY:
-                if ("_text".equalsIgnoreCase(typeName)) {
+                if ("_text".equalsIgnoreCase(column.getTypeName())) {
                     generator = new StringArrayGenerator.Builder().build();
-                } else if ("_int8".equalsIgnoreCase(typeName) || "_int4".equalsIgnoreCase(typeName)) {
+                } else if ("_int8".equalsIgnoreCase(column.getTypeName()) || "_int4".equalsIgnoreCase(column.getTypeName())) {
                     generator = new IntegerArrayGenerator.Builder().build();
                 } else {
-                    throw new UnsupportedOperationException("Data Type [" + typeName + "] for ARRAY not supported");
+                    throw new UnsupportedOperationException("Data Type [" + column.getTypeName() + "] for ARRAY not supported");
                 }
                 break;
             case BIT:
-                if (1 == maxSize) {
+                if (1 == column.getMaxSize()) {
                     generator = new BitGenerator.Builder().build();
                 } else {
-                    generator = new BitStringGenerator.Builder().size(maxSize).build();
+                    generator = new BitStringGenerator.Builder().size(column.getMaxSize()).build();
                 }
                 break;
             case BOOLEAN:
                 generator = new BooleanGenerator.Builder().build();
                 break;
             case OTHER:
-                if ("uuid".equalsIgnoreCase(typeName)) {
+                if ("uuid".equalsIgnoreCase(column.getTypeName())) {
                     generator = new UUIDGenerator.Builder().build();
-                } else if ("varbit".equalsIgnoreCase(typeName)) {
-                    generator = new BitStringGenerator.Builder().size(maxSize).build();
-                } else if ("inet".equalsIgnoreCase(typeName)) {
+                } else if ("varbit".equalsIgnoreCase(column.getTypeName())) {
+                    generator = new BitStringGenerator.Builder().size(column.getMaxSize()).build();
+                } else if ("inet".equalsIgnoreCase(column.getTypeName())) {
                     generator = new InetGenerator.Builder().build();
-                } else if ("interval".equalsIgnoreCase(typeName)) {
+                } else if ("interval".equalsIgnoreCase(column.getTypeName())) {
                     generator = new IntervalGenerator.Builder().build();
-                } else if ("jsonb".equalsIgnoreCase(typeName)) {
+                } else if ("jsonb".equalsIgnoreCase(column.getTypeName())) {
                     generator = new JsonbGenerator.Builder().build();
                 } else {
-                    throw new UnsupportedOperationException("Data Type [" + typeName + "] for OTHER not supported");
+                    throw new UnsupportedOperationException("Data Type [" + column.getTypeName() + "] for OTHER not supported");
                 }
                 break;
             case JAVA_OBJECT:
@@ -292,9 +292,9 @@ public class DatabaseUtils {
             case SQLXML:
             case REF_CURSOR:
             case NULL:
-                throw new UnsupportedOperationException("JDBCType [" + jdbcType + "] not supported");
+                throw new UnsupportedOperationException("JDBCType [" + column.getJdbcType() + "] not supported");
             default:
-                throw new IllegalStateException("Unexpected value: " + jdbcType);
+                throw new IllegalStateException("Unexpected value [" + column.getJdbcType() + "]");
         }
 
         return generator;
