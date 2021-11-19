@@ -121,15 +121,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- uses for ScriptRunner class only during test data load -->
-        <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis</artifactId>
-            <version>3.5.7</version>
-            <scope>test</scope>
-        </dependency>
-
-
     </dependencies>
 
     <build>

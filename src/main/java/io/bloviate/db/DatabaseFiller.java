@@ -16,6 +16,7 @@
 
 package io.bloviate.db;
 
+import io.bloviate.util.DatabaseUtils;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;

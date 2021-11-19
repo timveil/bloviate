@@ -16,7 +16,8 @@
 
 package io.bloviate.db;
 
-import org.apache.ibatis.jdbc.ScriptRunner;
+import io.bloviate.util.DatabaseUtils;
+import io.bloviate.util.ScriptRunner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -68,11 +69,9 @@ class DatabaseFillerTest {
     }
 
     @Test
-    void fillDatabase() {
+    void fillDatabase() throws SQLException {
         try (Connection connection = ds.getConnection()) {
             new DatabaseFiller.Builder(connection).build().fill();
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 }

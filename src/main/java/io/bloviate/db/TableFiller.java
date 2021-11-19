@@ -17,6 +17,7 @@
 package io.bloviate.db;
 
 import io.bloviate.gen.DataGenerator;
+import io.bloviate.util.DatabaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

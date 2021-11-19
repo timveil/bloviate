@@ -1,4 +1,4 @@
-package io.bloviate.gen;
+package io.bloviate.util;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.Validate;

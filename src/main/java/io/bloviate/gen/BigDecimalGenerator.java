@@ -16,6 +16,7 @@
 
 package io.bloviate.gen;
 
+import io.bloviate.util.SeededRandomUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;

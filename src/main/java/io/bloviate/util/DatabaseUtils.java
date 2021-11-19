@@ -1,5 +1,6 @@
-package io.bloviate.db;
+package io.bloviate.util;
 
+import io.bloviate.db.*;
 import io.bloviate.gen.*;
 
 import javax.sql.DataSource;

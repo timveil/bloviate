@@ -16,6 +16,8 @@
 
 package io.bloviate.gen;
 
+import io.bloviate.util.SeededRandomUtils;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;

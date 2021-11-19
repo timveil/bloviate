@@ -16,7 +16,8 @@
 
 package io.bloviate.db;
 
-import org.apache.ibatis.jdbc.ScriptRunner;
+import io.bloviate.util.DatabaseUtils;
+import io.bloviate.util.ScriptRunner;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
