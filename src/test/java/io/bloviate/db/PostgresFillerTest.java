@@ -16,6 +16,7 @@
 
 package io.bloviate.db;
 
+import io.bloviate.ext.PostgresSupport;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.ScriptRunner;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +31,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-class DatabaseFillerTest {
+class PostgresFillerTest {
 
     private final PGSimpleDataSource ds = new PGSimpleDataSource();
 
@@ -58,7 +59,7 @@ class DatabaseFillerTest {
 
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
-            try (InputStream is = getClass().getResourceAsStream("/create_tpcc.sql")) {
+            try (InputStream is = getClass().getResourceAsStream("/create_tpcc.postgres.sql")) {
                 if (is != null) {
                     try (Reader reader = new InputStreamReader(is)) {
                         sr.runScript(reader);
@@ -71,7 +72,7 @@ class DatabaseFillerTest {
     @Test
     void fillDatabase() throws SQLException {
         try (Connection connection = ds.getConnection()) {
-            new DatabaseFiller.Builder(connection).build().fill();
+            new DatabaseFiller.Builder(connection).databaseSupport(new PostgresSupport()).build().fill();
         }
     }
 }

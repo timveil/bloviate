@@ -16,6 +16,7 @@
 
 package io.bloviate.db;
 
+import io.bloviate.ext.CockroachDBSupport;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.ScriptRunner;
 import org.junit.jupiter.api.BeforeAll;
@@ -57,7 +58,7 @@ class TableFillerTest {
 
         try (Connection connection = ds.getConnection()) {
             ScriptRunner sr = new ScriptRunner(connection);
-            try (InputStream is = TableFillerTest.class.getResourceAsStream("/create_tables.sql")) {
+            try (InputStream is = TableFillerTest.class.getResourceAsStream("/create_tables.cockroachdb.sql")) {
                 if (is != null) {
                     try (Reader reader = new InputStreamReader(is)) {
                         sr.runScript(reader);
@@ -146,7 +147,7 @@ class TableFillerTest {
         try (Connection connection = ds.getConnection()) {
             Database database = DatabaseUtils.getMetadata(connection);
             Table table = database.getTable(tableName);
-            new TableFiller.Builder(connection, database).table(table).build().fill();
+            new TableFiller.Builder(connection, database, new CockroachDBSupport()).table(table).build().fill();
         }
     }
 }

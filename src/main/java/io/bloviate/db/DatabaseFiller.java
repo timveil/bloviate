@@ -16,6 +16,8 @@
 
 package io.bloviate.db;
 
+import io.bloviate.ext.DatabaseSupport;
+import io.bloviate.ext.DefaultSupport;
 import io.bloviate.util.DatabaseUtils;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -38,6 +40,7 @@ public class DatabaseFiller implements Fillable {
     private final Connection connection;
     private final int rows;
     private final int batchSize;
+    private final DatabaseSupport databaseSupport;
 
     @Override
     public void fill() throws SQLException {
@@ -73,7 +76,7 @@ public class DatabaseFiller implements Fillable {
 
         for (Table table : ordered) {
             logger.debug("filling table [{}]", table.getName());
-            new TableFiller.Builder(connection, database)
+            new TableFiller.Builder(connection, database, databaseSupport)
                     .table(table)
                     .batchSize(batchSize)
                     .rows(rows)
@@ -88,6 +91,7 @@ public class DatabaseFiller implements Fillable {
 
         private int rows = 1000;
         private int batchSize = 128;
+        private DatabaseSupport databaseSupport = new DefaultSupport();
 
         public Builder(Connection connection) {
             this.connection = connection;
@@ -103,6 +107,11 @@ public class DatabaseFiller implements Fillable {
             return this;
         }
 
+        public Builder databaseSupport(DatabaseSupport databaseSupport) {
+            this.databaseSupport = databaseSupport;
+            return this;
+        }
+
         public DatabaseFiller build() {
             return new DatabaseFiller(this);
         }
@@ -112,5 +121,6 @@ public class DatabaseFiller implements Fillable {
         this.connection = builder.connection;
         this.rows = builder.rows;
         this.batchSize = builder.batchSize;
+        this.databaseSupport = builder.databaseSupport;
     }
 }

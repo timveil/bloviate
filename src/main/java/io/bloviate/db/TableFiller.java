@@ -16,6 +16,7 @@
 
 package io.bloviate.db;
 
+import io.bloviate.ext.DatabaseSupport;
 import io.bloviate.gen.DataGenerator;
 import io.bloviate.util.DatabaseUtils;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ public class TableFiller implements Fillable {
 
     private final Connection connection;
     private final Database database;
+    private final DatabaseSupport databaseSupport;
     private final Table table;
     private final int rows;
     private final int batchSize;
@@ -71,7 +73,7 @@ public class TableFiller implements Fillable {
                 random = new Random(column.hashCode());
             }
 
-            generatorMap.put(column, DatabaseUtils.getDataGenerator(column, random));
+            generatorMap.put(column, databaseSupport.getDataGenerator(column, random));
         }
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -107,14 +109,16 @@ public class TableFiller implements Fillable {
 
         private final Connection connection;
         private final Database database;
+        private final DatabaseSupport databaseSupport;
 
         private Table table;
         private int rows = 1000;
         private int batchSize = 128;
 
-        public Builder(Connection connection, Database database) {
+        public Builder(Connection connection, Database database, DatabaseSupport databaseSupport) {
             this.connection = connection;
             this.database = database;
+            this.databaseSupport = databaseSupport;
         }
 
         public Builder rows(int rows) {
@@ -148,5 +152,6 @@ public class TableFiller implements Fillable {
         this.database = builder.database;
         this.rows = builder.rows;
         this.batchSize = builder.batchSize;
+        this.databaseSupport = builder.databaseSupport;
     }
 }

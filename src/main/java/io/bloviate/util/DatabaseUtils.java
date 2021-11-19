@@ -1,7 +1,6 @@
 package io.bloviate.util;
 
 import io.bloviate.db.*;
-import io.bloviate.gen.*;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -242,93 +241,4 @@ public class DatabaseUtils {
         return null;
     }
 
-    public static DataGenerator<?> getDataGenerator(Column column, Random random) {
-
-        switch (column.getJdbcType()) {
-            case TINYINT:
-                return new ShortGenerator.Builder(random).start(0).end(255).build();
-            case SMALLINT:
-                return new ShortGenerator.Builder(random).build();
-            case INTEGER:
-                return new IntegerGenerator.Builder(random).build();
-            case BIGINT:
-                return new LongGenerator.Builder(random).build();
-            case FLOAT:
-            case REAL:
-                return new FloatGenerator.Builder(random).build();
-            case DOUBLE:
-                return new DoubleGenerator.Builder(random).build();
-            case NUMERIC:
-            case DECIMAL:
-                return new BigDecimalGenerator.Builder(random).precision(column.getMaxSize()).digits(column.getMaxDigits()).build();
-            case CHAR:
-            case VARCHAR:
-            case LONGVARCHAR:
-            case NCHAR:
-            case NVARCHAR:
-            case LONGNVARCHAR:
-                return new SimpleStringGenerator.Builder(random).size(column.getMaxSize()).build();
-            case DATE:
-                return new SqlDateGenerator.Builder(random).build();
-            case TIME:
-            case TIME_WITH_TIMEZONE:
-                return new SqlTimeGenerator.Builder(random).build();
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_TIMEZONE:
-                return new SqlTimestampGenerator.Builder(random).build();
-            case BINARY:
-            case VARBINARY:
-            case LONGVARBINARY:
-                return new ByteGenerator.Builder(random).size(column.getMaxSize()).build();
-            case BLOB:
-                return new SqlBlobGenerator.Builder(random).build();
-            case CLOB:
-            case NCLOB:
-                return new SqlClobGenerator.Builder(random).build();
-            case STRUCT:
-                return new SqlStructGenerator.Builder(random).build();
-            case ARRAY:
-                if ("_text".equalsIgnoreCase(column.getTypeName())) {
-                    return new StringArrayGenerator.Builder(random).build();
-                } else if ("_int8".equalsIgnoreCase(column.getTypeName()) || "_int4".equalsIgnoreCase(column.getTypeName())) {
-                    return new IntegerArrayGenerator.Builder(random).build();
-                } else {
-                    throw new UnsupportedOperationException("Data Type [" + column.getTypeName() + "] for ARRAY not supported");
-                }
-            case BIT:
-                if (1 == column.getMaxSize()) {
-                    return new BitGenerator.Builder(random).build();
-                } else {
-                    return new BitStringGenerator.Builder(random).size(column.getMaxSize()).build();
-                }
-            case BOOLEAN:
-                return new BooleanGenerator.Builder(random).build();
-            case OTHER:
-                if ("uuid".equalsIgnoreCase(column.getTypeName())) {
-                    return new UUIDGenerator.Builder(random).build();
-                } else if ("varbit".equalsIgnoreCase(column.getTypeName())) {
-                    return new BitStringGenerator.Builder(random).size(column.getMaxSize()).build();
-                } else if ("inet".equalsIgnoreCase(column.getTypeName())) {
-                    return new InetGenerator.Builder(random).build();
-                } else if ("interval".equalsIgnoreCase(column.getTypeName())) {
-                    return new IntervalGenerator.Builder(random).build();
-                } else if ("jsonb".equalsIgnoreCase(column.getTypeName())) {
-                    return new JsonbGenerator.Builder(random).build();
-                } else {
-                    throw new UnsupportedOperationException("Data Type [" + column.getTypeName() + "] for OTHER not supported");
-                }
-            case JAVA_OBJECT:
-            case DISTINCT:
-            case REF:
-            case DATALINK:
-            case ROWID:
-            case SQLXML:
-            case REF_CURSOR:
-            case NULL:
-                throw new UnsupportedOperationException("JDBCType [" + column.getJdbcType() + "] not supported");
-            default:
-                throw new IllegalStateException("Unexpected value [" + column.getJdbcType() + "]");
-        }
-
-    }
 }

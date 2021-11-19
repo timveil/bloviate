@@ -31,7 +31,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-class ManualTableFillerTest {
+class CockroachFillerTest {
 
     private final PGSimpleDataSource ds = new PGSimpleDataSource();
 
@@ -44,7 +44,7 @@ class ManualTableFillerTest {
         ds.setUser("root");
         ds.setPassword(null);
         ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("ManualTableFillerTest");
+        ds.setApplicationName("DatabaseFillerTest");
 
         Database db = DatabaseUtils.getMetadata(ds);
 
@@ -70,15 +70,9 @@ class ManualTableFillerTest {
     }
 
     @Test
-    void fill() throws SQLException {
+    void fillDatabase() throws SQLException {
         try (Connection connection = ds.getConnection()) {
-            Database database = DatabaseUtils.getMetadata(connection);
-            CockroachDBSupport support = new CockroachDBSupport();
-
-            new TableFiller.Builder(connection, database, support).table(database.getTable("warehouse")).rows(100).build().fill();
-            new TableFiller.Builder(connection, database, support).table(database.getTable("item")).rows(100000).build().fill();
-            new TableFiller.Builder(connection, database, support).table(database.getTable("stock")).rows(1000).build().fill();
+            new DatabaseFiller.Builder(connection).databaseSupport(new CockroachDBSupport()).build().fill();
         }
-
     }
 }
