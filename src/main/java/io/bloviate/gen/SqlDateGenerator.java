@@ -17,11 +17,12 @@
 package io.bloviate.gen;
 
 
-import java.sql.Date;
+import java.sql.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Random;
 
-public class SqlDateGenerator implements DataGenerator<Date> {
+public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
     private final LongGenerator longGenerator;
 
@@ -34,14 +35,23 @@ public class SqlDateGenerator implements DataGenerator<Date> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setDate(parameterIndex, (Date) value);
     }
 
-    public static class Builder {
+    @Override
+    public Date get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getDate(columnIndex);
+    }
 
-        private Date startInclusive = new Date(Instant.EPOCH.toEpochMilli());
-        private Date endExclusive = new Date(Instant.now().plus(100, ChronoUnit.HOURS).toEpochMilli());
+    public static class Builder extends AbstractBuilder {
+
+        private Date startInclusive = new Date(Instant.now().minus(100, ChronoUnit.DAYS).toEpochMilli());
+        private Date endExclusive = new Date(Instant.now().plus(100, ChronoUnit.DAYS).toEpochMilli());
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(Date start) {
             this.startInclusive = start;
@@ -53,13 +63,15 @@ public class SqlDateGenerator implements DataGenerator<Date> {
             return this;
         }
 
+        @Override
         public SqlDateGenerator build() {
             return new SqlDateGenerator(this);
         }
     }
 
     private SqlDateGenerator(Builder builder) {
-        this.longGenerator = new LongGenerator.Builder()
+        super(builder.random);
+        this.longGenerator = new LongGenerator.Builder(builder.random)
                 .start(builder.startInclusive.getTime())
                 .end(builder.endExclusive.getTime())
                 .build();

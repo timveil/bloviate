@@ -16,56 +16,56 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
+import java.sql.*;
+import java.util.Random;
 
-public class IntegerArrayGenerator implements DataGenerator<Integer[]> {
+public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
 
     private final int length;
-    private final DataGenerator<? extends Integer> elementGenerator;
 
     @Override
     public Integer[] generate() {
-        Integer[] random = new Integer[length];
+        Integer[] randomArray = new Integer[length];
 
         for (int i = 0; i < length; i++) {
-            if (elementGenerator != null) {
-                random[i] = elementGenerator.generate();
-            } else {
-                random[i] = RandomUtils.nextInt();
-            }
+            randomArray[i] = random.nextInt();
         }
 
-        return random;
+        return randomArray;
 
     }
 
     @Override
-    public String generateAsString() {
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setArray(parameterIndex, connection.createArrayOf(JDBCType.INTEGER.getName(), (Integer[]) value));
+    }
+
+    @Override
+    public Integer[] get(ResultSet resultSet, int columnIndex) throws SQLException {
         return null;
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private int length = 3;
-        private DataGenerator<? extends Integer> elementGenerator;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder length(int length) {
             this.length = length;
             return this;
         }
 
-        public Builder elementGenerator(DataGenerator<? extends Integer> generator) {
-            this.elementGenerator = generator;
-            return this;
-        }
-
+        @Override
         public IntegerArrayGenerator build() {
             return new IntegerArrayGenerator(this);
         }
     }
 
     private IntegerArrayGenerator(Builder builder) {
+        super(builder.random);
         this.length = builder.length;
-        this.elementGenerator = builder.elementGenerator;
     }
 }

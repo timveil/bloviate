@@ -20,35 +20,52 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
-public class BitGenerator extends AbstractDataGenerator<Integer> {
+public class BitStringGenerator extends AbstractDataGenerator<String> {
 
-    private final IntegerGenerator integerGenerator;
+    private final int size;
+
+    private final BitGenerator bitGenerator;
 
     @Override
-    public Integer generate() {
-        return integerGenerator.generate();
+    public String generate() {
+
+        int maxSize = Math.min(size, 25);
+
+        StringBuilder builder = new StringBuilder();
+
+        for (int i = 0; i < maxSize; i++) {
+            builder.append(bitGenerator.generate());
+        }
+
+        return builder.toString();
     }
 
     @Override
-    public Integer get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getInt(columnIndex);
+    public String get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getString(columnIndex);
     }
 
     public static class Builder extends AbstractBuilder {
+        private int size = 1;
 
         public Builder(Random random) {
             super(random);
         }
 
+        public Builder size(int size) {
+            this.size = size;
+            return this;
+        }
+
         @Override
-        public BitGenerator build() {
-            return new BitGenerator(this);
+        public BitStringGenerator build() {
+            return new BitStringGenerator(this);
         }
     }
 
-    private BitGenerator(Builder builder) {
+    private BitStringGenerator(Builder builder) {
         super(builder.random);
-
-        this.integerGenerator = new IntegerGenerator.Builder(builder.random).start(0).end(2).build();
+        this.size = builder.size;
+        this.bitGenerator = new BitGenerator.Builder(builder.random).build();
     }
 }

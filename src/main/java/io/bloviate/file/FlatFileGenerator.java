@@ -34,7 +34,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FlatFile implements FileGenerator {
+public class FlatFileGenerator implements FileGenerator {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -176,12 +176,12 @@ public class FlatFile implements FileGenerator {
             return this;
         }
 
-        public FlatFile build() {
-            return new FlatFile(this);
+        public FlatFileGenerator build() {
+            return new FlatFileGenerator(this);
         }
     }
 
-    private FlatFile(Builder builder) {
+    private FlatFileGenerator(Builder builder) {
         this.fileName = builder.fileName;
         this.columnDefinitions = builder.columnDefinitions;
         this.compress = builder.compress;

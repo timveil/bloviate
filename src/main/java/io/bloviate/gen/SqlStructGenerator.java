@@ -16,9 +16,12 @@
 
 package io.bloviate.gen;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Struct;
+import java.util.Random;
 
-public class SqlStructGenerator implements DataGenerator<Struct> {
+public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
     //todo
 
     @Override
@@ -31,14 +34,25 @@ public class SqlStructGenerator implements DataGenerator<Struct> {
         return null;
     }
 
-    public static class Builder {
+    @Override
+    public Struct get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return null;
+    }
 
+    public static class Builder extends AbstractBuilder {
+
+        public Builder(Random random) {
+            super(random);
+        }
+
+        @Override
         public SqlStructGenerator build() {
             return new SqlStructGenerator(this);
         }
     }
 
     private SqlStructGenerator(Builder builder) {
+        super(builder.random);
 
     }
 }

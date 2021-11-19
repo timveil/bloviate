@@ -16,7 +16,11 @@
 
 package io.bloviate.gen;
 
-public class JsonbGenerator implements DataGenerator<String> {
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Random;
+
+public class JsonbGenerator extends AbstractDataGenerator<String> {
     // todo
 
     @Override
@@ -25,19 +29,24 @@ public class JsonbGenerator implements DataGenerator<String> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate();
+    public String get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return null;
     }
 
+    public static class Builder extends AbstractBuilder {
 
-    public static class Builder {
+        public Builder(Random random) {
+            super(random);
+        }
 
+        @Override
         public JsonbGenerator build() {
             return new JsonbGenerator(this);
         }
     }
 
     private JsonbGenerator(Builder builder) {
+        super(builder.random);
 
     }
 }

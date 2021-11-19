@@ -16,28 +16,41 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Random;
 
-public class DoubleGenerator implements DataGenerator<Double> {
+public class DoubleGenerator extends AbstractDataGenerator<Double> {
 
     private final double startInclusive;
     private final double endExclusive;
 
     @Override
     public Double generate() {
-        return RandomUtils.nextDouble(startInclusive, endExclusive);
+        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
+        return randomUtils.nextDouble(startInclusive, endExclusive);
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setDouble(parameterIndex, (Double) value);
     }
 
+    @Override
+    public Double get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getDouble(columnIndex);
+    }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private double startInclusive = 0;
         private double endExclusive = Double.MAX_VALUE;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(double start) {
             this.startInclusive = start;
@@ -49,12 +62,14 @@ public class DoubleGenerator implements DataGenerator<Double> {
             return this;
         }
 
+        @Override
         public DoubleGenerator build() {
             return new DoubleGenerator(this);
         }
     }
 
     private DoubleGenerator(Builder builder) {
+        super(builder.random);
         this.startInclusive = builder.startInclusive;
         this.endExclusive = builder.endExclusive;
     }

@@ -17,11 +17,15 @@
 package io.bloviate.gen;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.RandomUtils;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Random;
 
-public class ByteGenerator implements DataGenerator<Byte[]> {
+public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
 
     private final int size;
 
@@ -30,29 +34,48 @@ public class ByteGenerator implements DataGenerator<Byte[]> {
 
         int maxSize = Math.min(size, 25);
 
-        return ArrayUtils.toObject(RandomUtils.nextBytes(maxSize));
+        final byte[] result = new byte[maxSize];
+        random.nextBytes(result);
+
+        return ArrayUtils.toObject(result);
     }
 
     @Override
     public String generateAsString() {
-        return Arrays.toString(RandomUtils.nextBytes(size));
+        return Arrays.toString(generate());
     }
 
-    public static class Builder {
+    @Override
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setBytes(parameterIndex, ArrayUtils.toPrimitive((Byte[]) value));
+    }
+
+    @Override
+    public Byte[] get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return ArrayUtils.toObject(resultSet.getBytes(columnIndex));
+    }
+
+    public static class Builder extends AbstractBuilder {
 
         private int size = 25;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder size(int size) {
             this.size = size;
             return this;
         }
 
+        @Override
         public ByteGenerator build() {
             return new ByteGenerator(this);
         }
     }
 
     private ByteGenerator(Builder builder) {
+        super(builder.random);
         this.size = builder.size;
     }
 }

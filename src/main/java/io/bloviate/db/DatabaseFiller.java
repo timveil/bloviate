@@ -16,17 +16,23 @@
 
 package io.bloviate.db;
 
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public class DatabaseFiller implements Fillable {
 
-    final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Connection connection;
     private final int rows;
@@ -35,21 +41,42 @@ public class DatabaseFiller implements Fillable {
     @Override
     public void fill() throws SQLException {
 
-        DatabaseMetaData databaseMetaData = connection.getMetaData();
+        Database database = DatabaseUtils.getMetadata(connection);
 
-        String catalog = connection.getCatalog();
-        String schema = connection.getSchema();
+        Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
+        for (Table table : database.getTables()) {
 
-        try (ResultSet tables = databaseMetaData.getTables(catalog, schema, null, new String[]{"TABLE"})) {
-            while (tables.next()) {
-                String tableName = tables.getString("TABLE_NAME");
-                new TableFiller.Builder(connection, tableName)
-                        .catalog(catalog)
-                        .schemaPattern(schema)
-                        .batchSize(batchSize)
-                        .rows(rows)
-                        .build().fill();
+            List<ForeignKey> foreignKeys = table.getForeignKeys();
+
+            graph.addVertex(table);
+
+            if (foreignKeys != null && !foreignKeys.isEmpty()) {
+                for (ForeignKey key : foreignKeys) {
+                    Table referencedTable = database.getTable(key.getPrimaryKey().getTableName());
+                    if (!graph.containsVertex(referencedTable)) {
+                        graph.addVertex(referencedTable);
+                    }
+                    graph.addEdge(table, referencedTable);
+                }
             }
+        }
+
+        List<Table> ordered = new ArrayList<>();
+
+        Iterator<Table> toi = new TopologicalOrderIterator<>(graph);
+        while (toi.hasNext()) {
+            ordered.add(toi.next());
+        }
+
+        Collections.reverse(ordered);
+
+        for (Table table : ordered) {
+            logger.debug("filling table [{}]", table.getName());
+            new TableFiller.Builder(connection, database)
+                    .table(table)
+                    .batchSize(batchSize)
+                    .rows(rows)
+                    .build().fill();
         }
 
     }

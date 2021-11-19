@@ -16,11 +16,12 @@
 
 package io.bloviate.gen;
 
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Random;
 
-public class SqlTimestampGenerator implements DataGenerator<Timestamp> {
+public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
 
     private final LongGenerator longGenerator;
 
@@ -29,19 +30,27 @@ public class SqlTimestampGenerator implements DataGenerator<Timestamp> {
 
         Long randomTime = longGenerator.generate();
 
-        return new Timestamp(randomTime);
+        return Timestamp.from(Instant.ofEpochMilli(randomTime));
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setTimestamp(parameterIndex, (Timestamp) value);
     }
 
+    @Override
+    public Timestamp get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getTimestamp(columnIndex);
+    }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
-        private Timestamp startInclusive = Timestamp.from(Instant.EPOCH);
+        private Timestamp startInclusive = Timestamp.from(Instant.now().minus(100, ChronoUnit.DAYS));
         private Timestamp endExclusive = Timestamp.from(Instant.now().plus(100, ChronoUnit.DAYS));
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(Timestamp start) {
             this.startInclusive = start;
@@ -53,16 +62,18 @@ public class SqlTimestampGenerator implements DataGenerator<Timestamp> {
             return this;
         }
 
+        @Override
         public SqlTimestampGenerator build() {
             return new SqlTimestampGenerator(this);
         }
     }
 
     private SqlTimestampGenerator(Builder builder) {
+        super(builder.random);
 
-        this.longGenerator = new LongGenerator.Builder()
-                .start(builder.startInclusive.getTime())
-                .end(builder.endExclusive.getTime())
+        this.longGenerator = new LongGenerator.Builder(builder.random)
+                .start(builder.startInclusive.toInstant().toEpochMilli())
+                .end(builder.endExclusive.toInstant().toEpochMilli())
                 .build();
     }
 }

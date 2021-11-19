@@ -18,6 +18,7 @@ package io.bloviate;
 
 import io.bloviate.gen.DataGenerator;
 
+@Deprecated //see Column < Table < Database
 public class ColumnDefinition {
 
     private final String name;

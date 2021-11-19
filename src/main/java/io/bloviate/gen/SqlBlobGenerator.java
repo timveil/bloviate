@@ -16,9 +16,10 @@
 
 package io.bloviate.gen;
 
-import java.sql.Blob;
+import java.sql.*;
+import java.util.Random;
 
-public class SqlBlobGenerator implements DataGenerator<Blob> {
+public class SqlBlobGenerator extends AbstractDataGenerator<Blob> {
     //todo
 
     @Override
@@ -31,14 +32,30 @@ public class SqlBlobGenerator implements DataGenerator<Blob> {
         return null;
     }
 
-    public static class Builder {
+    @Override
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setBlob(parameterIndex, (Blob) value);
+    }
 
+    @Override
+    public Blob get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getBlob(columnIndex);
+    }
+
+    public static class Builder extends AbstractBuilder {
+
+        public Builder(Random random) {
+            super(random);
+        }
+
+        @Override
         public SqlBlobGenerator build() {
             return new SqlBlobGenerator(this);
         }
     }
 
     private SqlBlobGenerator(Builder builder) {
+        super(builder.random);
 
     }
 }

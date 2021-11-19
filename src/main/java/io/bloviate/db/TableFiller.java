@@ -16,48 +16,62 @@
 
 package io.bloviate.db;
 
-import io.bloviate.ColumnDefinition;
-import io.bloviate.gen.*;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
+import io.bloviate.gen.DataGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
-import java.util.StringJoiner;
+import java.util.Map;
+import java.util.Random;
 
 public class TableFiller implements Fillable {
 
-    final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Connection connection;
-    private final String tableName;
-    private final String catalog;
-    private final String schemaPattern;
+    private final Database database;
+    private final Table table;
     private final int rows;
     private final int batchSize;
 
     @Override
     public void fill() throws SQLException {
 
-        DatabaseMetaData databaseMetaData = connection.getMetaData();
+        // first fill keys then tables;
 
-        List<ColumnDefinition> definitions = getColumnDefinitions(databaseMetaData);
-
-        StringJoiner nameJoiner = new StringJoiner(",");
-        StringJoiner valueJoiner = new StringJoiner(",");
-        for (ColumnDefinition definition : definitions) {
-            nameJoiner.add(definition.getName());
-            valueJoiner.add("?");
-        }
-        String valueString = valueJoiner.toString();
-        String nameString = nameJoiner.toString();
-
-        String sql = String.format("insert into %s (%s) values (%s)", tableName, nameString, valueString);
+        String sql = table.insertString();
 
         logger.debug(sql);
+
+        // case 1 - simple case
+        // a - table has no foreign keys, simple primary key is not auto generated
+        // b - table has no foreign keys, simple primary key is auto generated
+        // c - table has no foreign keys, compound primary key is not auto generated
+        // d - table has no foreign keys, compound primary key is auto generated
+
+
+        Map<Column, DataGenerator<?>> generatorMap = new HashMap<>();
+
+        List<Column> filteredColumns = table.filteredColumns();
+
+        for (Column column : filteredColumns) {
+
+            Random random;
+
+            Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(database, table, column);
+
+            if (associatedPrimaryKeyColumn != null) {
+                random = new Random(associatedPrimaryKeyColumn.hashCode());
+            } else {
+                random = new Random(column.hashCode());
+            }
+
+            generatorMap.put(column, DatabaseUtils.getDataGenerator(column, random));
+        }
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
@@ -65,21 +79,15 @@ public class TableFiller implements Fillable {
             for (int i = 0; i < rows; i++) {
 
                 int colCount = 1;
-                for (ColumnDefinition definition : definitions) {
-                    if (definition.getDataGenerator() instanceof ByteGenerator) {
-                        // todo: this feels sort of gross
-                        ps.setBytes(colCount, ArrayUtils.toPrimitive(((ByteGenerator) definition.getDataGenerator()).generate()));
-                    } else if (definition.getDataGenerator() instanceof StringArrayGenerator) {
-                        // type name from definition has leading _.  need to investigate would like this to be dynamic
-                        ps.setArray(colCount, connection.createArrayOf(StringUtils.stripStart(definition.getTypeName(), "_"), ((StringArrayGenerator) definition.getDataGenerator()).generate()));
-                    } else if (definition.getDataGenerator() instanceof IntegerArrayGenerator) {
-                        // type name from definition has leading _.  need to investigate would like this to be dynamic
-                        ps.setArray(colCount, connection.createArrayOf(StringUtils.stripStart(definition.getTypeName(), "_"), ((IntegerArrayGenerator) definition.getDataGenerator()).generate()));
-                    } else {
-                        ps.setObject(colCount, definition.getDataGenerator().generate());
-                    }
+                for (Column column : filteredColumns) {
+
+                    DataGenerator<?> dataGenerator = generatorMap.get(column);
+
+                    dataGenerator.generateAndSet(connection, ps, colCount);
+
                     colCount++;
                 }
+
                 ps.addBatch();
 
                 if (++rowCount % batchSize == 0) {
@@ -90,194 +98,36 @@ public class TableFiller implements Fillable {
             ps.executeBatch();
         }
 
+
     }
 
-    private List<ColumnDefinition> getColumnDefinitions(DatabaseMetaData databaseMetaData) throws SQLException {
-
-        List<ColumnDefinition> definitions = new ArrayList<>();
-
-        try (ResultSet columns = databaseMetaData.getColumns(catalog, schemaPattern, tableName, null)) {
-
-            while (columns.next()) {
-                String columnName = columns.getString("COLUMN_NAME");
-                int sqlType = columns.getInt("DATA_TYPE");
-
-                JDBCType jdbcType = JDBCType.valueOf(sqlType);
-
-                // either number of characters or total precision, can be null
-                Integer maxSize = columns.getObject("COLUMN_SIZE", Integer.class);
-
-                // digits to right of decimal point, can be null
-                Integer maxDigits = null;
-
-                if (jdbcType.equals(JDBCType.NUMERIC) || jdbcType.equals(JDBCType.DECIMAL)) {
-                    // only care if its one of these types
-                    maxDigits = columns.getObject("DECIMAL_DIGITS", Integer.class);
-                }
-
-                String typeName = columns.getString("TYPE_NAME");
-
-                String autoIncrementString = columns.getString("IS_AUTOINCREMENT");
-
-                Boolean autoIncrement = null;
-
-                if ("YES".equalsIgnoreCase(autoIncrementString)) {
-                    autoIncrement = Boolean.TRUE;
-                } else if ("NO".equalsIgnoreCase(autoIncrementString)) {
-                    autoIncrement = Boolean.FALSE;
-                }
-
-                String defaultValue = columns.getString("COLUMN_DEF");
-
-                logger.debug("tableName [{}], columnName [{}], jdbcType [{}], typeName [{}], maxSize[{}], maxDigits[{}], autoIncrement[{}], defaultValue[{}]", tableName, columnName, jdbcType.getName(), typeName, maxSize, maxDigits, autoIncrement, defaultValue);
-
-                if (defaultValue != null || Boolean.TRUE.equals(autoIncrement)) {
-                    logger.debug("skipping column [{}]", columnName);
-                } else {
-                    definitions.add(new ColumnDefinition(columnName, getDataGenerator(jdbcType, typeName, maxSize, maxDigits), typeName));
-                }
-
-            }
-
-        }
-        return definitions;
-    }
-
-    private DataGenerator<?> getDataGenerator(JDBCType jdbcType, String typeName, Integer maxSize, Integer maxDigits) {
-        DataGenerator<?> generator;
-
-        switch (jdbcType) {
-
-            case TINYINT:
-                generator = new ShortGenerator.Builder().start(0).end(255).build();
-                break;
-            case SMALLINT:
-                generator = new ShortGenerator.Builder().build();
-                break;
-            case INTEGER:
-                generator = new IntegerGenerator.Builder().build();
-                break;
-            case BIGINT:
-                generator = new LongGenerator.Builder().build();
-                break;
-            case FLOAT:
-            case REAL:
-                generator = new FloatGenerator.Builder().build();
-                break;
-            case DOUBLE:
-                generator = new DoubleGenerator.Builder().build();
-                break;
-            case NUMERIC:
-            case DECIMAL:
-                generator = new BigDecimalGenerator.Builder().precision(maxSize).digits(maxDigits).build();
-                break;
-            case CHAR:
-            case VARCHAR:
-            case LONGVARCHAR:
-            case NCHAR:
-            case NVARCHAR:
-            case LONGNVARCHAR:
-                generator = new SimpleStringGenerator.Builder().size(maxSize).build();
-                break;
-            case DATE:
-                generator = new SqlDateGenerator.Builder().build();
-                break;
-            case TIME:
-            case TIME_WITH_TIMEZONE:
-                generator = new SqlTimeGenerator.Builder().build();
-                break;
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_TIMEZONE:
-                generator = new SqlTimestampGenerator.Builder().build();
-                break;
-            case BINARY:
-            case VARBINARY:
-            case LONGVARBINARY:
-                generator = new ByteGenerator.Builder().size(maxSize).build();
-                break;
-            case BLOB:
-                generator = new SqlBlobGenerator.Builder().build();
-                break;
-            case CLOB:
-            case NCLOB:
-                generator = new SqlClobGenerator.Builder().build();
-                break;
-            case STRUCT:
-                generator = new SqlStructGenerator.Builder().build();
-                break;
-            case ARRAY:
-                if ("_text".equalsIgnoreCase(typeName)) {
-                    generator = new StringArrayGenerator.Builder().build();
-                } else if ("_int8".equalsIgnoreCase(typeName)) {
-                    generator = new IntegerArrayGenerator.Builder().build();
-                } else {
-                    throw new UnsupportedOperationException("Data Type [" + typeName + "] for ARRAY not supported");
-                }
-                break;
-            case BIT:
-                generator = new BitGenerator.Builder().size(maxSize).build();
-                break;
-            case BOOLEAN:
-                generator = new BooleanGenerator.Builder().build();
-                break;
-            case OTHER:
-                if ("uuid".equalsIgnoreCase(typeName)) {
-                    generator = new UUIDGenerator.Builder().build();
-                } else if ("varbit".equalsIgnoreCase(typeName)) {
-                    generator = new BitGenerator.Builder().size(maxSize).build();
-                } else if ("inet".equalsIgnoreCase(typeName)) {
-                    generator = new InetGenerator.Builder().build();
-                } else if ("interval".equalsIgnoreCase(typeName)) {
-                    generator = new IntervalGenerator.Builder().build();
-                } else if ("jsonb".equalsIgnoreCase(typeName)) {
-                    generator = new JsonbGenerator.Builder().build();
-                } else {
-                    throw new UnsupportedOperationException("Data Type [" + typeName + "] for OTHER not supported");
-                }
-                break;
-            case JAVA_OBJECT:
-            case DISTINCT:
-            case REF:
-            case DATALINK:
-            case ROWID:
-            case SQLXML:
-            case REF_CURSOR:
-            case NULL:
-                throw new UnsupportedOperationException("JDBCType [" + jdbcType + "] not supported");
-            default:
-                throw new IllegalStateException("Unexpected value: " + jdbcType);
-        }
-
-        return generator;
-    }
 
     public static class Builder {
 
         private final Connection connection;
-        private final String tableName;
+        private final Database database;
 
-        private String catalog = null;
-        private String schemaPattern = null;
+        private Table table;
         private int rows = 1000;
         private int batchSize = 128;
 
-        public Builder(Connection connection, String tableName) {
+        public Builder(Connection connection, Database database) {
             this.connection = connection;
-            this.tableName = tableName;
-        }
-
-        public Builder catalog(String catalog) {
-            this.catalog = catalog;
-            return this;
-        }
-
-        public Builder schemaPattern(String schemaPattern) {
-            this.schemaPattern = schemaPattern;
-            return this;
+            this.database = database;
         }
 
         public Builder rows(int rows) {
             this.rows = rows;
+            return this;
+        }
+
+        public Builder table(String tableName) {
+            this.table = database.getTable(tableName);
+            return this;
+        }
+
+        public Builder table(Table table) {
+            this.table = table;
             return this;
         }
 
@@ -293,9 +143,8 @@ public class TableFiller implements Fillable {
 
     private TableFiller(Builder builder) {
         this.connection = builder.connection;
-        this.tableName = builder.tableName;
-        this.catalog = builder.catalog;
-        this.schemaPattern = builder.schemaPattern;
+        this.table = builder.table;
+        this.database = builder.database;
         this.rows = builder.rows;
         this.batchSize = builder.batchSize;
     }

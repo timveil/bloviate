@@ -38,7 +38,8 @@ CREATE TABLE decimal_table (
     b  decimal(10, 2),
     c  numeric,
     d  numeric(10, 5),
-    e  dec
+    e  dec,
+    f  decimal(4, 4) -- special case where all digits should be to right of decimal
 );
 
 CREATE TABLE float_table (

@@ -16,19 +16,21 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.util.StringJoiner;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Random;
 
-public class BigDecimalGenerator implements DataGenerator<BigDecimal> {
+public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
 
-    final Logger logger = LoggerFactory.getLogger(getClass());
-
+    // this is the number of digits on both sides of the decimal point, can be null
     private final Integer maxPrecision;
+
+    // digits to right of decimal point (fractional digits), can be null
     private final Integer maxDigits;
 
     @Override
@@ -36,44 +38,66 @@ public class BigDecimalGenerator implements DataGenerator<BigDecimal> {
 
         if (maxPrecision != null) {
 
+            SeededRandomUtils randomUtils = new SeededRandomUtils(random);
+
             // maxPrecision can be enormous (131089 for CRDB) and not helpful for testing therefore we significantly reduce
-            int precision = Math.min(maxPrecision, 25) - (maxDigits != null ? maxDigits : 0);
+            int minMaxPrecision = Math.min(maxPrecision, 25);
 
-            StringJoiner joiner = new StringJoiner(".");
+            if (maxDigits != null && maxDigits > maxPrecision) {
+                throw new IllegalArgumentException("max digits cannot be larger than max precision");
+            } else if (maxDigits != null && maxDigits.equals(maxPrecision)) {
+                // if these are equal then all digits are to the right of the decimal place
+                String bigDecimalString = "." + randomUtils.randomNumeric(1, maxDigits + 1);
 
-            // generate random numeric string then strip leading zeros.  if this results in empty string, default to "1"
-            String stripped = StringUtils.stripStart(RandomStringUtils.randomNumeric(1, (precision) + 1), "0");
+                return new BigDecimal(bigDecimalString);
+            } else {
 
-            if (stripped.isEmpty()) {
-                stripped = "1";
+                if (maxDigits != null) {
+
+                    int adjustedPrecision = minMaxPrecision - maxDigits;
+
+                    // generate random numeric string then strip leading zeros.  if this results in empty string, default to "1"
+                    String left = StringUtils.stripStart(randomUtils.randomNumeric(1, (adjustedPrecision) + 1), "0");
+
+                    if (left.isEmpty()) {
+                        left = "1";
+                    }
+
+                    String right = randomUtils.randomNumeric(1, maxDigits + 1);
+
+                    String bigDecimalString = left + "." + right;
+
+                    return new BigDecimal(bigDecimalString);
+                } else {
+                    return new BigDecimal(randomUtils.randomNumeric(1, minMaxPrecision + 1));
+                }
             }
 
-            joiner.add(stripped);
-
-            if (maxDigits != null) {
-                joiner.add(RandomStringUtils.randomNumeric(1, maxDigits + 1));
-            }
-
-            String bigDecimalString = joiner.toString();
-
-            logger.trace("maxPrecision [{}], adjustedPrecision [{}],  maxDigits [{}], bigDecimal [{}]", maxPrecision, precision, maxDigits, bigDecimalString);
-
-            return new BigDecimal(bigDecimalString);
         } else {
-            return BigDecimal.valueOf(new DoubleGenerator.Builder().build().generate());
+            return BigDecimal.valueOf(new DoubleGenerator.Builder(random).build().generate());
         }
 
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setBigDecimal(parameterIndex, (BigDecimal) value);
     }
 
-    public static class Builder {
+
+    @Override
+    public BigDecimal get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getBigDecimal(columnIndex);
+    }
+
+    public static class Builder extends AbstractBuilder {
 
         private Integer maxPrecision;
         private Integer maxDigits;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder precision(Integer maxPrecision) {
             this.maxPrecision = maxPrecision;
@@ -85,12 +109,14 @@ public class BigDecimalGenerator implements DataGenerator<BigDecimal> {
             return this;
         }
 
+        @Override
         public BigDecimalGenerator build() {
             return new BigDecimalGenerator(this);
         }
     }
 
     private BigDecimalGenerator(Builder builder) {
+        super(builder.random);
         this.maxDigits = builder.maxDigits;
         this.maxPrecision = builder.maxPrecision;
     }

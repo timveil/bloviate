@@ -16,28 +16,51 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Random;
 
-public class CharacterGenerator implements DataGenerator<Character> {
+public class CharacterGenerator extends AbstractDataGenerator<Character> {
+
+    private final IntegerGenerator integerGenerator;
+
 
     @Override
     public Character generate() {
-        return (char) (RandomUtils.nextInt(0, 26) + 'a');
+        return (char) (integerGenerator.generate() + 'a');
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public Character get(ResultSet resultSet, int columnIndex) throws SQLException {
+        String character = resultSet.getString(columnIndex);
+
+        if (character != null) {
+
+            if (character.length() > 1) {
+                throw new IllegalArgumentException("character length is greater than 1");
+            }
+
+            return character.charAt(0);
+        }
+
+        return null;
     }
 
+    public static class Builder extends AbstractBuilder {
+        public Builder(Random random) {
+            super(random);
+        }
 
-    public static class Builder {
+        @Override
         public CharacterGenerator build() {
             return new CharacterGenerator(this);
         }
     }
 
     private CharacterGenerator(Builder builder) {
+        super(builder.random);
+
+        this.integerGenerator = new IntegerGenerator.Builder(random).start(0).end(26).build();
 
     }
 }

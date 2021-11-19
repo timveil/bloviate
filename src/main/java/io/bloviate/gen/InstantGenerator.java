@@ -16,10 +16,13 @@
 
 package io.bloviate.gen;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Random;
 
-public class InstantGenerator implements DataGenerator<Instant> {
+public class InstantGenerator extends AbstractDataGenerator<Instant> {
 
     private final LongGenerator longGenerator;
 
@@ -32,15 +35,18 @@ public class InstantGenerator implements DataGenerator<Instant> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public Instant get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return null;
     }
 
-
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private Instant startInclusive = Instant.EPOCH;
         private Instant endExclusive = Instant.now().plus(100, ChronoUnit.DAYS);
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(Instant start) {
             this.startInclusive = start;
@@ -52,14 +58,16 @@ public class InstantGenerator implements DataGenerator<Instant> {
             return this;
         }
 
+        @Override
         public InstantGenerator build() {
             return new InstantGenerator(this);
         }
     }
 
     private InstantGenerator(Builder builder) {
+        super(builder.random);
 
-        this.longGenerator = new LongGenerator.Builder()
+        this.longGenerator = new LongGenerator.Builder(builder.random)
                 .start(builder.startInclusive.toEpochMilli())
                 .end(builder.endExclusive.toEpochMilli())
                 .build();

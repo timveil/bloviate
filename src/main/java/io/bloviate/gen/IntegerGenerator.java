@@ -16,27 +16,41 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Random;
 
-public class IntegerGenerator implements DataGenerator<Integer> {
+public class IntegerGenerator extends AbstractDataGenerator<Integer> {
 
     private final int startInclusive;
     private final int endExclusive;
 
     @Override
     public Integer generate() {
-        return RandomUtils.nextInt(startInclusive, endExclusive);
+        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
+        return randomUtils.nextInt(startInclusive, endExclusive);
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setInt(parameterIndex, (Integer) value);
     }
 
-    public static class Builder {
+    @Override
+    public Integer get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getInt(columnIndex);
+    }
+
+    public static class Builder extends AbstractBuilder {
 
         private int startInclusive = 0;
         private int endExclusive = Integer.MAX_VALUE;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(int start) {
             this.startInclusive = start;
@@ -48,12 +62,14 @@ public class IntegerGenerator implements DataGenerator<Integer> {
             return this;
         }
 
+        @Override
         public IntegerGenerator build() {
             return new IntegerGenerator(this);
         }
     }
 
     private IntegerGenerator(Builder builder) {
+        super(builder.random);
         this.startInclusive = builder.startInclusive;
         this.endExclusive = builder.endExclusive;
     }

@@ -16,11 +16,12 @@
 
 package io.bloviate.gen;
 
-import java.sql.Time;
+import java.sql.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Random;
 
-public class SqlTimeGenerator implements DataGenerator<Time> {
+public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
 
     private final LongGenerator longGenerator;
 
@@ -33,15 +34,23 @@ public class SqlTimeGenerator implements DataGenerator<Time> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate().toString();
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setTime(parameterIndex, (Time) value);
     }
 
+    @Override
+    public Time get(ResultSet resultSet, int columnIndex) throws SQLException {
+        return resultSet.getTime(columnIndex);
+    }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private Time startInclusive = new Time(Instant.EPOCH.toEpochMilli());
         private Time endExclusive = new Time(Instant.now().plus(100, ChronoUnit.HOURS).toEpochMilli());
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(Time start) {
             this.startInclusive = start;
@@ -53,14 +62,16 @@ public class SqlTimeGenerator implements DataGenerator<Time> {
             return this;
         }
 
+        @Override
         public SqlTimeGenerator build() {
             return new SqlTimeGenerator(this);
         }
     }
 
     private SqlTimeGenerator(Builder builder) {
+        super(builder.random);
 
-        this.longGenerator = new LongGenerator.Builder()
+        this.longGenerator = new LongGenerator.Builder(builder.random)
                 .start(builder.startInclusive.getTime())
                 .end(builder.endExclusive.getTime())
                 .build();
