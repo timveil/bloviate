@@ -99,17 +99,16 @@ CREATE TABLE history (
 );
 
 CREATE TABLE oorder (
-    o_w_id       int       NOT NULL,
-    o_d_id       int       NOT NULL,
-    o_id         int       NOT NULL,
-    o_c_id       int       NOT NULL,
-    o_carrier_id int                DEFAULT NULL,
-    o_ol_cnt     int       NOT NULL,
-    o_all_local  int       NOT NULL,
-    o_entry_d    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (o_w_id, o_d_id, o_id DESC),
-    FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customer (c_w_id, c_d_id, c_id) ON DELETE CASCADE,
-    UNIQUE INDEX order_idx (o_w_id, o_d_id, o_c_id, o_id DESC) STORING (o_entry_d, o_carrier_id)
+                        o_w_id       int       NOT NULL,
+                        o_d_id       int       NOT NULL,
+                        o_id         int       NOT NULL,
+                        o_c_id       int       NOT NULL,
+                        o_carrier_id int                DEFAULT NULL,
+                        o_ol_cnt     int       NOT NULL,
+                        o_all_local  int       NOT NULL,
+                        o_entry_d    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        PRIMARY KEY (o_w_id, o_d_id, o_id DESC),
+                        FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customer (c_w_id, c_d_id, c_id) ON DELETE CASCADE
 );
 
 CREATE TABLE new_order (

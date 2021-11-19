@@ -16,12 +16,12 @@
 
 package io.bloviate.db;
 
+import com.mysql.cj.jdbc.MysqlDataSource;
 import io.bloviate.ext.MySQLSupport;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.ScriptRunner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.postgresql.ds.PGSimpleDataSource;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,18 +33,16 @@ import java.sql.Statement;
 
 class MySqlFillerTest {
 
-    private final PGSimpleDataSource ds = new PGSimpleDataSource();
+    private final MysqlDataSource ds = new MysqlDataSource();
 
     @BeforeEach
     void setUp() throws SQLException, IOException {
 
-        ds.setServerNames(new String[]{"localhost"});
-        ds.setPortNumbers(new int[]{26257});
+        ds.setServerName("localhost");
+        ds.setPortNumber(3306);
         ds.setDatabaseName("bloviate");
         ds.setUser("root");
-        ds.setPassword(null);
-        ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("DatabaseFillerTest");
+        ds.setPassword("password");
 
         Database db = DatabaseUtils.getMetadata(ds);
 

@@ -39,12 +39,12 @@ class PostgresFillerTest {
     void setUp() throws SQLException, IOException {
 
         ds.setServerNames(new String[]{"localhost"});
-        ds.setPortNumbers(new int[]{26257});
+        ds.setPortNumbers(new int[]{5432});
         ds.setDatabaseName("bloviate");
-        ds.setUser("root");
-        ds.setPassword(null);
+        ds.setUser("admin");
+        ds.setPassword("password");
         ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("DatabaseFillerTest");
+        ds.setApplicationName("PostgresFillerTest");
 
         Database db = DatabaseUtils.getMetadata(ds);
 

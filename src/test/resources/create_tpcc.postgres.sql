@@ -114,9 +114,8 @@ CREATE TABLE oorder
     o_ol_cnt     int       NOT NULL,
     o_all_local  int       NOT NULL,
     o_entry_d    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (o_w_id, o_d_id, o_id DESC),
-    FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customer (c_w_id, c_d_id, c_id) ON DELETE CASCADE,
-    UNIQUE INDEX order_idx (o_w_id, o_d_id, o_c_id, o_id DESC) STORING (o_entry_d, o_carrier_id)
+    PRIMARY KEY (o_w_id, o_d_id, o_id),
+    FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customer (c_w_id, c_d_id, c_id) ON DELETE CASCADE
 );
 
 CREATE TABLE new_order
@@ -142,5 +141,5 @@ CREATE TABLE order_line
     ol_dist_info   char(24)      NOT NULL,
     FOREIGN KEY (ol_w_id, ol_d_id, ol_o_id) REFERENCES oorder (o_w_id, o_d_id, o_id) ON DELETE CASCADE,
     FOREIGN KEY (ol_supply_w_id, ol_i_id) REFERENCES stock (s_w_id, s_i_id) ON DELETE CASCADE,
-    PRIMARY KEY (ol_w_id, ol_d_id, ol_o_id DESC, ol_number)
+    PRIMARY KEY (ol_w_id, ol_d_id, ol_o_id, ol_number)
 );

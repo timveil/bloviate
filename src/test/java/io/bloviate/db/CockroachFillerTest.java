@@ -44,7 +44,7 @@ class CockroachFillerTest {
         ds.setUser("root");
         ds.setPassword(null);
         ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("DatabaseFillerTest");
+        ds.setApplicationName("CockroachFillerTest");
 
         Database db = DatabaseUtils.getMetadata(ds);
 

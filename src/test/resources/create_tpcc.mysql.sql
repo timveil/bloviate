@@ -115,8 +115,7 @@ CREATE TABLE oorder
     o_all_local  int       NOT NULL,
     o_entry_d    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (o_w_id, o_d_id, o_id DESC),
-    FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customer (c_w_id, c_d_id, c_id) ON DELETE CASCADE,
-    UNIQUE INDEX order_idx (o_w_id, o_d_id, o_c_id, o_id DESC) STORING (o_entry_d, o_carrier_id)
+    FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customer (c_w_id, c_d_id, c_id) ON DELETE CASCADE
 );
 
 CREATE TABLE new_order
