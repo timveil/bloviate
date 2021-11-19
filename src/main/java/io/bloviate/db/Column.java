@@ -1,7 +1,5 @@
 package io.bloviate.db;
 
-import io.bloviate.gen.DataGenerator;
-
 import java.sql.JDBCType;
 import java.util.Objects;
 
@@ -19,10 +17,8 @@ public class Column {
     private final Boolean nullable;
     private final String defaultValue;
     private final Integer ordinalPosition;
-    private final DataGenerator<?> dataGenerator;
 
-
-    public Column(String name, String tableName, String schema, String catalog, JDBCType jdbcType, Integer maxSize, Integer maxDigits, String typeName, Boolean autoIncrement, Boolean nullable, String defaultValue, Integer ordinalPosition, DataGenerator<?> dataGenerator) {
+    public Column(String name, String tableName, String schema, String catalog, JDBCType jdbcType, Integer maxSize, Integer maxDigits, String typeName, Boolean autoIncrement, Boolean nullable, String defaultValue, Integer ordinalPosition) {
         this.name = name;
         this.tableName = tableName;
         this.schema = schema;
@@ -35,7 +31,6 @@ public class Column {
         this.nullable = nullable;
         this.defaultValue = defaultValue;
         this.ordinalPosition = ordinalPosition;
-        this.dataGenerator = dataGenerator;
     }
 
     public String getName() {
@@ -72,10 +67,6 @@ public class Column {
 
     public Integer getOrdinalPosition() {
         return ordinalPosition;
-    }
-
-    public DataGenerator<?> getDataGenerator() {
-        return dataGenerator;
     }
 
     public String getSchema() {

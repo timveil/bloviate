@@ -16,12 +16,11 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class LongGenerator extends AbstractDataGenerator<Long> {
 
@@ -30,7 +29,8 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
 
     @Override
     public Long generate() {
-        return RandomUtils.nextLong(startInclusive, endExclusive);
+        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
+        return randomUtils.nextLong(startInclusive, endExclusive);
     }
 
     @Override
@@ -43,10 +43,14 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
         return resultSet.getLong(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private long startInclusive = 0;
         private long endExclusive = Long.MAX_VALUE;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(long start) {
             this.startInclusive = start;
@@ -58,12 +62,14 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
             return this;
         }
 
+        @Override
         public LongGenerator build() {
             return new LongGenerator(this);
         }
     }
 
     private LongGenerator(Builder builder) {
+        super(builder.random);
         this.startInclusive = builder.startInclusive;
         this.endExclusive = builder.endExclusive;
     }

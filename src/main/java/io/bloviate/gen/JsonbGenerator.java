@@ -18,6 +18,7 @@ package io.bloviate.gen;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class JsonbGenerator extends AbstractDataGenerator<String> {
     // todo
@@ -32,14 +33,20 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
         return null;
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
+        public Builder(Random random) {
+            super(random);
+        }
+
+        @Override
         public JsonbGenerator build() {
             return new JsonbGenerator(this);
         }
     }
 
     private JsonbGenerator(Builder builder) {
+        super(builder.random);
 
     }
 }

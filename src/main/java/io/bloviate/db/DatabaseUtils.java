@@ -185,105 +185,127 @@ public class DatabaseUtils {
 
         int ordinalPosition = columnsResultSet.getInt("ORDINAL_POSITION");
 
-        return new Column(columnName, tableName, schema, catalog, jdbcType, maxSize, maxDigits, typeName, autoIncrement, nullable, defaultValue, ordinalPosition, getDataGenerator(jdbcType, typeName, maxSize, maxDigits));
+        return new Column(columnName, tableName, schema, catalog, jdbcType, maxSize, maxDigits, typeName, autoIncrement, nullable, defaultValue, ordinalPosition);
     }
 
-    private static DataGenerator<?> getDataGenerator(JDBCType jdbcType, String typeName, Integer maxSize, Integer maxDigits) {
-        DataGenerator<?> generator;
+    // get the primary key column (column on other table) for the associated foreign key column (on this table)
+    public static Column getAssociatedPrimaryKeyColumn(Database database, Table table, Column foreignKeyColumn) {
 
-        switch (jdbcType) {
+        // get this tables foreign keys
+        List<ForeignKey> foreignKeys = table.getForeignKeys();
 
+        if (foreignKeys != null && !foreignKeys.isEmpty()) {
+            for (ForeignKey foreignKey : foreignKeys) {
+
+                // get the columns on this table specified in the foreign key
+                List<KeyColumn> keyColumns = foreignKey.getForeignKeyColumns();
+
+                for (KeyColumn keyColumn : keyColumns) {
+                    int keyColumnSequence = keyColumn.getSequence();
+
+                    // this is a column on this table
+                    Column column = keyColumn.getColumn();
+
+                    if (column.equals(foreignKeyColumn)) {
+
+                        // for the column on this table that is a foreign key, grab the associated column the another table where it is the primary key
+                        PrimaryKey primaryKey = foreignKey.getPrimaryKey();
+
+                        // for the primary key grab its full table data
+                        Table primaryTable = database.getTable(primaryKey.getTableName());
+                        // todo: go get the root primary key
+
+
+                        for (KeyColumn primaryKeyColumn : primaryKey.getKeyColumns()) {
+
+                            int primaryKeyColumnSequence = primaryKeyColumn.getSequence();
+                            if (primaryKeyColumnSequence == keyColumnSequence) {
+                                return primaryKeyColumn.getColumn();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public static DataGenerator<?> getDataGenerator(Column column, Random random) {
+
+        switch (column.getJdbcType()) {
             case TINYINT:
-                generator = new ShortGenerator.Builder().start(0).end(255).build();
-                break;
+                return new ShortGenerator.Builder(random).start(0).end(255).build();
             case SMALLINT:
-                generator = new ShortGenerator.Builder().build();
-                break;
+                return new ShortGenerator.Builder(random).build();
             case INTEGER:
-                generator = new IntegerGenerator.Builder().build();
-                break;
+                return new IntegerGenerator.Builder(random).build();
             case BIGINT:
-                generator = new LongGenerator.Builder().build();
-                break;
+                return new LongGenerator.Builder(random).build();
             case FLOAT:
             case REAL:
-                generator = new FloatGenerator.Builder().build();
-                break;
+                return new FloatGenerator.Builder(random).build();
             case DOUBLE:
-                generator = new DoubleGenerator.Builder().build();
-                break;
+                return new DoubleGenerator.Builder(random).build();
             case NUMERIC:
             case DECIMAL:
-                generator = new BigDecimalGenerator.Builder().precision(maxSize).digits(maxDigits).build();
-                break;
+                return new BigDecimalGenerator.Builder(random).precision(column.getMaxSize()).digits(column.getMaxDigits()).build();
             case CHAR:
             case VARCHAR:
             case LONGVARCHAR:
             case NCHAR:
             case NVARCHAR:
             case LONGNVARCHAR:
-                generator = new SimpleStringGenerator.Builder().size(maxSize).build();
-                break;
+                return new SimpleStringGenerator.Builder(random).size(column.getMaxSize()).build();
             case DATE:
-                generator = new SqlDateGenerator.Builder().build();
-                break;
+                return new SqlDateGenerator.Builder(random).build();
             case TIME:
             case TIME_WITH_TIMEZONE:
-                generator = new SqlTimeGenerator.Builder().build();
-                break;
+                return new SqlTimeGenerator.Builder(random).build();
             case TIMESTAMP:
             case TIMESTAMP_WITH_TIMEZONE:
-                generator = new SqlTimestampGenerator.Builder().build();
-                break;
+                return new SqlTimestampGenerator.Builder(random).build();
             case BINARY:
             case VARBINARY:
             case LONGVARBINARY:
-                generator = new ByteGenerator.Builder().size(maxSize).build();
-                break;
+                return new ByteGenerator.Builder(random).size(column.getMaxSize()).build();
             case BLOB:
-                generator = new SqlBlobGenerator.Builder().build();
-                break;
+                return new SqlBlobGenerator.Builder(random).build();
             case CLOB:
             case NCLOB:
-                generator = new SqlClobGenerator.Builder().build();
-                break;
+                return new SqlClobGenerator.Builder(random).build();
             case STRUCT:
-                generator = new SqlStructGenerator.Builder().build();
-                break;
+                return new SqlStructGenerator.Builder(random).build();
             case ARRAY:
-                if ("_text".equalsIgnoreCase(typeName)) {
-                    generator = new StringArrayGenerator.Builder().build();
-                } else if ("_int8".equalsIgnoreCase(typeName) || "_int4".equalsIgnoreCase(typeName)) {
-                    generator = new IntegerArrayGenerator.Builder().build();
+                if ("_text".equalsIgnoreCase(column.getTypeName())) {
+                    return new StringArrayGenerator.Builder(random).build();
+                } else if ("_int8".equalsIgnoreCase(column.getTypeName()) || "_int4".equalsIgnoreCase(column.getTypeName())) {
+                    return new IntegerArrayGenerator.Builder(random).build();
                 } else {
-                    throw new UnsupportedOperationException("Data Type [" + typeName + "] for ARRAY not supported");
+                    throw new UnsupportedOperationException("Data Type [" + column.getTypeName() + "] for ARRAY not supported");
                 }
-                break;
             case BIT:
-                if (1 == maxSize) {
-                    generator = new BitGenerator.Builder().build();
+                if (1 == column.getMaxSize()) {
+                    return new BitGenerator.Builder(random).build();
                 } else {
-                    generator = new BitStringGenerator.Builder().size(maxSize).build();
+                    return new BitStringGenerator.Builder(random).size(column.getMaxSize()).build();
                 }
-                break;
             case BOOLEAN:
-                generator = new BooleanGenerator.Builder().build();
-                break;
+                return new BooleanGenerator.Builder(random).build();
             case OTHER:
-                if ("uuid".equalsIgnoreCase(typeName)) {
-                    generator = new UUIDGenerator.Builder().build();
-                } else if ("varbit".equalsIgnoreCase(typeName)) {
-                    generator = new BitStringGenerator.Builder().size(maxSize).build();
-                } else if ("inet".equalsIgnoreCase(typeName)) {
-                    generator = new InetGenerator.Builder().build();
-                } else if ("interval".equalsIgnoreCase(typeName)) {
-                    generator = new IntervalGenerator.Builder().build();
-                } else if ("jsonb".equalsIgnoreCase(typeName)) {
-                    generator = new JsonbGenerator.Builder().build();
+                if ("uuid".equalsIgnoreCase(column.getTypeName())) {
+                    return new UUIDGenerator.Builder(random).build();
+                } else if ("varbit".equalsIgnoreCase(column.getTypeName())) {
+                    return new BitStringGenerator.Builder(random).size(column.getMaxSize()).build();
+                } else if ("inet".equalsIgnoreCase(column.getTypeName())) {
+                    return new InetGenerator.Builder(random).build();
+                } else if ("interval".equalsIgnoreCase(column.getTypeName())) {
+                    return new IntervalGenerator.Builder(random).build();
+                } else if ("jsonb".equalsIgnoreCase(column.getTypeName())) {
+                    return new JsonbGenerator.Builder(random).build();
                 } else {
-                    throw new UnsupportedOperationException("Data Type [" + typeName + "] for OTHER not supported");
+                    throw new UnsupportedOperationException("Data Type [" + column.getTypeName() + "] for OTHER not supported");
                 }
-                break;
             case JAVA_OBJECT:
             case DISTINCT:
             case REF:
@@ -292,11 +314,10 @@ public class DatabaseUtils {
             case SQLXML:
             case REF_CURSOR:
             case NULL:
-                throw new UnsupportedOperationException("JDBCType [" + jdbcType + "] not supported");
+                throw new UnsupportedOperationException("JDBCType [" + column.getJdbcType() + "] not supported");
             default:
-                throw new IllegalStateException("Unexpected value: " + jdbcType);
+                throw new IllegalStateException("Unexpected value [" + column.getJdbcType() + "]");
         }
 
-        return generator;
     }
 }

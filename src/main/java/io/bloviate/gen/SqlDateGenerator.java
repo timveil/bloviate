@@ -20,6 +20,7 @@ package io.bloviate.gen;
 import java.sql.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Random;
 
 public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
@@ -43,10 +44,14 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
         return resultSet.getDate(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
-        private Date startInclusive = new Date(Instant.EPOCH.toEpochMilli());
-        private Date endExclusive = new Date(Instant.now().plus(100, ChronoUnit.HOURS).toEpochMilli());
+        private Date startInclusive = new Date(Instant.now().minus(100, ChronoUnit.DAYS).toEpochMilli());
+        private Date endExclusive = new Date(Instant.now().plus(100, ChronoUnit.DAYS).toEpochMilli());
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(Date start) {
             this.startInclusive = start;
@@ -58,13 +63,15 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
             return this;
         }
 
+        @Override
         public SqlDateGenerator build() {
             return new SqlDateGenerator(this);
         }
     }
 
     private SqlDateGenerator(Builder builder) {
-        this.longGenerator = new LongGenerator.Builder()
+        super(builder.random);
+        this.longGenerator = new LongGenerator.Builder(builder.random)
                 .start(builder.startInclusive.getTime())
                 .end(builder.endExclusive.getTime())
                 .build();

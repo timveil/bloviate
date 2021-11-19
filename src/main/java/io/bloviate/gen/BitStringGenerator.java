@@ -16,16 +16,15 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class BitStringGenerator extends AbstractDataGenerator<String> {
 
     private final int size;
+
+    private final BitGenerator bitGenerator;
 
     @Override
     public String generate() {
@@ -35,7 +34,7 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
         StringBuilder builder = new StringBuilder();
 
         for (int i = 0; i < maxSize; i++) {
-            builder.append(RandomUtils.nextInt(0, 2));
+            builder.append(bitGenerator.generate());
         }
 
         return builder.toString();
@@ -46,20 +45,27 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
         private int size = 1;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder size(int size) {
             this.size = size;
             return this;
         }
 
+        @Override
         public BitStringGenerator build() {
             return new BitStringGenerator(this);
         }
     }
 
     private BitStringGenerator(Builder builder) {
+        super(builder.random);
         this.size = builder.size;
+        this.bitGenerator = new BitGenerator.Builder(builder.random).build();
     }
 }

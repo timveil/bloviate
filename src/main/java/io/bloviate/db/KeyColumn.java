@@ -30,11 +30,19 @@ public class KeyColumn {
         }
         KeyColumn keyColumn = (KeyColumn) o;
         return sequence == keyColumn.sequence &&
-                Objects.equals(column, keyColumn.column);
+               Objects.equals(column, keyColumn.column);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(sequence, column);
+    }
+
+    @Override
+    public String toString() {
+        return "KeyColumn{" +
+               "sequence=" + sequence +
+               ", column=" + column +
+               '}';
     }
 }

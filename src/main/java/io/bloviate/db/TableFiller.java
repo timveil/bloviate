@@ -16,12 +16,16 @@
 
 package io.bloviate.db;
 
+import io.bloviate.gen.DataGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class TableFiller implements Fillable {
@@ -33,7 +37,6 @@ public class TableFiller implements Fillable {
     private final Table table;
     private final int rows;
     private final int batchSize;
-    private final Random random;
 
     @Override
     public void fill() throws SQLException {
@@ -45,11 +48,30 @@ public class TableFiller implements Fillable {
         logger.debug(sql);
 
         // case 1 - simple case
-            // a - table has no foreign keys, simple primary key is not auto generated
-            // b - table has no foreign keys, simple primary key is auto generated
-            // c - table has no foreign keys, compound primary key is not auto generated
-            // d - table has no foreign keys, compound primary key is auto generated
+        // a - table has no foreign keys, simple primary key is not auto generated
+        // b - table has no foreign keys, simple primary key is auto generated
+        // c - table has no foreign keys, compound primary key is not auto generated
+        // d - table has no foreign keys, compound primary key is auto generated
 
+
+        Map<Column, DataGenerator<?>> generatorMap = new HashMap<>();
+
+        List<Column> filteredColumns = table.filteredColumns();
+
+        for (Column column : filteredColumns) {
+
+            Random random;
+
+            Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(database, table, column);
+
+            if (associatedPrimaryKeyColumn != null) {
+                random = new Random(associatedPrimaryKeyColumn.hashCode());
+            } else {
+                random = new Random(column.hashCode());
+            }
+
+            generatorMap.put(column, DatabaseUtils.getDataGenerator(column, random));
+        }
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
@@ -57,29 +79,11 @@ public class TableFiller implements Fillable {
             for (int i = 0; i < rows; i++) {
 
                 int colCount = 1;
-                for (Column column : table.getColumns()) {
+                for (Column column : filteredColumns) {
 
-                    boolean isPK = table.partOfPrimaryKey(column);
-                    boolean isFK = table.partOfForeignKeys(column);
+                    DataGenerator<?> dataGenerator = generatorMap.get(column);
 
-                    // problem is that some keys are both pk & fk.  either i need to populate key cache again or recursively link back to source
-
-
-                    if (isFK) {
-
-                        // need to grab from elsewhere
-
-                    } else if (isPK) {
-
-                        // need to generate but might need to store
-
-                    } else {
-
-
-
-                    }
-
-                    column.getDataGenerator().generateAndSet(connection, ps, colCount);
+                    dataGenerator.generateAndSet(connection, ps, colCount);
 
                     colCount++;
                 }
@@ -143,6 +147,5 @@ public class TableFiller implements Fillable {
         this.database = builder.database;
         this.rows = builder.rows;
         this.batchSize = builder.batchSize;
-        this.random = new Random(table.hashCode());
     }
 }

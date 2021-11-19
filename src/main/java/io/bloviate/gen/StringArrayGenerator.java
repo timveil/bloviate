@@ -16,29 +16,25 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomStringUtils;
-
 import java.sql.*;
+import java.util.Random;
 
 public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
 
     private final int length;
     private final int elementLength;
-    private final DataGenerator<? extends String> elementGenerator;
 
     @Override
     public String[] generate() {
-        String[] random = new String[length];
+        String[] randomArray = new String[length];
+
+        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
 
         for (int i = 0; i < length; i++) {
-            if (elementGenerator != null) {
-                random[i] = elementGenerator.generate();
-            } else {
-                random[i] = RandomStringUtils.randomAlphabetic(elementLength);
-            }
+            randomArray[i] = randomUtils.randomAlphabetic(elementLength);
         }
 
-        return random;
+        return randomArray;
 
     }
 
@@ -57,11 +53,15 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
         return null;
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private int length = 3;
         private int elementLength = 10;
         private DataGenerator<? extends String> elementGenerator;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder length(int length) {
             this.length = length;
@@ -73,19 +73,15 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
             return this;
         }
 
-        public Builder elementGenerator(DataGenerator<? extends String> generator) {
-            this.elementGenerator = generator;
-            return this;
-        }
-
+        @Override
         public StringArrayGenerator build() {
             return new StringArrayGenerator(this);
         }
     }
 
     private StringArrayGenerator(Builder builder) {
+        super(builder.random);
         this.length = builder.length;
         this.elementLength = builder.elementLength;
-        this.elementGenerator = builder.elementGenerator;
     }
 }

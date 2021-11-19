@@ -18,6 +18,7 @@ package io.bloviate.gen;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class IntervalGenerator extends AbstractDataGenerator<String> {
 
@@ -45,18 +46,25 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
+
+        public Builder(Random random) {
+            super(random);
+        }
+
+        @Override
         public IntervalGenerator build() {
             return new IntervalGenerator(this);
         }
     }
 
     private IntervalGenerator(Builder builder) {
-        this.yearGenerator = new IntegerGenerator.Builder().start(1).end(10).build();
-        this.monthGenerator = new IntegerGenerator.Builder().start(1).end(12).build();
-        this.dayGenerator = new IntegerGenerator.Builder().start(1).end(30).build();
-        this.hourGenerator = new IntegerGenerator.Builder().start(1).end(24).build();
-        this.minuteGenerator = new IntegerGenerator.Builder().start(1).end(60).build();
-        this.secondGenerator = new IntegerGenerator.Builder().start(1).end(60).build();
+        super(builder.random);
+        this.yearGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(10).build();
+        this.monthGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(12).build();
+        this.dayGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(30).build();
+        this.hourGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(24).build();
+        this.minuteGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(60).build();
+        this.secondGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(60).build();
     }
 }

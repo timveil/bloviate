@@ -17,13 +17,13 @@
 package io.bloviate.gen;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.RandomUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Random;
 
 public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
 
@@ -34,12 +34,15 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
 
         int maxSize = Math.min(size, 25);
 
-        return ArrayUtils.toObject(RandomUtils.nextBytes(maxSize));
+        final byte[] result = new byte[maxSize];
+        random.nextBytes(result);
+
+        return ArrayUtils.toObject(result);
     }
 
     @Override
     public String generateAsString() {
-        return Arrays.toString(RandomUtils.nextBytes(size));
+        return Arrays.toString(generate());
     }
 
     @Override
@@ -52,21 +55,27 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
         return ArrayUtils.toObject(resultSet.getBytes(columnIndex));
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private int size = 25;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder size(int size) {
             this.size = size;
             return this;
         }
 
+        @Override
         public ByteGenerator build() {
             return new ByteGenerator(this);
         }
     }
 
     private ByteGenerator(Builder builder) {
+        super(builder.random);
         this.size = builder.size;
     }
 }

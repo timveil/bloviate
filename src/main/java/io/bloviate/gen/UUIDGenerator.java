@@ -18,13 +18,16 @@ package io.bloviate.gen;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 import java.util.UUID;
 
 public class UUIDGenerator extends AbstractDataGenerator<UUID> {
 
     @Override
     public UUID generate() {
-        return UUID.randomUUID();
+        byte[] array = new byte[16];
+        random.nextBytes(array);
+        return UUID.nameUUIDFromBytes(array);
     }
 
     @Override
@@ -38,13 +41,19 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
         return null;
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
+
+        public Builder(Random random) {
+            super(random);
+        }
+
         public UUIDGenerator build() {
             return new UUIDGenerator(this);
         }
     }
 
     private UUIDGenerator(Builder builder) {
+        super(builder.random);
 
     }
 }

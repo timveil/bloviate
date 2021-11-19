@@ -17,6 +17,7 @@
 package io.bloviate.gen;
 
 import java.sql.*;
+import java.util.Random;
 
 public class SqlBlobGenerator extends AbstractDataGenerator<Blob> {
     //todo
@@ -41,13 +42,20 @@ public class SqlBlobGenerator extends AbstractDataGenerator<Blob> {
         return resultSet.getBlob(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
+
+        public Builder(Random random) {
+            super(random);
+        }
+
+        @Override
         public SqlBlobGenerator build() {
             return new SqlBlobGenerator(this);
         }
     }
 
     private SqlBlobGenerator(Builder builder) {
+        super(builder.random);
 
     }
 }

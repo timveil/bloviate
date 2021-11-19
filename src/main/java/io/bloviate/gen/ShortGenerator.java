@@ -16,21 +16,19 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class ShortGenerator extends AbstractDataGenerator<Short> {
 
-    private final int startInclusive;
-    private final int endExclusive;
+    private final IntegerGenerator integerGenerator;
 
     @Override
     public Short generate() {
-        return (short) RandomUtils.nextInt(startInclusive, endExclusive);
+        return integerGenerator.generate().shortValue();
     }
 
     @Override
@@ -43,10 +41,14 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
         return resultSet.getShort(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
 
         private int startInclusive = 0;
         private int endExclusive = Short.MAX_VALUE;
+
+        public Builder(Random random) {
+            super(random);
+        }
 
         public Builder start(int start) {
             if (start < Short.MIN_VALUE) {
@@ -65,13 +67,14 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
             return this;
         }
 
+        @Override
         public ShortGenerator build() {
             return new ShortGenerator(this);
         }
     }
 
     private ShortGenerator(Builder builder) {
-        this.startInclusive = builder.startInclusive;
-        this.endExclusive = builder.endExclusive;
+        super(builder.random);
+        this.integerGenerator = new IntegerGenerator.Builder(builder.random).start(builder.startInclusive).end(builder.endExclusive).build();
     }
 }

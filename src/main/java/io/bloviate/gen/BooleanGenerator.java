@@ -16,18 +16,17 @@
 
 package io.bloviate.gen;
 
-import org.apache.commons.lang3.RandomUtils;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
 
     @Override
     public Boolean generate() {
-        return RandomUtils.nextBoolean();
+        return random.nextBoolean();
     }
 
     @Override
@@ -40,13 +39,20 @@ public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
         return resultSet.getBoolean(columnIndex);
     }
 
-    public static class Builder {
+    public static class Builder extends AbstractBuilder {
+
+        public Builder(Random random) {
+            super(random);
+        }
+
+        @Override
         public BooleanGenerator build() {
             return new BooleanGenerator(this);
         }
     }
 
     private BooleanGenerator(Builder builder) {
+        super(builder.random);
 
     }
 }
