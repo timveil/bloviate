@@ -16,7 +16,6 @@
 
 package io.bloviate.file;
 
-import io.bloviate.ColumnDefinition;
 import io.bloviate.gen.*;
 import org.junit.jupiter.api.Test;
 

@@ -14,34 +14,23 @@
  * limitations under the License.
  */
 
-package io.bloviate;
+package io.bloviate.file;
 
 import io.bloviate.gen.DataGenerator;
 
-@Deprecated //see Column < Table < Database
 public class ColumnDefinition {
 
     private final String name;
     private final DataGenerator<?> dataGenerator;
-    private final String typeName;
-
-    public ColumnDefinition(String name, DataGenerator<?> dataGenerator, String typeName) {
-        this.name = name;
-        this.dataGenerator = dataGenerator;
-        this.typeName = typeName;
-    }
 
     public ColumnDefinition(String name, DataGenerator<?> dataGenerator) {
-        this(name, dataGenerator, null);
+        this.name = name;
+        this.dataGenerator = dataGenerator;
     }
 
 
     public String getName() {
         return name;
-    }
-
-    public String getTypeName() {
-        return typeName;
     }
 
     public DataGenerator<?> getDataGenerator() {
