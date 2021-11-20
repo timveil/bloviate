@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import io.bloviate.gen.DataGenerator;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.slf4j.Logger;
@@ -33,7 +34,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FlatFileGenerator implements FileGenerator {
+public class FlatFileGenerator<T> implements FileGenerator {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -48,7 +49,7 @@ public class FlatFileGenerator implements FileGenerator {
     private final String fileName;
     private final FileDefinition definition;
     private final boolean compress;
-    private final List<ColumnDefinition> columnDefinitions;
+    private final List<ColumnDefinition<T>> columnDefinitions;
     private final long rows;
 
     @Override
@@ -69,8 +70,10 @@ public class FlatFileGenerator implements FileGenerator {
             printHeader(csvPrinter);
 
             for (int i = 0; i < rows; i++) {
-                for (ColumnDefinition columnDefinition : columnDefinitions) {
-                    csvPrinter.print(columnDefinition.getDataGenerator().generateAsString());
+                for (ColumnDefinition<T> columnDefinition : columnDefinitions) {
+                    DataGenerator<T> dataGenerator = columnDefinition.getDataGenerator();
+                    T value = dataGenerator.generate();
+                    csvPrinter.print(dataGenerator.toString(value));
                 }
                 csvPrinter.println();
             }
@@ -103,7 +106,7 @@ public class FlatFileGenerator implements FileGenerator {
         return compress;
     }
 
-    public List<ColumnDefinition> getColumnDefinitions() {
+    public List<ColumnDefinition<T>> getColumnDefinitions() {
         return columnDefinitions;
     }
 
@@ -120,19 +123,19 @@ public class FlatFileGenerator implements FileGenerator {
     }
 
     private void printHeader(CSVPrinter csvPrinter) throws IOException {
-        for (ColumnDefinition columnDefinition : columnDefinitions) {
+        for (ColumnDefinition<T> columnDefinition : columnDefinitions) {
             csvPrinter.print(columnDefinition.getName());
         }
         csvPrinter.println();
     }
 
-    public static class Builder {
+    public static class Builder<T> {
 
         private final String fileName;
 
         private FileDefinition definition = new CsvFile();
         private boolean compress;
-        private List<ColumnDefinition> columnDefinitions = new ArrayList<>();
+        private List<ColumnDefinition<T>> columnDefinitions = new ArrayList<>();
         private long rows = 1000;
 
         public Builder(String fileName) {
@@ -140,37 +143,37 @@ public class FlatFileGenerator implements FileGenerator {
         }
 
 
-        public Builder output(FileDefinition fileDefinition) {
+        public Builder<T> output(FileDefinition fileDefinition) {
             this.definition = fileDefinition;
             return this;
         }
 
-        public Builder compress() {
+        public Builder<T> compress() {
             this.compress = true;
             return this;
         }
 
-        public Builder addAll(List<ColumnDefinition> columnDefinitions) {
+        public Builder<T> addAll(List<ColumnDefinition<T>> columnDefinitions) {
             this.columnDefinitions = columnDefinitions;
             return this;
         }
 
-        public Builder add(ColumnDefinition columnDefinition) {
+        public Builder<T> add(ColumnDefinition<T> columnDefinition) {
             this.columnDefinitions.add(columnDefinition);
             return this;
         }
 
-        public Builder rows(long rows) {
+        public Builder<T> rows(long rows) {
             this.rows = rows;
             return this;
         }
 
-        public FlatFileGenerator build() {
-            return new FlatFileGenerator(this);
+        public FlatFileGenerator<T> build() {
+            return new FlatFileGenerator<>(this);
         }
     }
 
-    private FlatFileGenerator(Builder builder) {
+    private FlatFileGenerator(Builder<T> builder) {
         this.fileName = builder.fileName;
         this.columnDefinitions = builder.columnDefinitions;
         this.compress = builder.compress;

@@ -41,13 +41,13 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
     }
 
     @Override
-    public String generateAsString() {
-        return Arrays.toString(generate());
+    public String toString(Byte[] generatedValue) {
+        return Arrays.toString(generatedValue);
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setBytes(parameterIndex, ArrayUtils.toPrimitive((Byte[]) value));
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Byte[] value) throws SQLException {
+        statement.setBytes(parameterIndex, ArrayUtils.toPrimitive(value));
     }
 
     @Override
@@ -68,7 +68,6 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
             return this;
         }
 
-        @Override
         public ByteGenerator build() {
             return new ByteGenerator(this);
         }

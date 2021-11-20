@@ -28,13 +28,8 @@ public class SqlClobGenerator extends AbstractDataGenerator<Clob> {
     }
 
     @Override
-    public String generateAsString() {
-        return null;
-    }
-
-    @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setClob(parameterIndex, (Clob) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Clob value) throws SQLException {
+        statement.setClob(parameterIndex, value);
     }
 
     @Override
@@ -48,7 +43,6 @@ public class SqlClobGenerator extends AbstractDataGenerator<Clob> {
             super(random);
         }
 
-        @Override
         public SqlClobGenerator build() {
             return new SqlClobGenerator(this);
         }

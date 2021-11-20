@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class TableFiller implements Fillable {
+public class TableFiller<T> implements Fillable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -77,7 +77,9 @@ public class TableFiller implements Fillable {
 
                     DataGenerator<?> dataGenerator = generatorMap.get(column);
 
-                    dataGenerator.generateAndSet(connection, ps, colCount);
+                    Object generatedValue = dataGenerator.generate();
+
+                    dataGenerator.set(connection, ps, colCount, generatedValue);
 
                     colCount++;
                 }

@@ -51,7 +51,6 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
             super(random);
         }
 
-        @Override
         public CharacterGenerator build() {
             return new CharacterGenerator(this);
         }

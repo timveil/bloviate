@@ -30,11 +30,6 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
     }
 
     @Override
-    public String generateAsString() {
-        return null;
-    }
-
-    @Override
     public Struct get(ResultSet resultSet, int columnIndex) throws SQLException {
         return null;
     }
@@ -45,7 +40,6 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
             super(random);
         }
 
-        @Override
         public SqlStructGenerator build() {
             return new SqlStructGenerator(this);
         }

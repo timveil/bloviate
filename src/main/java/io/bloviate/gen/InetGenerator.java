@@ -30,11 +30,6 @@ public class InetGenerator extends AbstractDataGenerator<String> {
     }
 
     @Override
-    public String generateAsString() {
-        return generate();
-    }
-
-    @Override
     public String get(ResultSet resultSet, int columnIndex) throws SQLException {
         return resultSet.getString(columnIndex);
     }
@@ -45,7 +40,6 @@ public class InetGenerator extends AbstractDataGenerator<String> {
             super(random);
         }
 
-        @Override
         public InetGenerator build() {
             return new InetGenerator(this);
         }

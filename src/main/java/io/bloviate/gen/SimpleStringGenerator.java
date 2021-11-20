@@ -67,7 +67,6 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
             return this;
         }
 
-        @Override
         public SimpleStringGenerator build() {
             return new SimpleStringGenerator(this);
         }

@@ -32,8 +32,8 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setShort(parameterIndex, (Short) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Short value) throws SQLException {
+        statement.setShort(parameterIndex, value);
     }
 
     @Override
@@ -67,7 +67,6 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
             return this;
         }
 
-        @Override
         public ShortGenerator build() {
             return new ShortGenerator(this);
         }

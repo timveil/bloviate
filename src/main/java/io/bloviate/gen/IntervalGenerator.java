@@ -52,7 +52,6 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
             super(random);
         }
 
-        @Override
         public IntervalGenerator build() {
             return new IntervalGenerator(this);
         }

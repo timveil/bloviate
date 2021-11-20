@@ -36,8 +36,8 @@ public class IntegerGenerator extends AbstractDataGenerator<Integer> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setInt(parameterIndex, (Integer) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Integer value) throws SQLException {
+        statement.setInt(parameterIndex, value);
     }
 
     @Override
@@ -64,7 +64,6 @@ public class IntegerGenerator extends AbstractDataGenerator<Integer> {
             return this;
         }
 
-        @Override
         public IntegerGenerator build() {
             return new IntegerGenerator(this);
         }

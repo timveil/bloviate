@@ -36,8 +36,8 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setDouble(parameterIndex, (Double) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Double value) throws SQLException {
+        statement.setDouble(parameterIndex, value);
     }
 
     @Override
@@ -64,7 +64,6 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
             return this;
         }
 
-        @Override
         public DoubleGenerator build() {
             return new DoubleGenerator(this);
         }

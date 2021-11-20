@@ -18,12 +18,12 @@ package io.bloviate.file;
 
 import io.bloviate.gen.DataGenerator;
 
-public class ColumnDefinition {
+public class ColumnDefinition<T> {
 
     private final String name;
-    private final DataGenerator<?> dataGenerator;
+    private final DataGenerator<T> dataGenerator;
 
-    public ColumnDefinition(String name, DataGenerator<?> dataGenerator) {
+    public ColumnDefinition(String name, DataGenerator<T> dataGenerator) {
         this.name = name;
         this.dataGenerator = dataGenerator;
     }
@@ -33,7 +33,7 @@ public class ColumnDefinition {
         return name;
     }
 
-    public DataGenerator<?> getDataGenerator() {
+    public DataGenerator<T> getDataGenerator() {
         return dataGenerator;
     }
 }

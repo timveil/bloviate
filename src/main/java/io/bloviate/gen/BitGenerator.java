@@ -40,7 +40,6 @@ public class BitGenerator extends AbstractDataGenerator<Integer> {
             super(random);
         }
 
-        @Override
         public BitGenerator build() {
             return new BitGenerator(this);
         }

@@ -58,7 +58,6 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
             return this;
         }
 
-        @Override
         public InstantGenerator build() {
             return new InstantGenerator(this);
         }

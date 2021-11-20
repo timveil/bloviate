@@ -39,7 +39,6 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
             super(random);
         }
 
-        @Override
         public JsonbGenerator build() {
             return new JsonbGenerator(this);
         }

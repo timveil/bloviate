@@ -60,7 +60,6 @@ public class DateGenerator extends AbstractDataGenerator<Date> {
             return this;
         }
 
-        @Override
         public DateGenerator build() {
             return new DateGenerator(this);
         }

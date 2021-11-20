@@ -57,7 +57,6 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
             return this;
         }
 
-        @Override
         public BitStringGenerator build() {
             return new BitStringGenerator(this);
         }

@@ -7,8 +7,9 @@ import java.util.Random;
 
 public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
+
     @Override
-    public final DataGenerator<?> getDataGenerator(Column column, Random random) {
+    public final AbstractDataGenerator getDataGenerator(Column column, Random random) {
         switch (column.getJdbcType()) {
             case BIT -> {
                 return buildBitGenerator(column, random);
@@ -133,7 +134,7 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
     }
 
     @Override
-    public DataGenerator<?> buildTinyIntGenerator(Column column, Random random) {
+    public <T> DataGenerator<T> buildTinyIntGenerator(Column column, Random random) {
         return new ShortGenerator.Builder(random).start(0).end(255).build();
     }
 
