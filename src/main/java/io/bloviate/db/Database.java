@@ -27,21 +27,6 @@ public class Database {
         return tables;
     }
 
-    // recrse to root primary key
-//    public PrimaryKey getRootPrimaryKey(String tableName, String primaryKeyName) {
-//        Table table = getTable(tableName);
-//        PrimaryKey primaryKey = table.getPrimaryKey(primaryKeyName);
-//
-//        // if column is both a primary key and a foreign key, lets find its source
-//        ForeignKey foreignKey = table.getForeignKey(primaryKeyName);
-//        if (foreignKey != null) {
-//            return getRootPrimaryKey(foreignKey.getPrimaryKeyTableName(), foreignKey.getPrimaryKeyColumnName());
-//        } else {
-//            return primaryKey;
-//        }
-//
-//    }
-
     public Table getTable(String tableName) {
         for (Table table : tables) {
             if (table.getName().equalsIgnoreCase(tableName)) {

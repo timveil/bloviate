@@ -113,21 +113,11 @@ public class FlatFileGenerator implements FileGenerator {
     }
 
     private CSVFormat getCsvFormat(FileType fileType) {
-        CSVFormat format;
-        switch (fileType) {
-            case CSV:
-                format = CSVFormat.DEFAULT;
-                break;
-            case TDV:
-                format = CSVFormat.TDF;
-                break;
-            case PIPE:
-                format = CSVFormat.DEFAULT.withDelimiter('|');
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + fileType);
-        }
-        return format;
+        return switch (fileType) {
+            case CSV -> CSVFormat.DEFAULT;
+            case TDV -> CSVFormat.TDF;
+            case PIPE -> CSVFormat.Builder.create().setDelimiter('|').build();
+        };
     }
 
     private void printHeader(CSVPrinter csvPrinter) throws IOException {

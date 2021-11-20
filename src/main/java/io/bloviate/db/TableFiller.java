@@ -44,18 +44,9 @@ public class TableFiller implements Fillable {
     @Override
     public void fill() throws SQLException {
 
-        // first fill keys then tables;
-
         String sql = table.insertString();
 
         logger.debug(sql);
-
-        // case 1 - simple case
-        // a - table has no foreign keys, simple primary key is not auto generated
-        // b - table has no foreign keys, simple primary key is auto generated
-        // c - table has no foreign keys, compound primary key is not auto generated
-        // d - table has no foreign keys, compound primary key is auto generated
-
 
         Map<Column, DataGenerator<?>> generatorMap = new HashMap<>();
 

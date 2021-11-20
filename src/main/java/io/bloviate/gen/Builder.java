@@ -1,5 +1,5 @@
 package io.bloviate.gen;
 
-public interface Builder<T> {
-    T build();
+public interface Builder {
+    AbstractDataGenerator<?> build();
 }
