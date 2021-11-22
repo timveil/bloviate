@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package io.bloviate.db.cockroach;
+package io.bloviate.db;
 
-import io.bloviate.db.Database;
-import io.bloviate.db.Table;
-import io.bloviate.db.TableFiller;
 import io.bloviate.ext.CockroachDBSupport;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.ScriptRunner;
@@ -34,7 +31,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-class ManualTableFillerTest {
+class CockroachDBManualTableFillerTest {
 
     private final PGSimpleDataSource ds = new PGSimpleDataSource();
 
