@@ -16,8 +16,6 @@
 
 package io.bloviate.db;
 
-import io.bloviate.ext.DatabaseSupport;
-import io.bloviate.ext.DefaultSupport;
 import io.bloviate.util.DatabaseUtils;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -28,19 +26,15 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class DatabaseFiller implements Fillable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Connection connection;
-    private final int rows;
-    private final int batchSize;
-    private final DatabaseSupport databaseSupport;
+    private final DatabaseConfiguration configuration;
+    private final Map<String, TableConfiguration> tableConfigurationMap;
 
     @Override
     public void fill() throws SQLException {
@@ -76,10 +70,17 @@ public class DatabaseFiller implements Fillable {
 
         for (Table table : ordered) {
             logger.debug("filling table [{}]", table.name());
-            new TableFiller.Builder(connection, database, databaseSupport)
+            TableConfiguration tableConfiguration = tableConfigurationMap.get(table.name());
+
+            long rowCount = configuration.defaultRowCount();
+
+            if (tableConfiguration != null) {
+                rowCount = tableConfiguration.rowCount();
+            }
+
+            new TableFiller.Builder(connection, database, configuration)
                     .table(table)
-                    .batchSize(batchSize)
-                    .rows(rows)
+                    .rows(rowCount)
                     .build().fill();
         }
 
@@ -88,27 +89,21 @@ public class DatabaseFiller implements Fillable {
     public static class Builder {
 
         private final Connection connection;
+        private final DatabaseConfiguration configuration;
+        private Map<String, TableConfiguration> tableConfigurationMap = new HashMap<>();
 
-        private int rows = 1000;
-        private int batchSize = 128;
-        private DatabaseSupport databaseSupport = new DefaultSupport();
-
-        public Builder(Connection connection) {
+        public Builder(Connection connection, DatabaseConfiguration configuration) {
             this.connection = connection;
+            this.configuration = configuration;
         }
 
-        public Builder rows(int rows) {
-            this.rows = rows;
+        public Builder tables(Map<String, TableConfiguration> tableConfigurations) {
+            this.tableConfigurationMap = tableConfigurations;
             return this;
         }
 
-        public Builder batchSize(int batchSize) {
-            this.batchSize = batchSize;
-            return this;
-        }
-
-        public Builder databaseSupport(DatabaseSupport databaseSupport) {
-            this.databaseSupport = databaseSupport;
+        public Builder addTable(TableConfiguration tableConfiguration) {
+            this.tableConfigurationMap.put(tableConfiguration.tableName(), tableConfiguration);
             return this;
         }
 
@@ -119,8 +114,7 @@ public class DatabaseFiller implements Fillable {
 
     private DatabaseFiller(Builder builder) {
         this.connection = builder.connection;
-        this.rows = builder.rows;
-        this.batchSize = builder.batchSize;
-        this.databaseSupport = builder.databaseSupport;
+        this.configuration = builder.configuration;
+        this.tableConfigurationMap = builder.tableConfigurationMap;
     }
 }

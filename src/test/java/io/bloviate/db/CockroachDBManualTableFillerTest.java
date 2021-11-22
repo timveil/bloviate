@@ -48,11 +48,12 @@ class CockroachDBManualTableFillerTest extends BaseDatabaseTestCase {
     void fill() throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             Database database = DatabaseUtils.getMetadata(connection);
-            CockroachDBSupport support = new CockroachDBSupport();
 
-            new TableFiller.Builder(connection, database, support).table(database.getTable("warehouse")).rows(1).build().fill();
-            new TableFiller.Builder(connection, database, support).table(database.getTable("item")).rows(2).build().fill();
-            new TableFiller.Builder(connection, database, support).table(database.getTable("stock")).rows(3).build().fill();
+            DatabaseConfiguration config = new DatabaseConfiguration(128, 5, new CockroachDBSupport());
+
+            new TableFiller.Builder(connection, database, config).table(database.getTable("warehouse")).rows(1).build().fill();
+            new TableFiller.Builder(connection, database, config).table(database.getTable("item")).rows(2).build().fill();
+            new TableFiller.Builder(connection, database, config).table(database.getTable("stock")).rows(3).build().fill();
         }
 
     }

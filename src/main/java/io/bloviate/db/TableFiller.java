@@ -36,10 +36,9 @@ public class TableFiller implements Fillable {
 
     private final Connection connection;
     private final Database database;
-    private final DatabaseSupport databaseSupport;
+    private final DatabaseConfiguration databaseConfiguration;
     private final Table table;
-    private final int rows;
-    private final int batchSize;
+    private final long rows;
 
     @Override
     public void fill() throws SQLException {
@@ -51,6 +50,8 @@ public class TableFiller implements Fillable {
         Map<Column, DataGenerator<?>> generatorMap = new HashMap<>();
 
         List<Column> filteredColumns = table.filteredColumns();
+
+        DatabaseSupport databaseSupport = databaseConfiguration.databaseSupport();
 
         for (Column column : filteredColumns) {
 
@@ -66,6 +67,8 @@ public class TableFiller implements Fillable {
 
             generatorMap.put(column, databaseSupport.getDataGenerator(column, random));
         }
+
+        int batchSize = databaseConfiguration.batchSize();
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
@@ -100,19 +103,18 @@ public class TableFiller implements Fillable {
 
         private final Connection connection;
         private final Database database;
-        private final DatabaseSupport databaseSupport;
+        private final DatabaseConfiguration databaseConfiguration;
 
         private Table table;
-        private int rows = 1000;
-        private int batchSize = 128;
+        private long rows = 1000;
 
-        public Builder(Connection connection, Database database, DatabaseSupport databaseSupport) {
+        public Builder(Connection connection, Database database, DatabaseConfiguration databaseConfiguration) {
             this.connection = connection;
             this.database = database;
-            this.databaseSupport = databaseSupport;
+            this.databaseConfiguration = databaseConfiguration;
         }
 
-        public Builder rows(int rows) {
+        public Builder rows(long rows) {
             this.rows = rows;
             return this;
         }
@@ -127,11 +129,6 @@ public class TableFiller implements Fillable {
             return this;
         }
 
-        public Builder batchSize(int batchSize) {
-            this.batchSize = batchSize;
-            return this;
-        }
-
         public TableFiller build() {
             return new TableFiller(this);
         }
@@ -142,7 +139,6 @@ public class TableFiller implements Fillable {
         this.table = builder.table;
         this.database = builder.database;
         this.rows = builder.rows;
-        this.batchSize = builder.batchSize;
-        this.databaseSupport = builder.databaseSupport;
+        this.databaseConfiguration = builder.databaseConfiguration;
     }
 }

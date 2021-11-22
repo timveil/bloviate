@@ -37,7 +37,7 @@ class MySqlFillerTest extends BaseDatabaseTestCase {
 
             DataSource dataSource = getDataSource(database);
             try (Connection connection = dataSource.getConnection()) {
-                new DatabaseFiller.Builder(connection).databaseSupport(new MySQLSupport()).build().fill();
+                new DatabaseFiller.Builder(connection, new DatabaseConfiguration(128, 10, new MySQLSupport())).build().fill();
             }
         }
     }

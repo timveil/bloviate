@@ -123,7 +123,8 @@ class CockroachDBTableFillerTest extends BaseDatabaseTestCase {
         try (Connection connection = dataSource.getConnection()) {
             Database database = DatabaseUtils.getMetadata(connection);
             Table table = database.getTable(tableName);
-            new TableFiller.Builder(connection, database, new CockroachDBSupport()).table(table).rows(5).build().fill();
+            DatabaseConfiguration config = new DatabaseConfiguration(128, 5, new CockroachDBSupport());
+            new TableFiller.Builder(connection, database, config).table(table).rows(5).build().fill();
         }
     }
 }
