@@ -18,20 +18,13 @@ package io.bloviate.db;
 
 import io.bloviate.ext.CockroachDBSupport;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.CockroachContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
 class CockroachDBFillerTest extends BaseDatabaseTestCase {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private final Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(logger, true);
 
     @Test
     void fillDatabase() throws SQLException {
@@ -42,7 +35,6 @@ class CockroachDBFillerTest extends BaseDatabaseTestCase {
                 .withCommand("start-single-node --insecure --store=type=mem,size=.75")) {
 
             database.start();
-            database.followOutput(logConsumer);
 
             DataSource dataSource = getDataSource(database);
 
