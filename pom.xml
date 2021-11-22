@@ -106,11 +106,28 @@
             <version>1.5.1</version>
         </dependency>
 
+        <!-- Testing Dependencies -->
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>5.8.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>3.4.5</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- PostgreSQL Support -->
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>1.16.2</version>
             <scope>test</scope>
         </dependency>
 
@@ -121,12 +138,33 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- MySQL Support -->
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <version>1.16.2</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.27</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- CockroachDB Support -->
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cockroachdb</artifactId>
+            <version>1.16.2</version>
+            <scope>test</scope>
+        </dependency>
+
+
+
 
     </dependencies>
 
