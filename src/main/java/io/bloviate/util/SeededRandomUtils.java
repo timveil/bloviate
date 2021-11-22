@@ -9,13 +9,7 @@ import java.util.Random;
  * Borrowed from org.apache.commons.lang3.RandomUtils and org.apache.commons.lang3.RandomStringUtils
  */
 
-public class SeededRandomUtils {
-
-    private final Random random;
-
-    public SeededRandomUtils(Random random) {
-        this.random = random;
-    }
+public record SeededRandomUtils(Random random) {
 
     public String randomNumeric(int minLengthInclusive, int maxLengthExclusive) {
         return randomNumeric(nextInt(minLengthInclusive, maxLengthExclusive));
