@@ -48,7 +48,7 @@ public class DatabaseFiller implements Fillable {
         Database database = DatabaseUtils.getMetadata(connection);
 
         Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
-        for (Table table : database.getTables()) {
+        for (Table table : database.tables()) {
 
             List<ForeignKey> foreignKeys = table.foreignKeys();
 
