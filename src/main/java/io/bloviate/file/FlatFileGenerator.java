@@ -70,7 +70,7 @@ public class FlatFileGenerator implements FileGenerator {
 
             for (int i = 0; i < rows; i++) {
                 for (ColumnDefinition columnDefinition : columnDefinitions) {
-                    csvPrinter.print(columnDefinition.getDataGenerator().generateAsString());
+                    csvPrinter.print(columnDefinition.dataGenerator().generateAsString());
                 }
                 csvPrinter.println();
             }
@@ -121,7 +121,7 @@ public class FlatFileGenerator implements FileGenerator {
 
     private void printHeader(CSVPrinter csvPrinter) throws IOException {
         for (ColumnDefinition columnDefinition : columnDefinitions) {
-            csvPrinter.print(columnDefinition.getName());
+            csvPrinter.print(columnDefinition.name());
         }
         csvPrinter.println();
     }
