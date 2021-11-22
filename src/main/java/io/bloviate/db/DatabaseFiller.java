@@ -50,7 +50,7 @@ public class DatabaseFiller implements Fillable {
         Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
         for (Table table : database.getTables()) {
 
-            List<ForeignKey> foreignKeys = table.getForeignKeys();
+            List<ForeignKey> foreignKeys = table.foreignKeys();
 
             graph.addVertex(table);
 
@@ -75,7 +75,7 @@ public class DatabaseFiller implements Fillable {
         Collections.reverse(ordered);
 
         for (Table table : ordered) {
-            logger.debug("filling table [{}]", table.getName());
+            logger.debug("filling table [{}]", table.name());
             new TableFiller.Builder(connection, database, databaseSupport)
                     .table(table)
                     .batchSize(batchSize)

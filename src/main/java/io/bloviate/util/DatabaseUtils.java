@@ -192,7 +192,7 @@ public class DatabaseUtils {
     public static Column getAssociatedPrimaryKeyColumn(Database database, Table table, Column column) {
 
         // get this tables foreign keys
-        List<ForeignKey> foreignKeys = table.getForeignKeys();
+        List<ForeignKey> foreignKeys = table.foreignKeys();
 
         if (foreignKeys != null && !foreignKeys.isEmpty()) {
 
