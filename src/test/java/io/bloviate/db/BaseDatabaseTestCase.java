@@ -12,7 +12,7 @@ public class BaseDatabaseTestCase {
 
     protected static final Logger logger = LoggerFactory.getLogger(BaseDatabaseTestCase.class);
 
-    protected DataSource getDataSource(JdbcDatabaseContainer<?> container) {
+    protected static DataSource getDataSource(JdbcDatabaseContainer<?> container) {
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(container.getJdbcUrl());
         hikariConfig.setUsername(container.getUsername());
