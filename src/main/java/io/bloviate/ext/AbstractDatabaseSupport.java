@@ -9,7 +9,7 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
     @Override
     public final DataGenerator<?> getDataGenerator(Column column, Random random) {
-        switch (column.getJdbcType()) {
+        switch (column.jdbcType()) {
             case BIT -> {
                 return buildBitGenerator(column, random);
             }
@@ -129,7 +129,7 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
             }
         }
 
-        throw new UnsupportedOperationException("JDBCType [" + column.getJdbcType() + "] not supported");
+        throw new UnsupportedOperationException("JDBCType [" + column.jdbcType() + "] not supported");
     }
 
     @Override
@@ -169,37 +169,37 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
     @Override
     public DataGenerator<?> buildDecimalGenerator(Column column, Random random) {
-        return new BigDecimalGenerator.Builder(random).precision(column.getMaxSize()).digits(column.getMaxDigits()).build();
+        return new BigDecimalGenerator.Builder(random).precision(column.maxSize()).digits(column.maxDigits()).build();
     }
 
     @Override
     public DataGenerator<?> buildCharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.getMaxSize()).build();
+        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
     }
 
     @Override
     public DataGenerator<?> buildNCharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.getMaxSize()).build();
+        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
     }
 
     @Override
     public DataGenerator<?> buildVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.getMaxSize()).build();
+        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
     }
 
     @Override
     public DataGenerator<?> buildNVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.getMaxSize()).build();
+        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
     }
 
     @Override
     public DataGenerator<?> buildLongVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.getMaxSize()).build();
+        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
     }
 
     @Override
     public DataGenerator<?> buildLongNVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.getMaxSize()).build();
+        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
     }
 
     @Override
@@ -229,17 +229,17 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
     @Override
     public DataGenerator<?> buildBinaryGenerator(Column column, Random random) {
-        return new ByteGenerator.Builder(random).size(column.getMaxSize()).build();
+        return new ByteGenerator.Builder(random).size(column.maxSize()).build();
     }
 
     @Override
     public DataGenerator<?> buildVarbinaryGenerator(Column column, Random random) {
-        return new ByteGenerator.Builder(random).size(column.getMaxSize()).build();
+        return new ByteGenerator.Builder(random).size(column.maxSize()).build();
     }
 
     @Override
     public DataGenerator<?> buildLongVarbinaryGenerator(Column column, Random random) {
-        return new ByteGenerator.Builder(random).size(column.getMaxSize()).build();
+        return new ByteGenerator.Builder(random).size(column.maxSize()).build();
     }
 
     @Override
@@ -269,10 +269,10 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
     @Override
     public DataGenerator<?> buildBitGenerator(Column column, Random random) {
-        if (1 == column.getMaxSize()) {
+        if (1 == column.maxSize()) {
             return new BitGenerator.Builder(random).build();
         } else {
-            return new BitStringGenerator.Builder(random).size(column.getMaxSize()).build();
+            return new BitStringGenerator.Builder(random).size(column.maxSize()).build();
         }
     }
 
@@ -288,7 +288,7 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
     @Override
     public DataGenerator<?> buildNumericGenerator(Column column, Random random) {
-        return new BigDecimalGenerator.Builder(random).precision(column.getMaxSize()).digits(column.getMaxDigits()).build();
+        return new BigDecimalGenerator.Builder(random).precision(column.maxSize()).digits(column.maxDigits()).build();
     }
 
     @Override

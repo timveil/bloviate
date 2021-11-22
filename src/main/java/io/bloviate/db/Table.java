@@ -32,7 +32,7 @@ public class Table {
         StringJoiner valueJoiner = new StringJoiner(",");
 
         for (Column column : filteredColumns()) {
-            nameJoiner.add(column.getName());
+            nameJoiner.add(column.name());
             valueJoiner.add("?");
         }
 
@@ -44,7 +44,7 @@ public class Table {
         List<Column> filtered = new ArrayList<>();
 
         for (Column column : columns) {
-            if (!column.getAutoIncrement()) {
+            if (!column.autoIncrement()) {
                 filtered.add(column);
             }
         }
@@ -62,7 +62,7 @@ public class Table {
 
     public Column findColumn(String name) {
         for (Column column : columns) {
-            if (column.getName().equalsIgnoreCase(name)) {
+            if (column.name().equalsIgnoreCase(name)) {
                 return column;
             }
         }

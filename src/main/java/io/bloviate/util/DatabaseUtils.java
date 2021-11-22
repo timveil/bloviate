@@ -129,7 +129,7 @@ public class DatabaseUtils {
                 columns.add(mapColumn(columnsResultSet));
             }
 
-            columns.sort(Comparator.comparing(Column::getOrdinalPosition));
+            columns.sort(Comparator.comparing(Column::ordinalPosition));
 
             return columns;
 
