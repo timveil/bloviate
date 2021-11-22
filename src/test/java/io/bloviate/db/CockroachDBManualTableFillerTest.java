@@ -18,66 +18,41 @@ package io.bloviate.db;
 
 import io.bloviate.ext.CockroachDBSupport;
 import io.bloviate.util.DatabaseUtils;
-import io.bloviate.util.ScriptRunner;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.postgresql.ds.PGSimpleDataSource;
+import org.testcontainers.containers.CockroachContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 
-class CockroachDBManualTableFillerTest {
+@Testcontainers
+class CockroachDBManualTableFillerTest extends BaseDatabaseTestCase {
 
-    private final PGSimpleDataSource ds = new PGSimpleDataSource();
+    @Container
+    private static final CockroachContainer database = new CockroachContainer("cockroachdb/cockroach:latest")
+            .withUrlParam("rewriteBatchedInserts", "true")
+            .withInitScript("create_tpcc.cockroachdb.sql")
+            .withCommand("start-single-node --insecure --store=type=mem,size=.75");
 
-    @BeforeEach
-    void setUp() throws SQLException, IOException {
+    private static DataSource dataSource;
 
-        ds.setServerNames(new String[]{"localhost"});
-        ds.setPortNumbers(new int[]{26257});
-        ds.setDatabaseName("bloviate");
-        ds.setUser("root");
-        ds.setPassword(null);
-        ds.setReWriteBatchedInserts(true);
-        ds.setApplicationName("ManualTableFillerTest");
-
-        Database db = DatabaseUtils.getMetadata(ds);
-
-        if (db.getTables() != null && !db.getTables().isEmpty()) {
-            for (Table table : db.getTables()) {
-                try (Connection connection = ds.getConnection();
-                     Statement stmt = connection.createStatement()) {
-                    stmt.execute(String.format("drop table %s cascade", table.getName()));
-                }
-            }
-        }
-
-        try (Connection connection = ds.getConnection()) {
-            ScriptRunner sr = new ScriptRunner(connection);
-            try (InputStream is = getClass().getResourceAsStream("/create_tpcc.cockroachdb.sql")) {
-                if (is != null) {
-                    try (Reader reader = new InputStreamReader(is)) {
-                        sr.runScript(reader);
-                    }
-                }
-            }
-        }
+    @BeforeAll
+    static void beforeAll() {
+        dataSource = getDataSource(database);
     }
 
     @Test
     void fill() throws SQLException {
-        try (Connection connection = ds.getConnection()) {
+        try (Connection connection = dataSource.getConnection()) {
             Database database = DatabaseUtils.getMetadata(connection);
             CockroachDBSupport support = new CockroachDBSupport();
 
-            new TableFiller.Builder(connection, database, support).table(database.getTable("warehouse")).rows(100).build().fill();
-            new TableFiller.Builder(connection, database, support).table(database.getTable("item")).rows(100000).build().fill();
-            new TableFiller.Builder(connection, database, support).table(database.getTable("stock")).rows(1000).build().fill();
+            new TableFiller.Builder(connection, database, support).table(database.getTable("warehouse")).rows(1).build().fill();
+            new TableFiller.Builder(connection, database, support).table(database.getTable("item")).rows(2).build().fill();
+            new TableFiller.Builder(connection, database, support).table(database.getTable("stock")).rows(3).build().fill();
         }
 
     }
