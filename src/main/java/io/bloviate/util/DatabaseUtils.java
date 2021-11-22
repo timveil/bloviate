@@ -199,7 +199,7 @@ public class DatabaseUtils {
             for (ForeignKey foreignKey : foreignKeys) {
 
                 // get the columns on this table specified in the foreign key
-                List<KeyColumn> keyColumns = foreignKey.getForeignKeyColumns();
+                List<KeyColumn> keyColumns = foreignKey.foreignKeyColumns();
 
                 for (KeyColumn keyColumn : keyColumns) {
                     int keyColumnSequence = keyColumn.getSequence();
@@ -210,7 +210,7 @@ public class DatabaseUtils {
                     if (foreignKeyColumn.equals(column)) {
 
                         // for the column on this table that is a foreign key, grab the associated column the another table where it is the primary key
-                        PrimaryKey primaryKey = foreignKey.getPrimaryKey();
+                        PrimaryKey primaryKey = foreignKey.primaryKey();
 
                         // for the primary key grab its full table data
                         Table primaryTable = database.getTable(primaryKey.getTableName());
