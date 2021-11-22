@@ -75,7 +75,7 @@ public class DatabaseUtils {
 
                 Map<Integer, KeyColumn> seqColMap = map.get(primaryKeyTableName);
                 List<KeyColumn> columns = new ArrayList<>(seqColMap.values());
-                columns.sort(Comparator.comparing(KeyColumn::getSequence));
+                columns.sort(Comparator.comparing(KeyColumn::sequence));
 
                 keys.add(new ForeignKey(columns, getPrimaryKey(metaData, catalog, schema, primaryKeyTableName)));
 
@@ -100,7 +100,7 @@ public class DatabaseUtils {
                 keyColumns.add(new KeyColumn(sequence, getColumn(metaData, catalog, schema, tableName, columnName)));
             }
 
-            keyColumns.sort(Comparator.comparing(KeyColumn::getSequence));
+            keyColumns.sort(Comparator.comparing(KeyColumn::sequence));
 
             return new PrimaryKey(tableName, keyColumns);
 
@@ -202,10 +202,10 @@ public class DatabaseUtils {
                 List<KeyColumn> keyColumns = foreignKey.foreignKeyColumns();
 
                 for (KeyColumn keyColumn : keyColumns) {
-                    int keyColumnSequence = keyColumn.getSequence();
+                    int keyColumnSequence = keyColumn.sequence();
 
                     // this is a column on this table
-                    Column foreignKeyColumn = keyColumn.getColumn();
+                    Column foreignKeyColumn = keyColumn.column();
 
                     if (foreignKeyColumn.equals(column)) {
 
@@ -217,12 +217,12 @@ public class DatabaseUtils {
 
                         for (KeyColumn primaryKeyColumn : primaryKey.getKeyColumns()) {
 
-                            int primaryKeyColumnSequence = primaryKeyColumn.getSequence();
+                            int primaryKeyColumnSequence = primaryKeyColumn.sequence();
 
                             // let's make sure we are matching the right column in sequence
                             if (primaryKeyColumnSequence == keyColumnSequence) {
 
-                                Column primaryKeyColumnColumn = primaryKeyColumn.getColumn();
+                                Column primaryKeyColumnColumn = primaryKeyColumn.column();
 
                                 Column possibleRoot = getAssociatedPrimaryKeyColumn(database, primaryTable, primaryKeyColumnColumn);
 
