@@ -56,7 +56,7 @@ public class DatabaseFiller implements Fillable {
 
             if (foreignKeys != null && !foreignKeys.isEmpty()) {
                 for (ForeignKey key : foreignKeys) {
-                    Table referencedTable = database.getTable(key.primaryKey().getTableName());
+                    Table referencedTable = database.getTable(key.primaryKey().tableName());
                     if (!graph.containsVertex(referencedTable)) {
                         graph.addVertex(referencedTable);
                     }

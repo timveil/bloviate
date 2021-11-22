@@ -213,9 +213,9 @@ public class DatabaseUtils {
                         PrimaryKey primaryKey = foreignKey.primaryKey();
 
                         // for the primary key grab its full table data
-                        Table primaryTable = database.getTable(primaryKey.getTableName());
+                        Table primaryTable = database.getTable(primaryKey.tableName());
 
-                        for (KeyColumn primaryKeyColumn : primaryKey.getKeyColumns()) {
+                        for (KeyColumn primaryKeyColumn : primaryKey.keyColumns()) {
 
                             int primaryKeyColumnSequence = primaryKeyColumn.sequence();
 
