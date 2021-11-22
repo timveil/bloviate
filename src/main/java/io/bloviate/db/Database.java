@@ -11,6 +11,6 @@ public record Database(String catalog, String schema, List<Table> tables) {
             }
         }
 
-        return null;
+        throw new IllegalArgumentException(String.format("table with name [%s] not found", tableName));
     }
 }

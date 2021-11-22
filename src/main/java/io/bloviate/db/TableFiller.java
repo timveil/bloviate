@@ -38,7 +38,6 @@ public class TableFiller implements Fillable {
     private final Database database;
     private final DatabaseConfiguration databaseConfiguration;
     private final Table table;
-    private final long rows;
 
     @Override
     public void fill() throws SQLException {
@@ -70,24 +69,31 @@ public class TableFiller implements Fillable {
 
         int batchSize = databaseConfiguration.batchSize();
 
+        TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
+
+        long rowCount = databaseConfiguration.defaultRowCount();
+        if (tableConfiguration != null) {
+            rowCount = tableConfiguration.rowCount();
+        }
+
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
-            int rowCount = 0;
-            for (int i = 0; i < rows; i++) {
+            int rowCounter = 0;
+            for (long i = 0; i < rowCount; i++) {
 
-                int colCount = 1;
+                int colCounter = 1;
                 for (Column column : filteredColumns) {
 
                     DataGenerator<?> dataGenerator = generatorMap.get(column);
 
-                    dataGenerator.generateAndSet(connection, ps, colCount);
+                    dataGenerator.generateAndSet(connection, ps, colCounter);
 
-                    colCount++;
+                    colCounter++;
                 }
 
                 ps.addBatch();
 
-                if (++rowCount % batchSize == 0) {
+                if (++rowCounter % batchSize == 0) {
                     ps.executeBatch();
                 }
             }
@@ -106,17 +112,11 @@ public class TableFiller implements Fillable {
         private final DatabaseConfiguration databaseConfiguration;
 
         private Table table;
-        private long rows = 1000;
 
         public Builder(Connection connection, Database database, DatabaseConfiguration databaseConfiguration) {
             this.connection = connection;
             this.database = database;
             this.databaseConfiguration = databaseConfiguration;
-        }
-
-        public Builder rows(long rows) {
-            this.rows = rows;
-            return this;
         }
 
         public Builder table(String tableName) {
@@ -138,7 +138,6 @@ public class TableFiller implements Fillable {
         this.connection = builder.connection;
         this.table = builder.table;
         this.database = builder.database;
-        this.rows = builder.rows;
         this.databaseConfiguration = builder.databaseConfiguration;
     }
 }

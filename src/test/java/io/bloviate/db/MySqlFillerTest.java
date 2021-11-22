@@ -23,6 +23,8 @@ import org.testcontainers.containers.MySQLContainer;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 class MySqlFillerTest extends BaseDatabaseTestCase {
 
@@ -37,7 +39,9 @@ class MySqlFillerTest extends BaseDatabaseTestCase {
 
             DataSource dataSource = getDataSource(database);
             try (Connection connection = dataSource.getConnection()) {
-                new DatabaseFiller.Builder(connection, new DatabaseConfiguration(128, 10, new MySQLSupport())).build().fill();
+                Set<TableConfiguration> tableConfigurations = new HashSet<>();
+                DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new MySQLSupport(), tableConfigurations);
+                new DatabaseFiller.Builder(connection, configuration).build().fill();
             }
         }
     }

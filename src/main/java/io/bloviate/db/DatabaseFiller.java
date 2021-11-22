@@ -26,7 +26,10 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public class DatabaseFiller implements Fillable {
 
@@ -34,7 +37,6 @@ public class DatabaseFiller implements Fillable {
 
     private final Connection connection;
     private final DatabaseConfiguration configuration;
-    private final Map<String, TableConfiguration> tableConfigurationMap;
 
     @Override
     public void fill() throws SQLException {
@@ -70,17 +72,9 @@ public class DatabaseFiller implements Fillable {
 
         for (Table table : ordered) {
             logger.debug("filling table [{}]", table.name());
-            TableConfiguration tableConfiguration = tableConfigurationMap.get(table.name());
-
-            long rowCount = configuration.defaultRowCount();
-
-            if (tableConfiguration != null) {
-                rowCount = tableConfiguration.rowCount();
-            }
 
             new TableFiller.Builder(connection, database, configuration)
                     .table(table)
-                    .rows(rowCount)
                     .build().fill();
         }
 
@@ -90,21 +84,10 @@ public class DatabaseFiller implements Fillable {
 
         private final Connection connection;
         private final DatabaseConfiguration configuration;
-        private Map<String, TableConfiguration> tableConfigurationMap = new HashMap<>();
 
         public Builder(Connection connection, DatabaseConfiguration configuration) {
             this.connection = connection;
             this.configuration = configuration;
-        }
-
-        public Builder tables(Map<String, TableConfiguration> tableConfigurations) {
-            this.tableConfigurationMap = tableConfigurations;
-            return this;
-        }
-
-        public Builder addTable(TableConfiguration tableConfiguration) {
-            this.tableConfigurationMap.put(tableConfiguration.tableName(), tableConfiguration);
-            return this;
         }
 
         public DatabaseFiller build() {
@@ -115,6 +98,5 @@ public class DatabaseFiller implements Fillable {
     private DatabaseFiller(Builder builder) {
         this.connection = builder.connection;
         this.configuration = builder.configuration;
-        this.tableConfigurationMap = builder.tableConfigurationMap;
     }
 }

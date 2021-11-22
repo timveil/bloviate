@@ -27,6 +27,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 @Testcontainers
 class CockroachDBTableFillerTest extends BaseDatabaseTestCase {
@@ -122,9 +124,15 @@ class CockroachDBTableFillerTest extends BaseDatabaseTestCase {
     private void fill(String tableName) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             Database database = DatabaseUtils.getMetadata(connection);
+
+            Set<TableConfiguration> tableConfigurations = new HashSet<>();
+            tableConfigurations.add(new TableConfiguration(tableName, 10));
+
+            DatabaseConfiguration config = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
+
             Table table = database.getTable(tableName);
-            DatabaseConfiguration config = new DatabaseConfiguration(128, 5, new CockroachDBSupport());
-            new TableFiller.Builder(connection, database, config).table(table).rows(5).build().fill();
+
+            new TableFiller.Builder(connection, database, config).table(table).build().fill();
         }
     }
 }

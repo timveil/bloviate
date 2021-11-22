@@ -23,6 +23,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 class PostgresFillerTest extends BaseDatabaseTestCase {
 
@@ -37,7 +39,9 @@ class PostgresFillerTest extends BaseDatabaseTestCase {
 
             DataSource dataSource = getDataSource(database);
             try (Connection connection = dataSource.getConnection()) {
-                new DatabaseFiller.Builder(connection, new DatabaseConfiguration(128, 10, new PostgresSupport())).build().fill();
+                Set<TableConfiguration> tableConfigurations = new HashSet<>();
+                DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new PostgresSupport(), tableConfigurations);
+                new DatabaseFiller.Builder(connection, configuration).build().fill();
             }
         }
     }

@@ -23,6 +23,8 @@ import org.testcontainers.containers.CockroachContainer;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 class CockroachDBFillerTest extends BaseDatabaseTestCase {
 
@@ -39,7 +41,30 @@ class CockroachDBFillerTest extends BaseDatabaseTestCase {
             DataSource dataSource = getDataSource(database);
 
             try (Connection connection = dataSource.getConnection()) {
-                new DatabaseFiller.Builder(connection, new DatabaseConfiguration(128, 10, new CockroachDBSupport())).build().fill();
+                Set<TableConfiguration> tableConfigurations = new HashSet<>();
+                DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
+                new DatabaseFiller.Builder(connection, configuration).build().fill();
+            }
+        }
+    }
+
+    @Test
+    void fillDatabaseWithConfigs() throws SQLException {
+
+        try (CockroachContainer database = new CockroachContainer("cockroachdb/cockroach:latest")
+                .withUrlParam("rewriteBatchedInserts", "true")
+                .withInitScript("create_tpcc.cockroachdb.sql")
+                .withCommand("start-single-node --insecure --store=type=mem,size=.75")) {
+
+            database.start();
+
+            DataSource dataSource = getDataSource(database);
+
+            try (Connection connection = dataSource.getConnection()) {
+                Set<TableConfiguration> tableConfigurations = new HashSet<>();
+                tableConfigurations.add(new TableConfiguration("warehouse", 10));
+                DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
+                new DatabaseFiller.Builder(connection, configuration).build().fill();
             }
         }
     }

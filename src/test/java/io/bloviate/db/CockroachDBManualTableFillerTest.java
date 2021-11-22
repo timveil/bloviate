@@ -27,6 +27,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 @Testcontainers
 class CockroachDBManualTableFillerTest extends BaseDatabaseTestCase {
@@ -49,11 +51,17 @@ class CockroachDBManualTableFillerTest extends BaseDatabaseTestCase {
         try (Connection connection = dataSource.getConnection()) {
             Database database = DatabaseUtils.getMetadata(connection);
 
-            DatabaseConfiguration config = new DatabaseConfiguration(128, 5, new CockroachDBSupport());
+            Set<TableConfiguration> tableConfigurations = new HashSet<>();
+            tableConfigurations.add(new TableConfiguration("warehouse", 1));
+            tableConfigurations.add(new TableConfiguration("item", 2));
+            tableConfigurations.add(new TableConfiguration("stock", 3));
 
-            new TableFiller.Builder(connection, database, config).table(database.getTable("warehouse")).rows(1).build().fill();
-            new TableFiller.Builder(connection, database, config).table(database.getTable("item")).rows(2).build().fill();
-            new TableFiller.Builder(connection, database, config).table(database.getTable("stock")).rows(3).build().fill();
+            DatabaseConfiguration config = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
+
+
+            new TableFiller.Builder(connection, database, config).table(database.getTable("warehouse")).build().fill();
+            new TableFiller.Builder(connection, database, config).table(database.getTable("item")).build().fill();
+            new TableFiller.Builder(connection, database, config).table(database.getTable("stock")).build().fill();
         }
 
     }
