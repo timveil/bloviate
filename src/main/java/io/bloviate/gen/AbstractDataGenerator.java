@@ -19,6 +19,11 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
     }
 
     @Override
+    public void setSeed(long seed) {
+        random.setSeed(seed);
+    }
+
+    @Override
     public final void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException {
         T value = generate();
         set(connection, statement, parameterIndex, value);

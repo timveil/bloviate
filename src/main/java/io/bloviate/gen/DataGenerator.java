@@ -29,6 +29,8 @@ public interface DataGenerator<T> {
 
     String generateAsString();
 
+    void setSeed(long seed);
+
     void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException;
 
     void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException;

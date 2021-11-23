@@ -51,10 +51,14 @@ class CockroachDBManualTableFillerTest extends BaseDatabaseTestCase {
         try (Connection connection = dataSource.getConnection()) {
             Database database = DatabaseUtils.getMetadata(connection);
 
+            int numWarehouses = 1;
+            int numItems = 2;
+            int stock = numWarehouses * numItems;
+
             Set<TableConfiguration> tableConfigurations = new HashSet<>();
-            tableConfigurations.add(new TableConfiguration("warehouse", 1));
-            tableConfigurations.add(new TableConfiguration("item", 2));
-            tableConfigurations.add(new TableConfiguration("stock", 3));
+            tableConfigurations.add(new TableConfiguration("warehouse", numWarehouses));
+            tableConfigurations.add(new TableConfiguration("item", numItems));
+            tableConfigurations.add(new TableConfiguration("stock", stock));
 
             DatabaseConfiguration config = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
 

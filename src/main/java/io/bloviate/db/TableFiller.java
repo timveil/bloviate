@@ -47,6 +47,8 @@ public class TableFiller implements Fillable {
         logger.debug(sql);
 
         Map<Column, DataGenerator<?>> generatorMap = new HashMap<>();
+        Map<Column, Long> seedMap = new HashMap<>();
+        Map<Column, Long> maxInvocationMap = new HashMap<>();
 
         List<Column> filteredColumns = table.filteredColumns();
 
@@ -54,17 +56,27 @@ public class TableFiller implements Fillable {
 
         for (Column column : filteredColumns) {
 
-            Random random;
+            long seed;
 
             Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(database, table, column);
 
             if (associatedPrimaryKeyColumn != null) {
-                random = new Random(associatedPrimaryKeyColumn.hashCode());
+
+                // check to see if table has custom configuration
+                TableConfiguration primaryTableConfiguration = databaseConfiguration.tableConfiguration(associatedPrimaryKeyColumn.tableName());
+
+                if (primaryTableConfiguration != null) {
+                    // this is the number of rows in the primary table.  a foreign key random generator can't be called more than this number of times.
+                    maxInvocationMap.put(column, primaryTableConfiguration.rowCount());
+                }
+
+                seed = associatedPrimaryKeyColumn.hashCode();
             } else {
-                random = new Random(column.hashCode());
+                seed = column.hashCode();
             }
 
-            generatorMap.put(column, databaseSupport.getDataGenerator(column, random));
+            generatorMap.put(column, databaseSupport.getDataGenerator(column, new Random(seed)));
+            seedMap.put(column, seed);
         }
 
         int batchSize = databaseConfiguration.batchSize();
@@ -85,6 +97,14 @@ public class TableFiller implements Fillable {
                 for (Column column : filteredColumns) {
 
                     DataGenerator<?> dataGenerator = generatorMap.get(column);
+
+                    if (maxInvocationMap.containsKey(column)) {
+                        long maxInvocations = maxInvocationMap.get(column);
+
+                        if (rowCounter != 0 && rowCounter % maxInvocations == 0) {
+                            dataGenerator.setSeed(seedMap.get(column));
+                        }
+                    }
 
                     dataGenerator.generateAndSet(connection, ps, colCounter);
 
