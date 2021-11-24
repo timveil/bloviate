@@ -18,65 +18,34 @@ package io.bloviate.db;
 
 import io.bloviate.ext.MySQLSupport;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.MySQLContainer;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
-class MySqlFillerTest extends BaseDatabaseTestCase {
+class MySqlFillerTest extends BaseMySqlTest {
 
     @Test
-    void fillDatabase() throws SQLException {
-
-        try (MySQLContainer<?> database = new MySQLContainer<>("mysql:latest")
-                .withDatabaseName("bloviate")
-                .withUrlParam("rewriteBatchedStatements", "true")
-                .withInitScript("create_tpcc.mysql.sql")) {
-
-            database.start();
-
-            DataSource dataSource = getDataSource(database);
-
-            Set<TableConfiguration> tableConfigurations = new HashSet<>();
-            DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new MySQLSupport(), tableConfigurations);
-
-            try (Connection connection = dataSource.getConnection()) {
-                new DatabaseFiller.Builder(connection, configuration).build().fill();
-            }
-        }
+    void fillTPCC() throws SQLException {
+        Set<TableConfiguration> tableConfigurations = new HashSet<>();
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new MySQLSupport(), tableConfigurations);
+        fillDatabase("create_tpcc.mysql.sql", configuration);
     }
 
     @Test
-    void fillDatabaseWithConfigs() throws SQLException {
+    void fillTPCCWithConfigs() throws SQLException {
+        Set<TableConfiguration> tableConfigurations = new HashSet<>();
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_STOCK, Constants.TPCC_NUM_STOCK));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_DISTRICT, Constants.TPCC_NUM_DISTRICTS));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_CUSTOMER, Constants.TPCC_NUM_CUSTOMERS));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_HISTORY, Constants.TPCC_NUM_HISTORY));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_OPEN_ORDER, Constants.TPCC_NUM_OPEN_ORDER));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_NEW_ORDER, Constants.TPCC_NUM_NEW_ORDER));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_ORDER_LINE, Constants.TPCC_NUM_ORDER_LINE));
 
-        try (MySQLContainer<?> database = new MySQLContainer<>("mysql:latest")
-                .withDatabaseName("bloviate")
-                .withUrlParam("rewriteBatchedStatements", "true")
-                .withInitScript("create_tpcc.mysql.sql")) {
-
-            database.start();
-
-            DataSource dataSource = getDataSource(database);
-
-            Set<TableConfiguration> tableConfigurations = new HashSet<>();
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_STOCK, Constants.TPCC_NUM_STOCK));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_DISTRICT, Constants.TPCC_NUM_DISTRICTS));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_CUSTOMER, Constants.TPCC_NUM_CUSTOMERS));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_HISTORY, Constants.TPCC_NUM_HISTORY));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_OPEN_ORDER, Constants.TPCC_NUM_OPEN_ORDER));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_NEW_ORDER, Constants.TPCC_NUM_NEW_ORDER));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_ORDER_LINE, Constants.TPCC_NUM_ORDER_LINE));
-
-            DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new MySQLSupport(), tableConfigurations);
-
-            try (Connection connection = dataSource.getConnection()) {
-                new DatabaseFiller.Builder(connection, configuration).build().fill();
-            }
-        }
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new MySQLSupport(), tableConfigurations);
+        fillDatabase("create_tpcc.mysql.sql", configuration);
     }
 }

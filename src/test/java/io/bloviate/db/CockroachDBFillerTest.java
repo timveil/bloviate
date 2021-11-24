@@ -18,66 +18,42 @@ package io.bloviate.db;
 
 import io.bloviate.ext.CockroachDBSupport;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.CockroachContainer;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
-class CockroachDBFillerTest extends BaseDatabaseTestCase {
+class CockroachDBFillerTest extends BaseCockroachTest {
 
     @Test
-    void fillDatabase() throws SQLException {
-
-        try (CockroachContainer database = new CockroachContainer("cockroachdb/cockroach:latest")
-                .withUrlParam("rewriteBatchedInserts", "true")
-                .withInitScript("create_tpcc.cockroachdb.sql")
-                .withCommand("start-single-node --insecure --store=type=mem,size=.75")) {
-
-            database.start();
-
-            DataSource dataSource = getDataSource(database);
-
-            Set<TableConfiguration> tableConfigurations = new HashSet<>();
-            DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
-
-            try (Connection connection = dataSource.getConnection()) {
-                new DatabaseFiller.Builder(connection, configuration).build().fill();
-            }
-
-        }
+    void fillTPCC() throws SQLException {
+        Set<TableConfiguration> tableConfigurations = new HashSet<>();
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
+        fillDatabase("create_tpcc.cockroachdb.sql", configuration);
     }
 
     @Test
-    void fillDatabaseWithConfigs() throws SQLException {
+    void fillTPCCWithConfigs() throws SQLException {
+        Set<TableConfiguration> tableConfigurations = new HashSet<>();
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_STOCK, Constants.TPCC_NUM_STOCK));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_DISTRICT, Constants.TPCC_NUM_DISTRICTS));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_CUSTOMER, Constants.TPCC_NUM_CUSTOMERS));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_HISTORY, Constants.TPCC_NUM_HISTORY));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_OPEN_ORDER, Constants.TPCC_NUM_OPEN_ORDER));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_NEW_ORDER, Constants.TPCC_NUM_NEW_ORDER));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_ORDER_LINE, Constants.TPCC_NUM_ORDER_LINE));
 
-        try (CockroachContainer database = new CockroachContainer("cockroachdb/cockroach:latest")
-                .withUrlParam("rewriteBatchedInserts", "true")
-                .withInitScript("create_tpcc.cockroachdb.sql")
-                .withCommand("start-single-node --insecure --store=type=mem,size=.75")) {
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
+        fillDatabase("create_tpcc.cockroachdb.sql", configuration);
 
-            database.start();
+    }
 
-            DataSource dataSource = getDataSource(database);
-
-            Set<TableConfiguration> tableConfigurations = new HashSet<>();
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_STOCK, Constants.TPCC_NUM_STOCK));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_DISTRICT, Constants.TPCC_NUM_DISTRICTS));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_CUSTOMER, Constants.TPCC_NUM_CUSTOMERS));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_HISTORY, Constants.TPCC_NUM_HISTORY));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_OPEN_ORDER, Constants.TPCC_NUM_OPEN_ORDER));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_NEW_ORDER, Constants.TPCC_NUM_NEW_ORDER));
-            tableConfigurations.add(new TableConfiguration(Constants.TPCC_ORDER_LINE, Constants.TPCC_NUM_ORDER_LINE));
-
-            DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
-
-            try (Connection connection = dataSource.getConnection()) {
-                new DatabaseFiller.Builder(connection, configuration).build().fill();
-            }
-        }
+    @Test
+    void fillTestTables() throws SQLException {
+        Set<TableConfiguration> tableConfigurations = new HashSet<>();
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
+        fillDatabase("create_tables.cockroachdb.sql", configuration);
     }
 }
