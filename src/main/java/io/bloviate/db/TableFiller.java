@@ -19,6 +19,7 @@ package io.bloviate.db;
 import io.bloviate.ext.DatabaseSupport;
 import io.bloviate.gen.DataGenerator;
 import io.bloviate.util.DatabaseUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +89,11 @@ public class TableFiller implements Fillable {
             rowCount = tableConfiguration.rowCount();
         }
 
+        logger.info("filling table [{}] with [{}] rows", table.name(), rowCount);
+
+        StopWatch tableWatch = new StopWatch(String.format("filled table [%s] in", table.name()));
+        tableWatch.start();
+
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
             int rowCounter = 0;
@@ -121,6 +127,9 @@ public class TableFiller implements Fillable {
             ps.executeBatch();
         }
 
+        tableWatch.stop();
+
+        logger.info(tableWatch.toString());
 
     }
 

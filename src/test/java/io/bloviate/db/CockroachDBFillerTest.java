@@ -62,28 +62,16 @@ class CockroachDBFillerTest extends BaseDatabaseTestCase {
 
             DataSource dataSource = getDataSource(database);
 
-            int numWarehouses = 1;
-            int numItems = 100000;
-            int stock = 100000;
-            int districtsPerWarehouse = 10;
-            int districts = numWarehouses * districtsPerWarehouse;
-            int customersPerDistrict = 3000;
-            int customers = districts * customersPerDistrict;
-            int history = customers;
-            int openOrder = customers;
-            int newOrder = customers;
-            int orderLine = customers * 10;
-
             Set<TableConfiguration> tableConfigurations = new HashSet<>();
-            tableConfigurations.add(new TableConfiguration("warehouse", numWarehouses));
-            tableConfigurations.add(new TableConfiguration("item", numItems));
-            tableConfigurations.add(new TableConfiguration("stock", stock));
-            tableConfigurations.add(new TableConfiguration("district", districts));
-            tableConfigurations.add(new TableConfiguration("customer", customers));
-            tableConfigurations.add(new TableConfiguration("history", history));
-            tableConfigurations.add(new TableConfiguration("open_order", openOrder));
-            tableConfigurations.add(new TableConfiguration("new_order", newOrder));
-            tableConfigurations.add(new TableConfiguration("order_line", orderLine));
+            tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES));
+            tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS));
+            tableConfigurations.add(new TableConfiguration(Constants.TPCC_STOCK, Constants.TPCC_NUM_STOCK));
+            tableConfigurations.add(new TableConfiguration(Constants.TPCC_DISTRICT, Constants.TPCC_NUM_DISTRICTS));
+            tableConfigurations.add(new TableConfiguration(Constants.TPCC_CUSTOMER, Constants.TPCC_NUM_CUSTOMERS));
+            tableConfigurations.add(new TableConfiguration(Constants.TPCC_HISTORY, Constants.TPCC_NUM_HISTORY));
+            tableConfigurations.add(new TableConfiguration(Constants.TPCC_OPEN_ORDER, Constants.TPCC_NUM_OPEN_ORDER));
+            tableConfigurations.add(new TableConfiguration(Constants.TPCC_NEW_ORDER, Constants.TPCC_NUM_NEW_ORDER));
+            tableConfigurations.add(new TableConfiguration(Constants.TPCC_ORDER_LINE, Constants.TPCC_NUM_ORDER_LINE));
 
             DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
 

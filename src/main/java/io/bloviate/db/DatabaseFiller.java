@@ -77,16 +77,9 @@ public class DatabaseFiller implements Fillable {
         Collections.reverse(ordered);
 
         for (Table table : ordered) {
-            StopWatch tableWatch = new StopWatch(String.format("filled table [%s] in", table.name()));
-            tableWatch.start();
-
             new TableFiller.Builder(connection, database, configuration)
                     .table(table)
                     .build().fill();
-
-            tableWatch.stop();
-
-            logger.info(tableWatch.toString());
         }
 
         databaseWatch.stop();
