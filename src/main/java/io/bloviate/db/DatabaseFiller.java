@@ -31,9 +31,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,13 +80,13 @@ public class DatabaseFiller implements Fillable {
 
         EdgeReversedGraph<Table, DefaultEdge> reversedGraph = new EdgeReversedGraph<>(graph);
 
-        visualizeGraph(reversedGraph);
+        visualizeGraph(reversedGraph, database.catalog());
 
-        Iterator<Table> graphIterator = new TopologicalOrderIterator<>(reversedGraph);
+        TopologicalOrderIterator<Table, DefaultEdge> iterator = new TopologicalOrderIterator<>(reversedGraph);
 
-        while (graphIterator.hasNext()) {
+        while (iterator.hasNext()) {
             new TableFiller.Builder(connection, database, configuration)
-                    .table(graphIterator.next())
+                    .table(iterator.next())
                     .build().fill();
         }
 
@@ -95,7 +96,7 @@ public class DatabaseFiller implements Fillable {
 
     }
 
-    private void visualizeGraph(Graph<Table, DefaultEdge> graph) {
+    private void visualizeGraph(Graph<Table, DefaultEdge> graph, String databaseName) {
         DOTExporter<Table, DefaultEdge> exporter = new DOTExporter<>(Table::name);
         exporter.setVertexAttributeProvider((v) -> {
             Map<String, Attribute> map = new LinkedHashMap<>();
@@ -103,10 +104,18 @@ public class DatabaseFiller implements Fillable {
             return map;
         });
 
+        exporter.setGraphIdProvider(() -> databaseName);
+
         Writer writer = new StringWriter();
         exporter.exportGraph(graph, writer);
 
-        System.out.println(writer.toString());
+        String graphAsString = writer.toString();
+
+        logger.debug("database graph in DOT notation:\n\n{}", graphAsString);
+
+        String encodedDiagram = URLEncoder.encode(graphAsString, StandardCharsets.UTF_8).replace("+", "%20");
+
+        logger.info("Use this link to visualize the database graph:  https://dreampuf.github.io/GraphvizOnline/#{}", encodedDiagram);
     }
 
     public static class Builder {
