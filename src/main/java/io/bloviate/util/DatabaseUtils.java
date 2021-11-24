@@ -21,7 +21,7 @@ public class DatabaseUtils {
 
         DatabaseMetaData metaData = connection.getMetaData();
 
-        return new Database(catalog, schema, getTables(metaData, catalog, schema));
+        return new Database(metaData.getDatabaseProductName(), metaData.getDatabaseProductVersion(), catalog, schema, getTables(metaData, catalog, schema));
     }
 
     private static List<Table> getTables(DatabaseMetaData metaData, String catalog, String schema) throws SQLException {

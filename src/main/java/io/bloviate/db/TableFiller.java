@@ -44,7 +44,7 @@ public class TableFiller implements Fillable {
 
         String sql = table.insertString();
 
-        logger.debug(sql);
+        logger.trace(sql);
 
         Map<Column, DataGenerator<?>> generatorMap = new HashMap<>();
         Map<Column, Long> seedMap = new HashMap<>();

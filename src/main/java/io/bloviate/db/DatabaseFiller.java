@@ -17,6 +17,7 @@
 package io.bloviate.db;
 
 import io.bloviate.util.DatabaseUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -42,6 +43,11 @@ public class DatabaseFiller implements Fillable {
     public void fill() throws SQLException {
 
         Database database = DatabaseUtils.getMetadata(connection);
+
+        StopWatch databaseWatch = new StopWatch(String.format("filled database [%s] in", database.catalog()));
+        databaseWatch.start();
+
+        logger.debug(database.toString());
 
         Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
         for (Table table : database.tables()) {
@@ -71,12 +77,21 @@ public class DatabaseFiller implements Fillable {
         Collections.reverse(ordered);
 
         for (Table table : ordered) {
-            logger.debug("filling table [{}]", table.name());
+            StopWatch tableWatch = new StopWatch(String.format("filled table [%s] in", table.name()));
+            tableWatch.start();
 
             new TableFiller.Builder(connection, database, configuration)
                     .table(table)
                     .build().fill();
+
+            tableWatch.stop();
+
+            logger.info(tableWatch.toString());
         }
+
+        databaseWatch.stop();
+
+        logger.info(databaseWatch.toString());
 
     }
 
