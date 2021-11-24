@@ -21,16 +21,22 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.EdgeReversedGraph;
+import org.jgrapht.nio.Attribute;
+import org.jgrapht.nio.DefaultAttribute;
+import org.jgrapht.nio.dot.DOTExporter;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.StringWriter;
+import java.io.Writer;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DatabaseFiller implements Fillable {
 
@@ -42,12 +48,15 @@ public class DatabaseFiller implements Fillable {
     @Override
     public void fill() throws SQLException {
 
+        StopWatch metadataWatch = new StopWatch("fetched database metadata in");
+        metadataWatch.start();
         Database database = DatabaseUtils.getMetadata(connection);
+        metadataWatch.stop();
+
+        logger.info(metadataWatch.toString());
 
         StopWatch databaseWatch = new StopWatch(String.format("filled database [%s] in", database.catalog()));
         databaseWatch.start();
-
-        logger.debug(database.toString());
 
         Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
         for (Table table : database.tables()) {
@@ -67,18 +76,16 @@ public class DatabaseFiller implements Fillable {
             }
         }
 
-        List<Table> ordered = new ArrayList<>();
 
-        Iterator<Table> toi = new TopologicalOrderIterator<>(graph);
-        while (toi.hasNext()) {
-            ordered.add(toi.next());
-        }
+        EdgeReversedGraph<Table, DefaultEdge> reversedGraph = new EdgeReversedGraph<>(graph);
 
-        Collections.reverse(ordered);
+        visualizeGraph(reversedGraph);
 
-        for (Table table : ordered) {
+        Iterator<Table> graphIterator = new TopologicalOrderIterator<>(reversedGraph);
+
+        while (graphIterator.hasNext()) {
             new TableFiller.Builder(connection, database, configuration)
-                    .table(table)
+                    .table(graphIterator.next())
                     .build().fill();
         }
 
@@ -86,6 +93,20 @@ public class DatabaseFiller implements Fillable {
 
         logger.info(databaseWatch.toString());
 
+    }
+
+    private void visualizeGraph(Graph<Table, DefaultEdge> graph) {
+        DOTExporter<Table, DefaultEdge> exporter = new DOTExporter<>(Table::name);
+        exporter.setVertexAttributeProvider((v) -> {
+            Map<String, Attribute> map = new LinkedHashMap<>();
+            map.put("label", DefaultAttribute.createAttribute(v.name()));
+            return map;
+        });
+
+        Writer writer = new StringWriter();
+        exporter.exportGraph(graph, writer);
+
+        System.out.println(writer.toString());
     }
 
     public static class Builder {

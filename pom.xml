@@ -106,6 +106,12 @@
             <version>1.5.1</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-io</artifactId>
+            <version>1.5.1</version>
+        </dependency>
+
         <!-- Testing Dependencies -->
 
         <dependency>
