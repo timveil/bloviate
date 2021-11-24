@@ -98,39 +98,41 @@ CREATE TABLE history (
     FOREIGN KEY (h_w_id, h_d_id) REFERENCES district (d_w_id, d_id) ON DELETE CASCADE
 );
 
-CREATE TABLE oorder (
-                        o_w_id       int       NOT NULL,
-                        o_d_id       int       NOT NULL,
-                        o_id         int       NOT NULL,
-                        o_c_id       int       NOT NULL,
-                        o_carrier_id int                DEFAULT NULL,
-                        o_ol_cnt     int       NOT NULL,
-                        o_all_local  int       NOT NULL,
-                        o_entry_d    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        PRIMARY KEY (o_w_id, o_d_id, o_id DESC),
-                        FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customer (c_w_id, c_d_id, c_id) ON DELETE CASCADE
+CREATE TABLE open_order
+(
+    o_w_id       int       NOT NULL,
+    o_d_id       int       NOT NULL,
+    o_id         int       NOT NULL,
+    o_c_id       int       NOT NULL,
+    o_carrier_id int                DEFAULT NULL,
+    o_ol_cnt     int       NOT NULL,
+    o_all_local  int       NOT NULL,
+    o_entry_d    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (o_w_id, o_d_id, o_id DESC),
+    FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customer (c_w_id, c_d_id, c_id) ON DELETE CASCADE
 );
 
-CREATE TABLE new_order (
+CREATE TABLE new_order
+(
     no_w_id int NOT NULL,
     no_d_id int NOT NULL,
     no_o_id int NOT NULL,
-    FOREIGN KEY (no_w_id, no_d_id, no_o_id) REFERENCES oorder (o_w_id, o_d_id, o_id) ON DELETE CASCADE,
+    FOREIGN KEY (no_w_id, no_d_id, no_o_id) REFERENCES open_order (o_w_id, o_d_id, o_id) ON DELETE CASCADE,
     PRIMARY KEY (no_w_id, no_d_id, no_o_id)
 );
 
 CREATE TABLE order_line (
-    ol_w_id        int           NOT NULL,
-    ol_d_id        int           NOT NULL,
-    ol_o_id        int           NOT NULL,
-    ol_number      int           NOT NULL,
-    ol_i_id        int           NOT NULL,
-    ol_delivery_d  timestamp     NULL DEFAULT NULL,
-    ol_amount      decimal(6, 2) NOT NULL,
-    ol_supply_w_id int           NOT NULL,
-    ol_quantity    int           NOT NULL,
-    ol_dist_info   char(24)      NOT NULL,
-    FOREIGN KEY (ol_w_id, ol_d_id, ol_o_id) REFERENCES oorder (o_w_id, o_d_id, o_id) ON DELETE CASCADE,
-    FOREIGN KEY (ol_supply_w_id, ol_i_id) REFERENCES stock (s_w_id, s_i_id) ON DELETE CASCADE,
-    PRIMARY KEY (ol_w_id, ol_d_id, ol_o_id DESC, ol_number)
+                            ol_w_id        int           NOT NULL,
+                            ol_d_id        int           NOT NULL,
+                            ol_o_id        int           NOT NULL,
+                            ol_number      int           NOT NULL,
+                            ol_i_id        int           NOT NULL,
+                            ol_delivery_d  timestamp NULL DEFAULT NULL,
+                            ol_amount      decimal(6, 2) NOT NULL,
+                            ol_supply_w_id int           NOT NULL,
+                            ol_quantity    int           NOT NULL,
+                            ol_dist_info   char(24)      NOT NULL,
+                            FOREIGN KEY (ol_w_id, ol_d_id, ol_o_id) REFERENCES open_order (o_w_id, o_d_id, o_id) ON DELETE CASCADE,
+                            FOREIGN KEY (ol_supply_w_id, ol_i_id) REFERENCES stock (s_w_id, s_i_id) ON DELETE CASCADE,
+                            PRIMARY KEY (ol_w_id, ol_d_id, ol_o_id DESC, ol_number)
 );

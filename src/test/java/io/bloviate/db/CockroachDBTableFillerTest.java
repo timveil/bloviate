@@ -122,13 +122,15 @@ class CockroachDBTableFillerTest extends BaseDatabaseTestCase {
     }
 
     private void fill(String tableName) throws SQLException {
+
+        Set<TableConfiguration> tableConfigurations = new HashSet<>();
+        tableConfigurations.add(new TableConfiguration(tableName, 10));
+
+        DatabaseConfiguration config = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
+
+
         try (Connection connection = dataSource.getConnection()) {
             Database database = DatabaseUtils.getMetadata(connection);
-
-            Set<TableConfiguration> tableConfigurations = new HashSet<>();
-            tableConfigurations.add(new TableConfiguration(tableName, 10));
-
-            DatabaseConfiguration config = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
 
             Table table = database.getTable(tableName);
 

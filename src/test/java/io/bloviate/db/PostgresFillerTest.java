@@ -35,12 +35,15 @@ class PostgresFillerTest extends BaseDatabaseTestCase {
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedInserts", "true")
                 .withInitScript("create_tpcc.postgres.sql")) {
+
             database.start();
 
             DataSource dataSource = getDataSource(database);
+
+            Set<TableConfiguration> tableConfigurations = new HashSet<>();
+            DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new PostgresSupport(), tableConfigurations);
+
             try (Connection connection = dataSource.getConnection()) {
-                Set<TableConfiguration> tableConfigurations = new HashSet<>();
-                DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new PostgresSupport(), tableConfigurations);
                 new DatabaseFiller.Builder(connection, configuration).build().fill();
             }
         }

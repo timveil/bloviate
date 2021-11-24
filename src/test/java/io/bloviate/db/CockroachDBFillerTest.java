@@ -40,11 +40,13 @@ class CockroachDBFillerTest extends BaseDatabaseTestCase {
 
             DataSource dataSource = getDataSource(database);
 
+            Set<TableConfiguration> tableConfigurations = new HashSet<>();
+            DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
+
             try (Connection connection = dataSource.getConnection()) {
-                Set<TableConfiguration> tableConfigurations = new HashSet<>();
-                DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
                 new DatabaseFiller.Builder(connection, configuration).build().fill();
             }
+
         }
     }
 
@@ -60,10 +62,32 @@ class CockroachDBFillerTest extends BaseDatabaseTestCase {
 
             DataSource dataSource = getDataSource(database);
 
+            int numWarehouses = 1;
+            int numItems = 100000;
+            int stock = 100000;
+            int districtsPerWarehouse = 10;
+            int districts = numWarehouses * districtsPerWarehouse;
+            int customersPerDistrict = 3000;
+            int customers = districts * customersPerDistrict;
+            int history = customers;
+            int openOrder = customers;
+            int newOrder = customers;
+            int orderLine = customers * 10;
+
+            Set<TableConfiguration> tableConfigurations = new HashSet<>();
+            tableConfigurations.add(new TableConfiguration("warehouse", numWarehouses));
+            tableConfigurations.add(new TableConfiguration("item", numItems));
+            tableConfigurations.add(new TableConfiguration("stock", stock));
+            tableConfigurations.add(new TableConfiguration("district", districts));
+            tableConfigurations.add(new TableConfiguration("customer", customers));
+            tableConfigurations.add(new TableConfiguration("history", history));
+            tableConfigurations.add(new TableConfiguration("open_order", openOrder));
+            tableConfigurations.add(new TableConfiguration("new_order", newOrder));
+            tableConfigurations.add(new TableConfiguration("order_line", orderLine));
+
+            DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
+
             try (Connection connection = dataSource.getConnection()) {
-                Set<TableConfiguration> tableConfigurations = new HashSet<>();
-                tableConfigurations.add(new TableConfiguration("warehouse", 10));
-                DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
                 new DatabaseFiller.Builder(connection, configuration).build().fill();
             }
         }

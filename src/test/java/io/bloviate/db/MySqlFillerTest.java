@@ -35,12 +35,15 @@ class MySqlFillerTest extends BaseDatabaseTestCase {
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedStatements", "true")
                 .withInitScript("create_tpcc.mysql.sql")) {
+
             database.start();
 
             DataSource dataSource = getDataSource(database);
+
+            Set<TableConfiguration> tableConfigurations = new HashSet<>();
+            DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new MySQLSupport(), tableConfigurations);
+
             try (Connection connection = dataSource.getConnection()) {
-                Set<TableConfiguration> tableConfigurations = new HashSet<>();
-                DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new MySQLSupport(), tableConfigurations);
                 new DatabaseFiller.Builder(connection, configuration).build().fill();
             }
         }
