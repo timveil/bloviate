@@ -64,4 +64,11 @@ class CockroachDBFillerTest extends BaseCockroachTest {
         fillDatabase("create_auctionmark.cockroachdb.sql", configuration);
     }
 
+    @Test
+    void fillWikipedia() throws SQLException {
+        Set<TableConfiguration> tableConfigurations = new HashSet<>();
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
+        fillDatabase("create_wikipedia.cockroachdb.sql", configuration);
+    }
+
 }
