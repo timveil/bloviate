@@ -71,4 +71,11 @@ class CockroachDBFillerTest extends BaseCockroachTest {
         fillDatabase("create_wikipedia.cockroachdb.sql", configuration);
     }
 
+    @Test
+    void fillSeats() throws SQLException {
+        Set<TableConfiguration> tableConfigurations = new HashSet<>();
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
+        fillDatabase("create_seats.cockroachdb.sql", configuration);
+    }
+
 }
