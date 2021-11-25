@@ -1,16 +1,4 @@
--- Drop Tables
-DROP TABLE IF EXISTS config_profile CASCADE;
-DROP TABLE IF EXISTS config_histograms CASCADE;
-DROP TABLE IF EXISTS reservation CASCADE;
-DROP TABLE IF EXISTS frequent_flyer CASCADE;
-DROP TABLE IF EXISTS customer CASCADE;
-DROP TABLE IF EXISTS flight CASCADE;
-DROP TABLE IF EXISTS airport_distance CASCADE;
-DROP TABLE IF EXISTS airport CASCADE;
-DROP TABLE IF EXISTS airline CASCADE;
-DROP TABLE IF EXISTS country CASCADE;
-
--- 
+--
 -- CONFIG_PROFILE
 --
 CREATE TABLE config_profile (
@@ -206,7 +194,6 @@ CREATE TABLE frequent_flyer (
     FOREIGN KEY (ff_c_id) REFERENCES customer (c_id),
     FOREIGN KEY (ff_al_id) REFERENCES airline (al_id)
 );
-CREATE INDEX idx_ff_customer_id ON frequent_flyer (ff_c_id_str);
 
 --
 -- FLIGHT
@@ -257,7 +244,6 @@ CREATE TABLE flight (
     FOREIGN KEY (f_depart_ap_id) REFERENCES airport (ap_id),
     FOREIGN KEY (f_arrive_ap_id) REFERENCES airport (ap_id)
 );
-CREATE INDEX f_depart_time_idx ON flight (f_depart_time);
 
 --
 -- RESERVATION
