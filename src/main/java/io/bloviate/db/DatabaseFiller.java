@@ -72,7 +72,16 @@ public class DatabaseFiller implements Fillable {
                     if (!graph.containsVertex(referencedTable)) {
                         graph.addVertex(referencedTable);
                     }
-                    graph.addEdge(table, referencedTable);
+
+                    if (table.equals(referencedTable)) {
+                        logger.warn("this key is self referencing... will likely cause problems");
+                    }
+
+                    try {
+                        graph.addEdge(table, referencedTable);
+                    } catch (IllegalArgumentException e) {
+                        logger.error(String.format("error adding edge between %s and %s: %s", table.name(), referencedTable.name(), e.getMessage()), e);
+                    }
                 }
             }
         }

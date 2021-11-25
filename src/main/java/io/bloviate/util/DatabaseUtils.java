@@ -1,6 +1,8 @@
 package io.bloviate.util;
 
 import io.bloviate.db.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -8,6 +10,7 @@ import java.util.*;
 
 public class DatabaseUtils {
 
+    private static final Logger logger = LoggerFactory.getLogger(DatabaseUtils.class);
 
     public static Database getMetadata(DataSource dataSource) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
@@ -46,45 +49,89 @@ public class DatabaseUtils {
 
     private static List<ForeignKey> getForeignKeys(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {
 
-        try (ResultSet foreignKeysResultSet = metaData.getImportedKeys(catalog, schema, tableName)) {
-            // key: pkTableName value: seq/colname
-            Map<String, Map<Integer, KeyColumn>> map = new HashMap<>();
+        List<Key> importedKeys = getImportedKeys(metaData, catalog, schema, tableName);
 
-            while (foreignKeysResultSet.next()) {
-                String primaryKeyTableName = foreignKeysResultSet.getString("PKTABLE_NAME");
+        Map<String, List<Key>> map = new HashMap<>();
 
-                Map<Integer, KeyColumn> seqColMap;
+        for (Key key : importedKeys) {
 
-                if (map.containsKey(primaryKeyTableName)) {
-                    seqColMap = map.get(primaryKeyTableName);
-                } else {
-                    seqColMap = new HashMap<>();
-                }
-
-                int seq = foreignKeysResultSet.getInt("KEY_SEQ");
-                String fkColumnName = foreignKeysResultSet.getString("FKCOLUMN_NAME");
-
-                seqColMap.put(seq, new KeyColumn(seq, getColumn(metaData, catalog, schema, tableName, fkColumnName)));
-
-                map.put(primaryKeyTableName, seqColMap);
+            List<Key> keys;
+            if (map.containsKey(key.name())) {
+                keys = map.get(key.name());
+            } else {
+                keys = new ArrayList<>();
             }
 
-            List<ForeignKey> keys = new ArrayList<>();
-
-            for (String primaryKeyTableName : map.keySet()) {
-
-                Map<Integer, KeyColumn> seqColMap = map.get(primaryKeyTableName);
-                List<KeyColumn> columns = new ArrayList<>(seqColMap.values());
-                columns.sort(Comparator.comparing(KeyColumn::sequence));
-
-                keys.add(new ForeignKey(columns, getPrimaryKey(metaData, catalog, schema, primaryKeyTableName)));
-
-            }
-
-
-            return keys;
+            keys.add(key);
+            map.put(key.name(), keys);
         }
+
+        List<ForeignKey> foreignKeys = new ArrayList<>();
+
+        for (String keyName : map.keySet()) {
+
+            List<Key> keys = map.get(keyName);
+            keys.sort(Comparator.comparing(Key::sequence));
+
+            List<KeyColumn> columns = new ArrayList<>();
+
+            String primaryKeyTable = null;
+            for (Key key : keys) {
+                primaryKeyTable = key.primaryTableName();
+                columns.add(new KeyColumn(key.sequence(), getColumn(metaData, catalog, schema, tableName, key.foreignColumnName())));
+            }
+
+            foreignKeys.add(new ForeignKey(columns, getPrimaryKey(metaData, catalog, schema, primaryKeyTable)));
+
+        }
+
+        return foreignKeys;
+
     }
+
+    private static List<Key> getImportedKeys(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {
+
+        List<Key> keys = new ArrayList<>();
+
+        try (ResultSet rs = metaData.getImportedKeys(catalog, schema, tableName)) {
+
+            while (rs.next()) {
+                String primaryKeyTableName = rs.getString("PKTABLE_NAME");
+                String primaryKeyColumnName = rs.getString("PKCOLUMN_NAME");
+                String fkTableName = rs.getString("FKTABLE_NAME");
+                String fkColumnName = rs.getString("FKCOLUMN_NAME");
+                int seq = rs.getInt("KEY_SEQ");
+                String fkName = rs.getString("FK_NAME");
+
+                keys.add(new Key(primaryKeyTableName, primaryKeyColumnName, fkTableName, fkColumnName, seq, fkName));
+            }
+        }
+
+        return keys;
+    }
+
+
+    private static List<Key> getExportedKeys(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {
+
+        List<Key> keys = new ArrayList<>();
+
+        try (ResultSet rs = metaData.getExportedKeys(catalog, schema, tableName)) {
+
+            while (rs.next()) {
+                String primaryKeyTableName = rs.getString("PKTABLE_NAME");
+                String primaryKeyColumnName = rs.getString("PKCOLUMN_NAME");
+                String fkTableName = rs.getString("FKTABLE_NAME");
+                String fkColumnName = rs.getString("FKCOLUMN_NAME");
+                int seq = rs.getInt("KEY_SEQ");
+                String pkName = rs.getString("PK_NAME");
+
+                keys.add(new Key(primaryKeyTableName, primaryKeyColumnName, fkTableName, fkColumnName, seq, pkName));
+            }
+        }
+
+        return keys;
+    }
+
 
     private static PrimaryKey getPrimaryKey(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {
 
