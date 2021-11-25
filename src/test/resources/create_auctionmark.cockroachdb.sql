@@ -30,24 +30,6 @@
  *  OTHER DEALINGS IN THE SOFTWARE.                                        *
  ***************************************************************************/
 
-DROP TABLE IF EXISTS item_attribute CASCADE;
-DROP TABLE IF EXISTS item_image CASCADE;
-DROP TABLE IF EXISTS item_comment CASCADE;
-DROP TABLE IF EXISTS item_max_bid CASCADE;
-DROP TABLE IF EXISTS useracct_item CASCADE;
-DROP TABLE IF EXISTS item_purchase CASCADE;
-DROP TABLE IF EXISTS item_bid CASCADE;
-DROP TABLE IF EXISTS global_attribute_value CASCADE;
-DROP TABLE IF EXISTS global_attribute_group CASCADE;
-DROP TABLE IF EXISTS config_profile CASCADE;
-DROP TABLE IF EXISTS useracct_feedback CASCADE;
-DROP TABLE IF EXISTS useracct_watch CASCADE;
-DROP TABLE IF EXISTS item CASCADE;
-DROP TABLE IF EXISTS useracct_attributes CASCADE;
-DROP TABLE IF EXISTS useracct CASCADE;
-DROP TABLE IF EXISTS region CASCADE;
-DROP TABLE IF EXISTS category CASCADE;
-
 -- ================================================================
 -- CONFIG_PROFILE
 -- ================================================================
