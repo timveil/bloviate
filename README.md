@@ -1,33 +1,36 @@
+# Bloviate.io
+
+Bloviate is a simple data generator for relational databases. It is designed to connect to an empty database and automatically fill tables with the appropriate data given detected column types and relationships.
+
+# Getting Started
+
+Getting started with Bloviate is very simple. All you need to provide is a valid `java.sql.Connection` object and an instance of `io.bloviate.db.DatabaseConfiguration` to the `DatabaseFiller`. The `DatabaseConfiguration` object tells Bloviate about the underlying database type (see `DatabaseSupport`) and provides the ability to define important default values as well as override any `TableConfiguration` data. The following code will:
+
+* Automatically connect to the database using the provided `connection`
+* Populate all tables with `10` records using a batch size of `5`
+* Assume the underlying databases is an instance of `CockroachDB`
+* Provide no custom Table configurations
 
 ```java
-List<ColumnDefinition> definitions = new ArrayList<>();
-
-definitions.add(new ColumnDefinition("boolean_col", new BooleanGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("byte_col", new ByteGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("date_col", new DateGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("double_col", new DoubleGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("float_col", new FloatGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("integer_col", new IntegerGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("long_col", new LongGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("short_col", new ShortGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("string_col", new SimpleStringGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("sql_date_col", new SqlDateGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("sql_time_col", new SqlTimeGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("sql_timestamp_col", new SqlTimestampGenerator.Builder().build()));
-definitions.add(new ColumnDefinition("sql_uuid_col", new UUIDGenerator.Builder().build()));
-
-new FlatFile.Builder("target/csv-test").addAll(definitions).build().generate();
-
-new FlatFile.Builder("target/tab-test").output(new TabDelimitedFile()).addAll(definitions).build().generate();
-
-new FlatFile.Builder("target/pipe-test").output(new PipeDelimitedFile()).addAll(definitions).build().generate();
+new DatabaseFiller.Builder(connection,new DatabaseConfiguration(5,10,new CockroachDBSupport(),null))
+        .build().fill();
 ```
 
-CREATE TABLE array_table
-(
-    id uuid PRIMARY KEY,
-    a ARRAY
-    b string[]
-);
+In addition to populating a database directly, Bloviate can generate various flat file formats. For example, to generate a CSV file you can do the following...
 
-  Cause: org.postgresql.util.PSQLException: ERROR: at or near "array": syntax error
+```java
+Random random=new Random();
+
+        List<ColumnDefinition> definitions=new ArrayList<>();
+        definitions.add(new ColumnDefinition("integer_col",new IntegerGenerator.Builder(random).build()));
+        definitions.add(new ColumnDefinition("string_col",new SimpleStringGenerator.Builder(random).build()));
+
+        new FlatFileGenerator.Builder("target/csv-test").addAll(definitions).build().generate();
+```
+
+Here we create a `List` of `ColumnDefinition` objects which define the columns in our flat file. In addition to the column definitions, the `FlatFileGenerator` is provided an output path where the generated file will be placed once the `generate()` method completes. By default, `FlatFileGenerator` will create a "comma separated" or CSV file. To generate another type of file, simply pass different `FileDefinition` to the `FlatFileGenerator` via the `.output(...)` method. For example, the
+following creates a "tab" delimited file.
+
+```java
+new FlatFileGenerator.Builder("target/tab-test").output(new TabDelimitedFile()).addAll(definitions).build();
+```
