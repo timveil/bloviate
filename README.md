@@ -19,13 +19,13 @@ new DatabaseFiller.Builder(connection,new DatabaseConfiguration(5,10,new Cockroa
 In addition to populating a database directly, Bloviate can generate various flat file formats. For example, to generate a CSV file you can do the following...
 
 ```java
-Random random=new Random();
+Random random = new Random();
 
-        List<ColumnDefinition> definitions=new ArrayList<>();
-        definitions.add(new ColumnDefinition("integer_col",new IntegerGenerator.Builder(random).build()));
-        definitions.add(new ColumnDefinition("string_col",new SimpleStringGenerator.Builder(random).build()));
+List<ColumnDefinition> definitions = new ArrayList<>();
+definitions.add(new ColumnDefinition("integer_col",new IntegerGenerator.Builder(random).build()));
+definitions.add(new ColumnDefinition("string_col",new SimpleStringGenerator.Builder(random).build()));
 
-        new FlatFileGenerator.Builder("target/csv-test").addAll(definitions).build().generate();
+new FlatFileGenerator.Builder("target/csv-test").addAll(definitions).build().generate();
 ```
 
 Here we create a `List` of `ColumnDefinition` objects which define the columns in our flat file. In addition to the column definitions, the `FlatFileGenerator` is provided an output path where the generated file will be placed once the `generate()` method completes. By default, `FlatFileGenerator` will create a "comma separated" or CSV file. To generate another type of file, simply pass different `FileDefinition` to the `FlatFileGenerator` via the `.output(...)` method. For example, the
