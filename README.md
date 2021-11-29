@@ -1,6 +1,6 @@
 # Bloviate.io
 
-Bloviate is a simple data generator for relational databases. It is designed to connect to an empty database and automatically fill tables with the appropriate data given detected column types and relationships.
+Bloviate is a simple data generator for JDBC compatible, relational databases. It is designed to connect to an empty database and automatically fill tables with the appropriate data given detected column types and relationships.
 
 # Getting Started
 
