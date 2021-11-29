@@ -1,16 +1,8 @@
 version: 2
 updates:
-- package-ecosystem: maven
-  directory: "/"
-  schedule:
-    interval: daily
-    time: "10:00"
-  open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: com.fasterxml.jackson.dataformat:jackson-dataformat-yaml
-    versions:
-    - 2.12.1
-    - 2.12.2
-  - dependency-name: org.postgresql:postgresql
-    versions:
-    - 42.2.19
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    assignees:
+      - "timveil"
