@@ -55,6 +55,14 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub timveil Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/timveil/bloviate</url>
+        </repository>
+    </distributionManagement>
+
     <dependencies>
 
         <dependency>
