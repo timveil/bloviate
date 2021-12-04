@@ -37,7 +37,7 @@ new FlatFileGenerator.Builder("target/csv-test")
         .generate();
 ```
 
-Here we create a `List` of `ColumnDefinition` objects which define the columns in our flat file. In addition to the column definitions, the `FlatFileGenerator` is provided an output path where the generated file will be placed once the `generate()` method completes. By default, `FlatFileGenerator` will create a "comma separated" or CSV file. To generate another type of file, simply pass different `FileDefinition` to the `FlatFileGenerator` via the `.output(...)` method. For example, the
+Here we create a `List` of `ColumnDefinition` objects which define the columns in our flat file. In addition to the column definitions, the `FlatFileGenerator` is provided an output path where the generated file will be placed once the `generate()` method completes. By default, `FlatFileGenerator` will create a "comma separated" or CSV file. To generate another type of file, simply pass a different `FileDefinition` to the `FlatFileGenerator` via the `.output(...)` method. For example, the
 following creates a "tab" delimited file.
 
 ```java
