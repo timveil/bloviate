@@ -1,7 +1,7 @@
 {
   "Servers": {
     "1": {
-      "Name": "Docker PostgeSQL",
+      "Name": "Docker PostgreSQL",
       "Group": "Bloviate",
       "Port": 5432,
       "Username": "admin",
