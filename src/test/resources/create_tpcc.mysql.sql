@@ -1,5 +1,4 @@
-CREATE TABLE warehouse
-(
+CREATE TABLE warehouse (
     w_id       int            NOT NULL,
     w_ytd      decimal(12, 2) NOT NULL,
     w_tax      decimal(4, 4)  NOT NULL,
@@ -12,8 +11,7 @@ CREATE TABLE warehouse
     PRIMARY KEY (w_id)
 );
 
-CREATE TABLE item
-(
+CREATE TABLE item (
     i_id    int           NOT NULL,
     i_name  varchar(24)   NOT NULL,
     i_price decimal(5, 2) NOT NULL,
@@ -22,8 +20,7 @@ CREATE TABLE item
     PRIMARY KEY (i_id)
 );
 
-CREATE TABLE stock
-(
+CREATE TABLE stock (
     s_w_id       int           NOT NULL,
     s_i_id       int           NOT NULL,
     s_quantity   int           NOT NULL,
@@ -46,8 +43,7 @@ CREATE TABLE stock
     PRIMARY KEY (s_w_id, s_i_id)
 );
 
-CREATE TABLE district
-(
+CREATE TABLE district (
     d_w_id      int            NOT NULL,
     d_id        int            NOT NULL,
     d_ytd       decimal(12, 2) NOT NULL,
@@ -63,8 +59,7 @@ CREATE TABLE district
     PRIMARY KEY (d_w_id, d_id)
 );
 
-CREATE TABLE customer
-(
+CREATE TABLE customer (
     c_w_id         int            NOT NULL,
     c_d_id         int            NOT NULL,
     c_id           int            NOT NULL,
@@ -90,8 +85,7 @@ CREATE TABLE customer
     PRIMARY KEY (c_w_id, c_d_id, c_id)
 );
 
-CREATE TABLE history
-(
+CREATE TABLE history (
     h_c_id   int           NOT NULL,
     h_c_d_id int           NOT NULL,
     h_c_w_id int           NOT NULL,
@@ -104,8 +98,7 @@ CREATE TABLE history
     FOREIGN KEY (h_w_id, h_d_id) REFERENCES district (d_w_id, d_id) ON DELETE CASCADE
 );
 
-CREATE TABLE open_order
-(
+CREATE TABLE open_order (
     o_w_id       int       NOT NULL,
     o_d_id       int       NOT NULL,
     o_id         int       NOT NULL,
@@ -118,8 +111,7 @@ CREATE TABLE open_order
     FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customer (c_w_id, c_d_id, c_id) ON DELETE CASCADE
 );
 
-CREATE TABLE new_order
-(
+CREATE TABLE new_order (
     no_w_id int NOT NULL,
     no_d_id int NOT NULL,
     no_o_id int NOT NULL,
@@ -127,14 +119,13 @@ CREATE TABLE new_order
     PRIMARY KEY (no_w_id, no_d_id, no_o_id)
 );
 
-CREATE TABLE order_line
-(
+CREATE TABLE order_line (
     ol_w_id        int           NOT NULL,
     ol_d_id        int           NOT NULL,
     ol_o_id        int           NOT NULL,
     ol_number      int           NOT NULL,
     ol_i_id        int           NOT NULL,
-    ol_delivery_d  timestamp NULL DEFAULT NULL,
+    ol_delivery_d  timestamp     NULL DEFAULT NULL,
     ol_amount      decimal(6, 2) NOT NULL,
     ol_supply_w_id int           NOT NULL,
     ol_quantity    int           NOT NULL,
