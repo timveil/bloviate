@@ -28,19 +28,6 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
-//    protected Random random = null;
-//
-//
-//    @Override
-//    public void setSeed(long seed) {
-//        random.setSeed(seed);
-//    }
-//
-//    @Override
-//    public void setRandom(Random random) {
-//        this.random = random;
-//    }
-
     @Override
     public final void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex, Random random) throws SQLException {
         T value = generate(random);
