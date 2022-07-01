@@ -26,10 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class TableFiller implements Fillable {
 
@@ -55,13 +52,13 @@ public class TableFiller implements Fillable {
 
         DatabaseSupport databaseSupport = databaseConfiguration.databaseSupport();
 
-        TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
+        Optional<TableConfiguration> tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
 
         int batchSize = databaseConfiguration.batchSize();
         long rowCount = databaseConfiguration.defaultRowCount();
 
-        if (tableConfiguration != null) {
-            rowCount = tableConfiguration.rowCount();
+        if (tableConfiguration.isPresent()) {
+            rowCount = tableConfiguration.get().rowCount();
         }
 
         logger.info("filling table [{}] with [{}] rows; batch size is [{}]", table.name(), rowCount, batchSize);
@@ -77,16 +74,16 @@ public class TableFiller implements Fillable {
             if (associatedPrimaryKeyColumn != null) {
 
                 // check to see if table has custom configuration
-                TableConfiguration primaryTableConfiguration = databaseConfiguration.tableConfiguration(associatedPrimaryKeyColumn.tableName());
+                Optional<TableConfiguration> primaryTableConfiguration = databaseConfiguration.tableConfiguration(associatedPrimaryKeyColumn.tableName());
 
-                if (primaryTableConfiguration != null) {
+                if (primaryTableConfiguration.isPresent()) {
                     // this is the number of rows in the primary table.  a foreign key random generator can't be called more than this number of times.
-                    maxInvocationMap.put(column, primaryTableConfiguration.rowCount());
+                    maxInvocationMap.put(column, primaryTableConfiguration.get().rowCount());
 
-                    ColumnConfiguration<?> primaryKeyColumnConfiguration = primaryTableConfiguration.columnConfiguration(associatedPrimaryKeyColumn.name());
+                    Optional<ColumnConfiguration> primaryKeyColumnConfiguration = primaryTableConfiguration.get().columnConfiguration(associatedPrimaryKeyColumn.name());
 
-                    if (primaryKeyColumnConfiguration != null) {
-                        dataGenerator = primaryKeyColumnConfiguration.dataGenerator();
+                    if (primaryKeyColumnConfiguration.isPresent()) {
+                        dataGenerator = primaryKeyColumnConfiguration.get().dataGenerator();
                     }
 
                 }
@@ -94,11 +91,11 @@ public class TableFiller implements Fillable {
                 seed = associatedPrimaryKeyColumn.hashCode();
             } else {
 
-                if (tableConfiguration != null) {
-                    ColumnConfiguration<?> columnConfiguration = tableConfiguration.columnConfiguration(column.name());
+                if (tableConfiguration.isPresent()) {
+                    Optional<ColumnConfiguration> columnConfiguration = tableConfiguration.get().columnConfiguration(column.name());
 
-                    if (columnConfiguration != null) {
-                        dataGenerator = columnConfiguration.dataGenerator();
+                    if (columnConfiguration.isPresent()) {
+                        dataGenerator = columnConfiguration.get().dataGenerator();
                     }
 
                 }
@@ -111,6 +108,7 @@ public class TableFiller implements Fillable {
             } else {
                 generatorMap.put(column, databaseSupport.getDataGenerator(column, new Random(seed)));
             }
+
             seedMap.put(column, seed);
         }
 
