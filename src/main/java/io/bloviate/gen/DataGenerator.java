@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
@@ -30,13 +29,8 @@ public interface DataGenerator<T> {
 
     String generateAsString(Random random);
 
-    //void setRandom(Random random);
-
-    //void setSeed(long seed);
-
     void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex, Random random) throws SQLException;
 
     void set(Connection connection, PreparedStatement statement, int parameterIndex, T value) throws SQLException;
 
-    T get(ResultSet resultSet, int columnIndex) throws SQLException;
 }

@@ -20,7 +20,6 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Random;
@@ -48,11 +47,6 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
     @Override
     public void set(Connection connection, PreparedStatement statement, int parameterIndex, Byte[] value) throws SQLException {
         statement.setBytes(parameterIndex, ArrayUtils.toPrimitive(value));
-    }
-
-    @Override
-    public Byte[] get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return ArrayUtils.toObject(resultSet.getBytes(columnIndex));
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

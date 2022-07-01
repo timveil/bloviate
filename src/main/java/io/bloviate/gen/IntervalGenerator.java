@@ -16,8 +16,6 @@
 
 package io.bloviate.gen;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Random;
 
 public class IntervalGenerator extends AbstractDataGenerator<String> {
@@ -39,11 +37,6 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
                 minuteGenerator.generate(random),
                 secondGenerator.generate(random)
         );
-    }
-
-    @Override
-    public String get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getString(columnIndex);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

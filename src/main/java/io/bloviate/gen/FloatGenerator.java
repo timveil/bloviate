@@ -20,7 +20,6 @@ import io.bloviate.util.SeededRandomUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
@@ -38,11 +37,6 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
     @Override
     public void set(Connection connection, PreparedStatement statement, int parameterIndex, Float value) throws SQLException {
         statement.setFloat(parameterIndex, value);
-    }
-
-    @Override
-    public Float get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getFloat(columnIndex);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

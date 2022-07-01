@@ -16,7 +16,10 @@
 
 package io.bloviate.gen;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Time;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
@@ -36,11 +39,6 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
     @Override
     public void set(Connection connection, PreparedStatement statement, int parameterIndex, Time value) throws SQLException {
         statement.setTime(parameterIndex, value);
-    }
-
-    @Override
-    public Time get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getTime(columnIndex);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

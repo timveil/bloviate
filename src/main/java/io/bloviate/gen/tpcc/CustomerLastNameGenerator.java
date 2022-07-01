@@ -6,8 +6,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Random;
 
 public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
@@ -42,8 +40,4 @@ public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
         return lastName;
     }
 
-    @Override
-    public String get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getString(columnIndex);
-    }
 }

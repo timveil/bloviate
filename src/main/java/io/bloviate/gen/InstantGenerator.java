@@ -16,8 +16,6 @@
 
 package io.bloviate.gen;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
@@ -32,11 +30,6 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
         Long randomTime = longGenerator.generate(random);
 
         return Instant.ofEpochMilli(randomTime);
-    }
-
-    @Override
-    public Instant get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return null;
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

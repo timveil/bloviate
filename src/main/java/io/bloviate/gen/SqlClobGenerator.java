@@ -16,7 +16,10 @@
 
 package io.bloviate.gen;
 
-import java.sql.*;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Random;
 
 public class SqlClobGenerator extends AbstractDataGenerator<Clob> {
@@ -35,11 +38,6 @@ public class SqlClobGenerator extends AbstractDataGenerator<Clob> {
     @Override
     public void set(Connection connection, PreparedStatement statement, int parameterIndex, Clob value) throws SQLException {
         statement.setClob(parameterIndex, value);
-    }
-
-    @Override
-    public Clob get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getClob(columnIndex);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

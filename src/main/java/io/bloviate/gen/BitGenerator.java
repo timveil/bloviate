@@ -16,8 +16,6 @@
 
 package io.bloviate.gen;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Random;
 
 public class BitGenerator extends AbstractDataGenerator<Integer> {
@@ -27,11 +25,6 @@ public class BitGenerator extends AbstractDataGenerator<Integer> {
     @Override
     public Integer generate(Random random) {
         return integerGenerator.generate(random);
-    }
-
-    @Override
-    public Integer get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getInt(columnIndex);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

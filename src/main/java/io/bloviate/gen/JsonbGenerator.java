@@ -16,8 +16,6 @@
 
 package io.bloviate.gen;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Random;
 
 public class JsonbGenerator extends AbstractDataGenerator<String> {
@@ -25,11 +23,6 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
 
     @Override
     public String generate(Random random) {
-        return null;
-    }
-
-    @Override
-    public String get(ResultSet resultSet, int columnIndex) throws SQLException {
         return null;
     }
 

@@ -22,7 +22,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
@@ -85,11 +84,6 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
         statement.setBigDecimal(parameterIndex, value);
     }
 
-
-    @Override
-    public BigDecimal get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getBigDecimal(columnIndex);
-    }
 
     public static class Builder implements io.bloviate.gen.Builder {
 

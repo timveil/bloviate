@@ -16,8 +16,6 @@
 
 package io.bloviate.gen;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Random;
 import java.util.UUID;
 
@@ -28,17 +26,6 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
         byte[] array = new byte[16];
         random.nextBytes(array);
         return UUID.nameUUIDFromBytes(array);
-    }
-
-    @Override
-    public UUID get(ResultSet resultSet, int columnIndex) throws SQLException {
-        String string = resultSet.getString(columnIndex);
-
-        if (string != null) {
-            return UUID.fromString(string);
-        }
-
-        return null;
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

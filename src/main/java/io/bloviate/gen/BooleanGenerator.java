@@ -18,7 +18,6 @@ package io.bloviate.gen;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
@@ -32,11 +31,6 @@ public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
     @Override
     public void set(Connection connection, PreparedStatement statement, int parameterIndex, Boolean value) throws SQLException {
         statement.setBoolean(parameterIndex, value);
-    }
-
-    @Override
-    public Boolean get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getBoolean(columnIndex);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

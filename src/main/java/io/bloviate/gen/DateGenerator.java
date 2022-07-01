@@ -16,8 +16,6 @@
 
 package io.bloviate.gen;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -34,11 +32,6 @@ public class DateGenerator extends AbstractDataGenerator<Date> {
         Long randomTime = longGenerator.generate(random);
 
         return new Date(randomTime);
-    }
-
-    @Override
-    public Date get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return null;
     }
 
     public static class Builder implements io.bloviate.gen.Builder {
