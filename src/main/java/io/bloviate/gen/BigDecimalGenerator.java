@@ -81,8 +81,8 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setBigDecimal(parameterIndex, (BigDecimal) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, BigDecimal value) throws SQLException {
+        statement.setBigDecimal(parameterIndex, value);
     }
 
 

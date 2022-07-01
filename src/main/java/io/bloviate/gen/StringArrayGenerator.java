@@ -46,8 +46,8 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setArray(parameterIndex, connection.createArrayOf(JDBCType.VARCHAR.getName(), (String[]) value));
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, String[] value) throws SQLException {
+        statement.setArray(parameterIndex, connection.createArrayOf(JDBCType.VARCHAR.getName(), value));
     }
 
     @Override

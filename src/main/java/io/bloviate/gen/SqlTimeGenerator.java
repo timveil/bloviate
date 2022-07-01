@@ -34,8 +34,8 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setTime(parameterIndex, (Time) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Time value) throws SQLException {
+        statement.setTime(parameterIndex, value);
     }
 
     @Override
