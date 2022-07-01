@@ -27,8 +27,8 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
     private final IntegerGenerator integerGenerator;
 
     @Override
-    public Short generate() {
-        return integerGenerator.generate().shortValue();
+    public Short generate(Random random) {
+        return integerGenerator.generate(random).shortValue();
     }
 
     @Override
@@ -41,14 +41,10 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
         return resultSet.getShort(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private int startInclusive = 0;
         private int endExclusive = Short.MAX_VALUE;
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder start(int start) {
             if (start < Short.MIN_VALUE) {
@@ -74,7 +70,6 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
     }
 
     private ShortGenerator(Builder builder) {
-        super(builder.random);
-        this.integerGenerator = new IntegerGenerator.Builder(builder.random).start(builder.startInclusive).end(builder.endExclusive).build();
+        this.integerGenerator = new IntegerGenerator.Builder().start(builder.startInclusive).end(builder.endExclusive).build();
     }
 }

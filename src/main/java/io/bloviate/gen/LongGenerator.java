@@ -30,7 +30,7 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
     private final long endExclusive;
 
     @Override
-    public Long generate() {
+    public Long generate(Random random) {
         SeededRandomUtils randomUtils = new SeededRandomUtils(random);
         return randomUtils.nextLong(startInclusive, endExclusive);
     }
@@ -45,14 +45,10 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
         return resultSet.getLong(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private long startInclusive = 0;
         private long endExclusive = Long.MAX_VALUE;
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder start(long start) {
             this.startInclusive = start;
@@ -71,7 +67,6 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
     }
 
     private LongGenerator(Builder builder) {
-        super(builder.random);
         this.startInclusive = builder.startInclusive;
         this.endExclusive = builder.endExclusive;
     }

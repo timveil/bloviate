@@ -19,33 +19,31 @@ package io.bloviate.ext;
 import io.bloviate.db.Column;
 import io.bloviate.gen.*;
 
-import java.util.Random;
-
 public class CockroachDBSupport extends AbstractDatabaseSupport {
 
     @Override
-    public DataGenerator<?> buildArrayGenerator(Column column, Random random) {
+    public DataGenerator<?> buildArrayGenerator(Column column) {
         if ("_text".equalsIgnoreCase(column.typeName())) {
-            return new StringArrayGenerator.Builder(random).build();
+            return new StringArrayGenerator.Builder().build();
         } else if ("_int8".equalsIgnoreCase(column.typeName()) || "_int4".equalsIgnoreCase(column.typeName())) {
-            return new IntegerArrayGenerator.Builder(random).build();
+            return new IntegerArrayGenerator.Builder().build();
         } else {
             throw new UnsupportedOperationException("Data Type [" + column.typeName() + "] for ARRAY not supported");
         }
     }
 
     @Override
-    public DataGenerator<?> buildOtherGenerator(Column column, Random random) {
+    public DataGenerator<?> buildOtherGenerator(Column column) {
         if ("uuid".equalsIgnoreCase(column.typeName())) {
-            return new UUIDGenerator.Builder(random).build();
+            return new UUIDGenerator.Builder().build();
         } else if ("varbit".equalsIgnoreCase(column.typeName())) {
-            return new BitStringGenerator.Builder(random).size(column.maxSize()).build();
+            return new BitStringGenerator.Builder().size(column.maxSize()).build();
         } else if ("inet".equalsIgnoreCase(column.typeName())) {
-            return new InetGenerator.Builder(random).build();
+            return new InetGenerator.Builder().build();
         } else if ("interval".equalsIgnoreCase(column.typeName())) {
-            return new IntervalGenerator.Builder(random).build();
+            return new IntervalGenerator.Builder().build();
         } else if ("jsonb".equalsIgnoreCase(column.typeName())) {
-            return new JsonbGenerator.Builder(random).build();
+            return new JsonbGenerator.Builder().build();
         } else {
             throw new UnsupportedOperationException("Data Type [" + column.typeName() + "] for OTHER not supported");
         }

@@ -24,7 +24,7 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
     // todo
 
     @Override
-    public String generate() {
+    public String generate(Random random) {
         return null;
     }
 
@@ -33,11 +33,7 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
-
-        public Builder(Random random) {
-            super(random);
-        }
+    public static class Builder implements io.bloviate.gen.Builder {
 
         @Override
         public JsonbGenerator build() {
@@ -46,7 +42,6 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
     }
 
     private JsonbGenerator(Builder builder) {
-        super(builder.random);
 
     }
 }

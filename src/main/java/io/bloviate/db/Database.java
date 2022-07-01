@@ -29,4 +29,14 @@ public record Database(String product, String productVersion, String catalog, St
 
         throw new IllegalArgumentException(String.format("table with name [%s] not found", tableName));
     }
+
+    @Override
+    public String toString() {
+        return "Database{" +
+               "product='" + product + '\'' +
+               ", productVersion='" + productVersion + '\'' +
+               ", catalog='" + catalog + '\'' +
+               ", schema='" + schema + '\'' +
+               '}';
+    }
 }

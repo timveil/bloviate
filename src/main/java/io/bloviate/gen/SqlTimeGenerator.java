@@ -26,9 +26,9 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
     private final LongGenerator longGenerator;
 
     @Override
-    public Time generate() {
+    public Time generate(Random random) {
 
-        Long randomTime = longGenerator.generate();
+        Long randomTime = longGenerator.generate(random);
 
         return new Time(randomTime);
     }
@@ -43,14 +43,10 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
         return resultSet.getTime(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private Time startInclusive = new Time(Instant.EPOCH.toEpochMilli());
         private Time endExclusive = new Time(Instant.now().plus(100, ChronoUnit.HOURS).toEpochMilli());
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder start(Time start) {
             this.startInclusive = start;
@@ -69,9 +65,8 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
     }
 
     private SqlTimeGenerator(Builder builder) {
-        super(builder.random);
 
-        this.longGenerator = new LongGenerator.Builder(builder.random)
+        this.longGenerator = new LongGenerator.Builder()
                 .start(builder.startInclusive.getTime())
                 .end(builder.endExclusive.getTime())
                 .build();

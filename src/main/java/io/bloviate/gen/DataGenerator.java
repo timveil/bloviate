@@ -22,16 +22,19 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "type")
 public interface DataGenerator<T> {
-    T generate();
+    T generate(Random random);
 
-    String generateAsString();
+    String generateAsString(Random random);
 
-    void setSeed(long seed);
+    //void setRandom(Random random);
 
-    void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex) throws SQLException;
+    //void setSeed(long seed);
+
+    void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex, Random random) throws SQLException;
 
     void set(Connection connection, PreparedStatement statement, int parameterIndex, T value) throws SQLException;
 

@@ -25,12 +25,12 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
     //todo
 
     @Override
-    public Struct generate() {
+    public Struct generate(Random random) {
         return null;
     }
 
     @Override
-    public String generateAsString() {
+    public String generateAsString(Random random) {
         return null;
     }
 
@@ -39,11 +39,7 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
-
-        public Builder(Random random) {
-            super(random);
-        }
+    public static class Builder implements io.bloviate.gen.Builder {
 
         @Override
         public SqlStructGenerator build() {
@@ -52,7 +48,6 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
     }
 
     private SqlStructGenerator(Builder builder) {
-        super(builder.random);
 
     }
 }

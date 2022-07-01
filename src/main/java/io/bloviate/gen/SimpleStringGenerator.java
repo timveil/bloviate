@@ -29,7 +29,7 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
     private final boolean numbers;
 
     @Override
-    public String generate() {
+    public String generate(Random random) {
         int maxSize = Math.min(size, 2000);
         SeededRandomUtils randomUtils = new SeededRandomUtils(random);
         return randomUtils.random(maxSize, letters, numbers);
@@ -40,17 +40,13 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private int size = 10;
 
         private boolean letters = true;
 
         private boolean numbers = false;
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder size(int size) {
             this.size = size;
@@ -74,7 +70,6 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
     }
 
     private SimpleStringGenerator(Builder builder) {
-        super(builder.random);
         this.size = builder.size;
         this.letters = builder.letters;
         this.numbers = builder.numbers;

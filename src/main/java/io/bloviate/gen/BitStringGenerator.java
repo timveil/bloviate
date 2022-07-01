@@ -27,14 +27,14 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
     private final BitGenerator bitGenerator;
 
     @Override
-    public String generate() {
+    public String generate(Random random) {
 
         int maxSize = Math.min(size, 25);
 
         StringBuilder builder = new StringBuilder();
 
         for (int i = 0; i < maxSize; i++) {
-            builder.append(bitGenerator.generate());
+            builder.append(bitGenerator.generate(random));
         }
 
         return builder.toString();
@@ -45,12 +45,8 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
         private int size = 1;
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder size(int size) {
             this.size = size;
@@ -64,8 +60,7 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
     }
 
     private BitStringGenerator(Builder builder) {
-        super(builder.random);
         this.size = builder.size;
-        this.bitGenerator = new BitGenerator.Builder(builder.random).build();
+        this.bitGenerator = new BitGenerator.Builder().build();
     }
 }

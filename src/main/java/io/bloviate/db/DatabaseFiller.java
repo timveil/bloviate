@@ -56,7 +56,7 @@ public class DatabaseFiller implements Fillable {
 
         logger.info(metadataWatch.toString());
 
-        StopWatch databaseWatch = new StopWatch(String.format("filled database [%s] in", database.catalog()));
+        StopWatch databaseWatch = new StopWatch(String.format("filled database [%s] in", database));
         databaseWatch.start();
 
         try {

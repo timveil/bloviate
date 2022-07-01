@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import io.bloviate.gen.DataGenerator;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class FlatFileGenerator implements FileGenerator {
 
@@ -70,7 +72,8 @@ public class FlatFileGenerator implements FileGenerator {
 
             for (int i = 0; i < rows; i++) {
                 for (ColumnDefinition columnDefinition : columnDefinitions) {
-                    csvPrinter.print(columnDefinition.dataGenerator().generateAsString());
+                    DataGenerator<?> dataGenerator = columnDefinition.dataGenerator();
+                    csvPrinter.print(dataGenerator.generateAsString(new Random()));
                 }
                 csvPrinter.println();
             }

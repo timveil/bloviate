@@ -26,9 +26,9 @@ public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
     private final LongGenerator longGenerator;
 
     @Override
-    public Timestamp generate() {
+    public Timestamp generate(Random random) {
 
-        Long randomTime = longGenerator.generate();
+        Long randomTime = longGenerator.generate(random);
 
         return Timestamp.from(Instant.ofEpochMilli(randomTime));
     }
@@ -43,14 +43,10 @@ public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
         return resultSet.getTimestamp(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private Timestamp startInclusive = Timestamp.from(Instant.now().minus(100, ChronoUnit.DAYS));
         private Timestamp endExclusive = Timestamp.from(Instant.now().plus(100, ChronoUnit.DAYS));
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder start(Timestamp start) {
             this.startInclusive = start;
@@ -69,9 +65,8 @@ public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
     }
 
     private SqlTimestampGenerator(Builder builder) {
-        super(builder.random);
 
-        this.longGenerator = new LongGenerator.Builder(builder.random)
+        this.longGenerator = new LongGenerator.Builder()
                 .start(builder.startInclusive.toInstant().toEpochMilli())
                 .end(builder.endExclusive.toInstant().toEpochMilli())
                 .build();

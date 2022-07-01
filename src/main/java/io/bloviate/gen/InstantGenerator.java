@@ -27,9 +27,9 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
     private final LongGenerator longGenerator;
 
     @Override
-    public Instant generate() {
+    public Instant generate(Random random) {
 
-        Long randomTime = longGenerator.generate();
+        Long randomTime = longGenerator.generate(random);
 
         return Instant.ofEpochMilli(randomTime);
     }
@@ -39,14 +39,10 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private Instant startInclusive = Instant.EPOCH;
         private Instant endExclusive = Instant.now().plus(100, ChronoUnit.DAYS);
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder start(Instant start) {
             this.startInclusive = start;
@@ -65,9 +61,8 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
     }
 
     private InstantGenerator(Builder builder) {
-        super(builder.random);
 
-        this.longGenerator = new LongGenerator.Builder(builder.random)
+        this.longGenerator = new LongGenerator.Builder()
                 .start(builder.startInclusive.toEpochMilli())
                 .end(builder.endExclusive.toEpochMilli())
                 .build();

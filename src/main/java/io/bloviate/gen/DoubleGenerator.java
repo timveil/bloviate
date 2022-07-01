@@ -30,7 +30,7 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
     private final double endExclusive;
 
     @Override
-    public Double generate() {
+    public Double generate(Random random) {
         SeededRandomUtils randomUtils = new SeededRandomUtils(random);
         return randomUtils.nextDouble(startInclusive, endExclusive);
     }
@@ -45,14 +45,10 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
         return resultSet.getDouble(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private double startInclusive = 0;
         private double endExclusive = Double.MAX_VALUE;
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder start(double start) {
             this.startInclusive = start;
@@ -71,7 +67,6 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
     }
 
     private DoubleGenerator(Builder builder) {
-        super(builder.random);
         this.startInclusive = builder.startInclusive;
         this.endExclusive = builder.endExclusive;
     }

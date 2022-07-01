@@ -25,13 +25,13 @@ public class InetGenerator extends AbstractDataGenerator<String> {
     private final IntegerGenerator integerGenerator;
 
     @Override
-    public String generate() {
-        return integerGenerator.generate() + "." + integerGenerator.generate() + "." + integerGenerator.generate() + "." + integerGenerator.generate();
+    public String generate(Random random) {
+        return integerGenerator.generate(random) + "." + integerGenerator.generate(random) + "." + integerGenerator.generate(random) + "." + integerGenerator.generate(random);
     }
 
     @Override
-    public String generateAsString() {
-        return generate();
+    public String generateAsString(Random random) {
+        return generate(random);
     }
 
     @Override
@@ -39,11 +39,7 @@ public class InetGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
-
-        public Builder(Random random) {
-            super(random);
-        }
+    public static class Builder implements io.bloviate.gen.Builder {
 
         @Override
         public InetGenerator build() {
@@ -52,9 +48,7 @@ public class InetGenerator extends AbstractDataGenerator<String> {
     }
 
     private InetGenerator(Builder builder) {
-        super(builder.random);
-
-        this.integerGenerator = new IntegerGenerator.Builder(random).start(1).end(256).build();
+        this.integerGenerator = new IntegerGenerator.Builder().start(1).end(256).build();
 
     }
 }

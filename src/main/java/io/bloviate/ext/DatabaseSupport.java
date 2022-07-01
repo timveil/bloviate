@@ -19,89 +19,87 @@ package io.bloviate.ext;
 import io.bloviate.db.Column;
 import io.bloviate.gen.DataGenerator;
 
-import java.util.Random;
-
 public interface DatabaseSupport {
 
-    DataGenerator<?> getDataGenerator(Column column, Random random);
+    DataGenerator<?> getDataGenerator(Column column);
 
-    DataGenerator<?> buildTinyIntGenerator(Column column, Random random);
+    DataGenerator<?> buildTinyIntGenerator(Column column);
 
-    DataGenerator<?> buildSmallIntGenerator(Column column, Random random);
+    DataGenerator<?> buildSmallIntGenerator(Column column);
 
-    DataGenerator<?> buildIntegerGenerator(Column column, Random random);
+    DataGenerator<?> buildIntegerGenerator(Column column);
 
-    DataGenerator<?> buildBigIntGenerator(Column column, Random random);
+    DataGenerator<?> buildBigIntGenerator(Column column);
 
-    DataGenerator<?> buildFloatGenerator(Column column, Random random);
+    DataGenerator<?> buildFloatGenerator(Column column);
 
-    DataGenerator<?> buildRealGenerator(Column column, Random random);
+    DataGenerator<?> buildRealGenerator(Column column);
 
-    DataGenerator<?> buildDoubleGenerator(Column column, Random random);
+    DataGenerator<?> buildDoubleGenerator(Column column);
 
-    DataGenerator<?> buildDecimalGenerator(Column column, Random random);
+    DataGenerator<?> buildDecimalGenerator(Column column);
 
-    DataGenerator<?> buildCharGenerator(Column column, Random random);
+    DataGenerator<?> buildCharGenerator(Column column);
 
-    DataGenerator<?> buildNCharGenerator(Column column, Random random);
+    DataGenerator<?> buildNCharGenerator(Column column);
 
-    DataGenerator<?> buildVarcharGenerator(Column column, Random random);
+    DataGenerator<?> buildVarcharGenerator(Column column);
 
-    DataGenerator<?> buildNVarcharGenerator(Column column, Random random);
+    DataGenerator<?> buildNVarcharGenerator(Column column);
 
-    DataGenerator<?> buildLongVarcharGenerator(Column column, Random random);
+    DataGenerator<?> buildLongVarcharGenerator(Column column);
 
-    DataGenerator<?> buildLongNVarcharGenerator(Column column, Random random);
+    DataGenerator<?> buildLongNVarcharGenerator(Column column);
 
-    DataGenerator<?> buildDateGenerator(Column column, Random random);
+    DataGenerator<?> buildDateGenerator(Column column);
 
-    DataGenerator<?> buildTimeGenerator(Column column, Random random);
+    DataGenerator<?> buildTimeGenerator(Column column);
 
-    DataGenerator<?> buildTimeWithTimezoneGenerator(Column column, Random random);
+    DataGenerator<?> buildTimeWithTimezoneGenerator(Column column);
 
-    DataGenerator<?> buildTimestampGenerator(Column column, Random random);
+    DataGenerator<?> buildTimestampGenerator(Column column);
 
-    DataGenerator<?> buildTimestampWithTimezoneGenerator(Column column, Random random);
+    DataGenerator<?> buildTimestampWithTimezoneGenerator(Column column);
 
-    DataGenerator<?> buildBinaryGenerator(Column column, Random random);
+    DataGenerator<?> buildBinaryGenerator(Column column);
 
-    DataGenerator<?> buildVarbinaryGenerator(Column column, Random random);
+    DataGenerator<?> buildVarbinaryGenerator(Column column);
 
-    DataGenerator<?> buildLongVarbinaryGenerator(Column column, Random random);
+    DataGenerator<?> buildLongVarbinaryGenerator(Column column);
 
-    DataGenerator<?> buildBlobGenerator(Column column, Random random);
+    DataGenerator<?> buildBlobGenerator(Column column);
 
-    DataGenerator<?> buildClobGenerator(Column column, Random random);
+    DataGenerator<?> buildClobGenerator(Column column);
 
-    DataGenerator<?> buildNClobGenerator(Column column, Random random);
+    DataGenerator<?> buildNClobGenerator(Column column);
 
-    DataGenerator<?> buildStructGenerator(Column column, Random random);
+    DataGenerator<?> buildStructGenerator(Column column);
 
-    DataGenerator<?> buildArrayGenerator(Column column, Random random);
+    DataGenerator<?> buildArrayGenerator(Column column);
 
-    DataGenerator<?> buildBitGenerator(Column column, Random random);
+    DataGenerator<?> buildBitGenerator(Column column);
 
-    DataGenerator<?> buildBooleanGenerator(Column column, Random random);
+    DataGenerator<?> buildBooleanGenerator(Column column);
 
-    DataGenerator<?> buildOtherGenerator(Column column, Random random);
+    DataGenerator<?> buildOtherGenerator(Column column);
 
-    DataGenerator<?> buildNumericGenerator(Column column, Random random);
+    DataGenerator<?> buildNumericGenerator(Column column);
 
-    DataGenerator<?> buildJavaObjectGenerator(Column column, Random random);
+    DataGenerator<?> buildJavaObjectGenerator(Column column);
 
-    DataGenerator<?> buildDistinctGenerator(Column column, Random random);
+    DataGenerator<?> buildDistinctGenerator(Column column);
 
-    DataGenerator<?> buildNullGenerator(Column column, Random random);
+    DataGenerator<?> buildNullGenerator(Column column);
 
-    DataGenerator<?> buildRefGenerator(Column column, Random random);
+    DataGenerator<?> buildRefGenerator(Column column);
 
-    DataGenerator<?> buildDataLinkGenerator(Column column, Random random);
+    DataGenerator<?> buildDataLinkGenerator(Column column);
 
-    DataGenerator<?> buildRowIdGenerator(Column column, Random random);
+    DataGenerator<?> buildRowIdGenerator(Column column);
 
-    DataGenerator<?> buildSqlXmlGenerator(Column column, Random random);
+    DataGenerator<?> buildSqlXmlGenerator(Column column);
 
-    DataGenerator<?> buildRefCursorGenerator(Column column, Random random);
+    DataGenerator<?> buildRefCursorGenerator(Column column);
 
 
 }

@@ -24,7 +24,7 @@ public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
     private final int length;
 
     @Override
-    public Integer[] generate() {
+    public Integer[] generate(Random random) {
         Integer[] randomArray = new Integer[length];
 
         for (int i = 0; i < length; i++) {
@@ -45,13 +45,9 @@ public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private int length = 3;
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder length(int length) {
             this.length = length;
@@ -65,7 +61,6 @@ public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
     }
 
     private IntegerArrayGenerator(Builder builder) {
-        super(builder.random);
         this.length = builder.length;
     }
 }

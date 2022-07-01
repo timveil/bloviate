@@ -26,8 +26,8 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
 
 
     @Override
-    public Character generate() {
-        return (char) (integerGenerator.generate() + 'a');
+    public Character generate(Random random) {
+        return (char) (integerGenerator.generate(random) + 'a');
     }
 
     @Override
@@ -46,11 +46,7 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
-        public Builder(Random random) {
-            super(random);
-        }
-
+    public static class Builder implements io.bloviate.gen.Builder {
         @Override
         public CharacterGenerator build() {
             return new CharacterGenerator(this);
@@ -58,9 +54,7 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
     }
 
     private CharacterGenerator(Builder builder) {
-        super(builder.random);
-
-        this.integerGenerator = new IntegerGenerator.Builder(random).start(0).end(26).build();
+        this.integerGenerator = new IntegerGenerator.Builder().start(0).end(26).build();
 
     }
 }

@@ -30,7 +30,7 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
     private final float endExclusive;
 
     @Override
-    public Float generate() {
+    public Float generate(Random random) {
         SeededRandomUtils randomUtils = new SeededRandomUtils(random);
         return randomUtils.nextFloat(startInclusive, endExclusive);
     }
@@ -45,14 +45,10 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
         return resultSet.getFloat(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private float startInclusive = 0;
         private float endExclusive = Float.MAX_VALUE;
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder start(float start) {
             this.startInclusive = start;
@@ -71,7 +67,6 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
     }
 
     private FloatGenerator(Builder builder) {
-        super(builder.random);
         this.startInclusive = builder.startInclusive;
         this.endExclusive = builder.endExclusive;
     }

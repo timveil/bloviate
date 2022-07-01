@@ -45,6 +45,7 @@ public class TableFiller implements Fillable {
         logger.trace(sql);
 
         Map<Column, DataGenerator<?>> generatorMap = new HashMap<>();
+        Map<Column, Random> randomMap = new HashMap<>();
         Map<Column, Long> seedMap = new HashMap<>();
         Map<Column, Long> maxInvocationMap = new HashMap<>();
 
@@ -103,12 +104,12 @@ public class TableFiller implements Fillable {
                 seed = column.hashCode();
             }
 
-            if (dataGenerator != null) {
-                generatorMap.put(column, dataGenerator);
-            } else {
-                generatorMap.put(column, databaseSupport.getDataGenerator(column, new Random(seed)));
+            if (dataGenerator == null) {
+                dataGenerator =  databaseSupport.getDataGenerator(column);
             }
 
+            generatorMap.put(column, dataGenerator);
+            randomMap.put(column, new Random(seed));
             seedMap.put(column, seed);
         }
 
@@ -123,17 +124,19 @@ public class TableFiller implements Fillable {
                 int colCounter = 1;
                 for (Column column : filteredColumns) {
 
+                    Random random = randomMap.get(column);
+
                     DataGenerator<?> dataGenerator = generatorMap.get(column);
 
                     if (maxInvocationMap.containsKey(column)) {
                         long maxInvocations = maxInvocationMap.get(column);
 
                         if (rowCounter != 0 && rowCounter % maxInvocations == 0) {
-                            dataGenerator.setSeed(seedMap.get(column));
+                            random.setSeed(seedMap.get(column));
                         }
                     }
 
-                    dataGenerator.generateAndSet(connection, ps, colCounter);
+                    dataGenerator.generateAndSet(connection, ps, colCounter, random);
 
                     colCounter++;
                 }

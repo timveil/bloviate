@@ -19,129 +19,127 @@ package io.bloviate.ext;
 import io.bloviate.db.Column;
 import io.bloviate.gen.*;
 
-import java.util.Random;
-
 public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
     @Override
-    public final DataGenerator<?> getDataGenerator(Column column, Random random) {
+    public final DataGenerator<?> getDataGenerator(Column column) {
         switch (column.jdbcType()) {
             case BIT -> {
-                return buildBitGenerator(column, random);
+                return buildBitGenerator(column);
             }
             case TINYINT -> {
-                return buildTinyIntGenerator(column, random);
+                return buildTinyIntGenerator(column);
             }
             case SMALLINT -> {
-                return buildSmallIntGenerator(column, random);
+                return buildSmallIntGenerator(column);
             }
             case INTEGER -> {
-                return buildIntegerGenerator(column, random);
+                return buildIntegerGenerator(column);
             }
             case BIGINT -> {
-                return buildBigIntGenerator(column, random);
+                return buildBigIntGenerator(column);
             }
             case FLOAT -> {
-                return buildFloatGenerator(column, random);
+                return buildFloatGenerator(column);
             }
             case REAL -> {
-                return buildRealGenerator(column, random);
+                return buildRealGenerator(column);
             }
             case DOUBLE -> {
-                return buildDoubleGenerator(column, random);
+                return buildDoubleGenerator(column);
             }
             case NUMERIC -> {
-                return buildNumericGenerator(column, random);
+                return buildNumericGenerator(column);
             }
             case DECIMAL -> {
-                return buildDecimalGenerator(column, random);
+                return buildDecimalGenerator(column);
             }
             case CHAR -> {
-                return buildCharGenerator(column, random);
+                return buildCharGenerator(column);
             }
             case VARCHAR -> {
-                return buildVarcharGenerator(column, random);
+                return buildVarcharGenerator(column);
             }
             case LONGVARCHAR -> {
-                return buildLongVarcharGenerator(column, random);
+                return buildLongVarcharGenerator(column);
             }
             case DATE -> {
-                return buildDateGenerator(column, random);
+                return buildDateGenerator(column);
             }
             case TIME -> {
-                return buildTimeGenerator(column, random);
+                return buildTimeGenerator(column);
             }
             case TIMESTAMP -> {
-                return buildTimestampGenerator(column, random);
+                return buildTimestampGenerator(column);
             }
             case BINARY -> {
-                return buildBinaryGenerator(column, random);
+                return buildBinaryGenerator(column);
             }
             case VARBINARY -> {
-                return buildVarbinaryGenerator(column, random);
+                return buildVarbinaryGenerator(column);
             }
             case LONGVARBINARY -> {
-                return buildLongVarbinaryGenerator(column, random);
+                return buildLongVarbinaryGenerator(column);
             }
             case NULL -> {
-                return buildNullGenerator(column, random);
+                return buildNullGenerator(column);
             }
             case OTHER -> {
-                return buildOtherGenerator(column, random);
+                return buildOtherGenerator(column);
             }
             case JAVA_OBJECT -> {
-                return buildJavaObjectGenerator(column, random);
+                return buildJavaObjectGenerator(column);
             }
             case DISTINCT -> {
-                return buildDistinctGenerator(column, random);
+                return buildDistinctGenerator(column);
             }
             case STRUCT -> {
-                return buildStructGenerator(column, random);
+                return buildStructGenerator(column);
             }
             case ARRAY -> {
-                return buildArrayGenerator(column, random);
+                return buildArrayGenerator(column);
             }
             case BLOB -> {
-                return buildBlobGenerator(column, random);
+                return buildBlobGenerator(column);
             }
             case CLOB -> {
-                return buildClobGenerator(column, random);
+                return buildClobGenerator(column);
             }
             case REF -> {
-                return buildRefGenerator(column, random);
+                return buildRefGenerator(column);
             }
             case DATALINK -> {
-                return buildDataLinkGenerator(column, random);
+                return buildDataLinkGenerator(column);
             }
             case BOOLEAN -> {
-                return buildBooleanGenerator(column, random);
+                return buildBooleanGenerator(column);
             }
             case ROWID -> {
-                return buildRowIdGenerator(column, random);
+                return buildRowIdGenerator(column);
             }
             case NCHAR -> {
-                return buildNCharGenerator(column, random);
+                return buildNCharGenerator(column);
             }
             case NVARCHAR -> {
-                return buildNVarcharGenerator(column, random);
+                return buildNVarcharGenerator(column);
             }
             case LONGNVARCHAR -> {
-                return buildLongNVarcharGenerator(column, random);
+                return buildLongNVarcharGenerator(column);
             }
             case NCLOB -> {
-                return buildNClobGenerator(column, random);
+                return buildNClobGenerator(column);
             }
             case SQLXML -> {
-                return buildSqlXmlGenerator(column, random);
+                return buildSqlXmlGenerator(column);
             }
             case REF_CURSOR -> {
-                return buildRefCursorGenerator(column, random);
+                return buildRefCursorGenerator(column);
             }
             case TIME_WITH_TIMEZONE -> {
-                return buildTimeWithTimezoneGenerator(column, random);
+                return buildTimeWithTimezoneGenerator(column);
             }
             case TIMESTAMP_WITH_TIMEZONE -> {
-                return buildTimestampWithTimezoneGenerator(column, random);
+                return buildTimestampWithTimezoneGenerator(column);
             }
         }
 
@@ -149,201 +147,201 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
     }
 
     @Override
-    public DataGenerator<?> buildTinyIntGenerator(Column column, Random random) {
-        return new ShortGenerator.Builder(random).start(0).end(255).build();
+    public DataGenerator<?> buildTinyIntGenerator(Column column) {
+        return new ShortGenerator.Builder().start(0).end(255).build();
     }
 
     @Override
-    public DataGenerator<?> buildSmallIntGenerator(Column column, Random random) {
-        return new ShortGenerator.Builder(random).build();
+    public DataGenerator<?> buildSmallIntGenerator(Column column) {
+        return new ShortGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildIntegerGenerator(Column column, Random random) {
-        return new IntegerGenerator.Builder(random).build();
+    public DataGenerator<?> buildIntegerGenerator(Column column) {
+        return new IntegerGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildBigIntGenerator(Column column, Random random) {
-        return new LongGenerator.Builder(random).build();
+    public DataGenerator<?> buildBigIntGenerator(Column column) {
+        return new LongGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildFloatGenerator(Column column, Random random) {
-        return new FloatGenerator.Builder(random).build();
+    public DataGenerator<?> buildFloatGenerator(Column column) {
+        return new FloatGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildRealGenerator(Column column, Random random) {
-        return new FloatGenerator.Builder(random).build();
+    public DataGenerator<?> buildRealGenerator(Column column) {
+        return new FloatGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildDoubleGenerator(Column column, Random random) {
-        return new DoubleGenerator.Builder(random).build();
+    public DataGenerator<?> buildDoubleGenerator(Column column) {
+        return new DoubleGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildDecimalGenerator(Column column, Random random) {
-        return new BigDecimalGenerator.Builder(random).precision(column.maxSize()).digits(column.maxDigits()).build();
+    public DataGenerator<?> buildDecimalGenerator(Column column) {
+        return new BigDecimalGenerator.Builder().precision(column.maxSize()).digits(column.maxDigits()).build();
     }
 
     @Override
-    public DataGenerator<?> buildCharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
+    public DataGenerator<?> buildCharGenerator(Column column) {
+        return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildNCharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
+    public DataGenerator<?> buildNCharGenerator(Column column) {
+        return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
+    public DataGenerator<?> buildVarcharGenerator(Column column) {
+        return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildNVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
+    public DataGenerator<?> buildNVarcharGenerator(Column column) {
+        return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildLongVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
+    public DataGenerator<?> buildLongVarcharGenerator(Column column) {
+        return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildLongNVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
+    public DataGenerator<?> buildLongNVarcharGenerator(Column column) {
+        return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildDateGenerator(Column column, Random random) {
-        return new SqlDateGenerator.Builder(random).build();
+    public DataGenerator<?> buildDateGenerator(Column column) {
+        return new SqlDateGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildTimeGenerator(Column column, Random random) {
-        return new SqlTimeGenerator.Builder(random).build();
+    public DataGenerator<?> buildTimeGenerator(Column column) {
+        return new SqlTimeGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildTimeWithTimezoneGenerator(Column column, Random random) {
-        return new SqlTimeGenerator.Builder(random).build();
+    public DataGenerator<?> buildTimeWithTimezoneGenerator(Column column) {
+        return new SqlTimeGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildTimestampGenerator(Column column, Random random) {
-        return new SqlTimestampGenerator.Builder(random).build();
+    public DataGenerator<?> buildTimestampGenerator(Column column) {
+        return new SqlTimestampGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildTimestampWithTimezoneGenerator(Column column, Random random) {
-        return new SqlTimestampGenerator.Builder(random).build();
+    public DataGenerator<?> buildTimestampWithTimezoneGenerator(Column column) {
+        return new SqlTimestampGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildBinaryGenerator(Column column, Random random) {
-        return new ByteGenerator.Builder(random).size(column.maxSize()).build();
+    public DataGenerator<?> buildBinaryGenerator(Column column) {
+        return new ByteGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildVarbinaryGenerator(Column column, Random random) {
-        return new ByteGenerator.Builder(random).size(column.maxSize()).build();
+    public DataGenerator<?> buildVarbinaryGenerator(Column column) {
+        return new ByteGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildLongVarbinaryGenerator(Column column, Random random) {
-        return new ByteGenerator.Builder(random).size(column.maxSize()).build();
+    public DataGenerator<?> buildLongVarbinaryGenerator(Column column) {
+        return new ByteGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildBlobGenerator(Column column, Random random) {
-        return new SqlBlobGenerator.Builder(random).build();
+    public DataGenerator<?> buildBlobGenerator(Column column) {
+        return new SqlBlobGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildClobGenerator(Column column, Random random) {
-        return new SqlClobGenerator.Builder(random).build();
+    public DataGenerator<?> buildClobGenerator(Column column) {
+        return new SqlClobGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildNClobGenerator(Column column, Random random) {
-        return new SqlClobGenerator.Builder(random).build();
+    public DataGenerator<?> buildNClobGenerator(Column column) {
+        return new SqlClobGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildStructGenerator(Column column, Random random) {
-        return new SqlStructGenerator.Builder(random).build();
+    public DataGenerator<?> buildStructGenerator(Column column) {
+        return new SqlStructGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildArrayGenerator(Column column, Random random) {
+    public DataGenerator<?> buildArrayGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildBitGenerator(Column column, Random random) {
+    public DataGenerator<?> buildBitGenerator(Column column) {
         if (1 == column.maxSize()) {
-            return new BitGenerator.Builder(random).build();
+            return new BitGenerator.Builder().build();
         } else {
-            return new BitStringGenerator.Builder(random).size(column.maxSize()).build();
+            return new BitStringGenerator.Builder().size(column.maxSize()).build();
         }
     }
 
     @Override
-    public DataGenerator<?> buildBooleanGenerator(Column column, Random random) {
-        return new BooleanGenerator.Builder(random).build();
+    public DataGenerator<?> buildBooleanGenerator(Column column) {
+        return new BooleanGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildOtherGenerator(Column column, Random random) {
+    public DataGenerator<?> buildOtherGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildNumericGenerator(Column column, Random random) {
-        return new BigDecimalGenerator.Builder(random).precision(column.maxSize()).digits(column.maxDigits()).build();
+    public DataGenerator<?> buildNumericGenerator(Column column) {
+        return new BigDecimalGenerator.Builder().precision(column.maxSize()).digits(column.maxDigits()).build();
     }
 
     @Override
-    public DataGenerator<?> buildJavaObjectGenerator(Column column, Random random) {
+    public DataGenerator<?> buildJavaObjectGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildDistinctGenerator(Column column, Random random) {
+    public DataGenerator<?> buildDistinctGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildNullGenerator(Column column, Random random) {
+    public DataGenerator<?> buildNullGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildRefGenerator(Column column, Random random) {
+    public DataGenerator<?> buildRefGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildDataLinkGenerator(Column column, Random random) {
+    public DataGenerator<?> buildDataLinkGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildRowIdGenerator(Column column, Random random) {
+    public DataGenerator<?> buildRowIdGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildSqlXmlGenerator(Column column, Random random) {
+    public DataGenerator<?> buildSqlXmlGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildRefCursorGenerator(Column column, Random random) {
+    public DataGenerator<?> buildRefCursorGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 }

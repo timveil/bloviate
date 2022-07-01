@@ -17,15 +17,11 @@
 package io.bloviate.db;
 
 import io.bloviate.ext.PostgresSupport;
-import io.bloviate.gen.AbstractDataGenerator;
-import io.bloviate.gen.DataGenerator;
 import io.bloviate.gen.tpcc.CustomerLastNameGenerator;
 import org.junit.jupiter.api.Test;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 class PostgresFillerTest extends BasePostgresTest {
@@ -42,7 +38,7 @@ class PostgresFillerTest extends BasePostgresTest {
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
 
         Set<ColumnConfiguration> customerColumnConfiguration = new HashSet<>();
-        customerColumnConfiguration.add(new ColumnConfiguration("c_last", new CustomerLastNameGenerator(new Random())));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_last", new CustomerLastNameGenerator()));
 
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES, null));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS, null));

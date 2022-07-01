@@ -24,7 +24,7 @@ import java.util.UUID;
 public class UUIDGenerator extends AbstractDataGenerator<UUID> {
 
     @Override
-    public UUID generate() {
+    public UUID generate(Random random) {
         byte[] array = new byte[16];
         random.nextBytes(array);
         return UUID.nameUUIDFromBytes(array);
@@ -41,11 +41,7 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
-
-        public Builder(Random random) {
-            super(random);
-        }
+    public static class Builder implements io.bloviate.gen.Builder {
 
         public UUIDGenerator build() {
             return new UUIDGenerator(this);
@@ -53,7 +49,6 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
     }
 
     private UUIDGenerator(Builder builder) {
-        super(builder.random);
 
     }
 }

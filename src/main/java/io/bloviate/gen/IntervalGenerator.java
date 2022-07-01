@@ -30,14 +30,14 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
     private final IntegerGenerator secondGenerator;
 
     @Override
-    public String generate() {
+    public String generate(Random random) {
         return String.format("%d-%d %d %d:%d:%d",
-                yearGenerator.generate(),
-                monthGenerator.generate(),
-                dayGenerator.generate(),
-                hourGenerator.generate(),
-                minuteGenerator.generate(),
-                secondGenerator.generate()
+                yearGenerator.generate(random),
+                monthGenerator.generate(random),
+                dayGenerator.generate(random),
+                hourGenerator.generate(random),
+                minuteGenerator.generate(random),
+                secondGenerator.generate(random)
         );
     }
 
@@ -46,11 +46,7 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
-
-        public Builder(Random random) {
-            super(random);
-        }
+    public static class Builder implements io.bloviate.gen.Builder {
 
         @Override
         public IntervalGenerator build() {
@@ -59,12 +55,11 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
     }
 
     private IntervalGenerator(Builder builder) {
-        super(builder.random);
-        this.yearGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(10).build();
-        this.monthGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(12).build();
-        this.dayGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(30).build();
-        this.hourGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(24).build();
-        this.minuteGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(60).build();
-        this.secondGenerator = new IntegerGenerator.Builder(builder.random).start(1).end(60).build();
+        this.yearGenerator = new IntegerGenerator.Builder().start(1).end(10).build();
+        this.monthGenerator = new IntegerGenerator.Builder().start(1).end(12).build();
+        this.dayGenerator = new IntegerGenerator.Builder().start(1).end(30).build();
+        this.hourGenerator = new IntegerGenerator.Builder().start(1).end(24).build();
+        this.minuteGenerator = new IntegerGenerator.Builder().start(1).end(60).build();
+        this.secondGenerator = new IntegerGenerator.Builder().start(1).end(60).build();
     }
 }

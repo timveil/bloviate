@@ -25,8 +25,8 @@ public class BitGenerator extends AbstractDataGenerator<Integer> {
     private final IntegerGenerator integerGenerator;
 
     @Override
-    public Integer generate() {
-        return integerGenerator.generate();
+    public Integer generate(Random random) {
+        return integerGenerator.generate(random);
     }
 
     @Override
@@ -34,11 +34,7 @@ public class BitGenerator extends AbstractDataGenerator<Integer> {
         return resultSet.getInt(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
-
-        public Builder(Random random) {
-            super(random);
-        }
+    public static class Builder implements io.bloviate.gen.Builder {
 
         @Override
         public BitGenerator build() {
@@ -47,8 +43,6 @@ public class BitGenerator extends AbstractDataGenerator<Integer> {
     }
 
     private BitGenerator(Builder builder) {
-        super(builder.random);
-
-        this.integerGenerator = new IntegerGenerator.Builder(builder.random).start(0).end(2).build();
+        this.integerGenerator = new IntegerGenerator.Builder().start(0).end(2).build();
     }
 }

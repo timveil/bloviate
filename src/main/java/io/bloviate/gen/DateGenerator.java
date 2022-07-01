@@ -29,9 +29,9 @@ public class DateGenerator extends AbstractDataGenerator<Date> {
     private final LongGenerator longGenerator;
 
     @Override
-    public Date generate() {
+    public Date generate(Random random) {
 
-        Long randomTime = longGenerator.generate();
+        Long randomTime = longGenerator.generate(random);
 
         return new Date(randomTime);
     }
@@ -41,14 +41,10 @@ public class DateGenerator extends AbstractDataGenerator<Date> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private Date startInclusive = Date.from(Instant.EPOCH);
         private Date endExclusive = Date.from(Instant.now().plus(100, ChronoUnit.DAYS));
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder start(Date start) {
             this.startInclusive = start;
@@ -67,9 +63,7 @@ public class DateGenerator extends AbstractDataGenerator<Date> {
     }
 
     private DateGenerator(Builder builder) {
-        super(builder.random);
-
-        this.longGenerator = new LongGenerator.Builder(builder.random)
+        this.longGenerator = new LongGenerator.Builder()
                 .start(builder.startInclusive.getTime())
                 .end(builder.endExclusive.getTime())
                 .build();

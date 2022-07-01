@@ -27,7 +27,7 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
     private final int elementLength;
 
     @Override
-    public String[] generate() {
+    public String[] generate(Random random) {
         String[] randomArray = new String[length];
 
         SeededRandomUtils randomUtils = new SeededRandomUtils(random);
@@ -41,7 +41,7 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
     }
 
     @Override
-    public String generateAsString() {
+    public String generateAsString(Random random) {
         return null;
     }
 
@@ -55,15 +55,11 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private int length = 3;
         private int elementLength = 10;
         private DataGenerator<? extends String> elementGenerator;
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder length(int length) {
             this.length = length;
@@ -82,7 +78,6 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
     }
 
     private StringArrayGenerator(Builder builder) {
-        super(builder.random);
         this.length = builder.length;
         this.elementLength = builder.elementLength;
     }

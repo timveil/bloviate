@@ -23,12 +23,12 @@ public class SqlBlobGenerator extends AbstractDataGenerator<Blob> {
     //todo
 
     @Override
-    public Blob generate() {
+    public Blob generate(Random random) {
         return null;
     }
 
     @Override
-    public String generateAsString() {
+    public String generateAsString(Random random) {
         return null;
     }
 
@@ -42,11 +42,7 @@ public class SqlBlobGenerator extends AbstractDataGenerator<Blob> {
         return resultSet.getBlob(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
-
-        public Builder(Random random) {
-            super(random);
-        }
+    public static class Builder implements io.bloviate.gen.Builder {
 
         @Override
         public SqlBlobGenerator build() {
@@ -55,7 +51,6 @@ public class SqlBlobGenerator extends AbstractDataGenerator<Blob> {
     }
 
     private SqlBlobGenerator(Builder builder) {
-        super(builder.random);
 
     }
 }

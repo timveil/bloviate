@@ -35,7 +35,7 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     private final Integer maxDigits;
 
     @Override
-    public BigDecimal generate() {
+    public BigDecimal generate(Random random) {
 
         if (maxPrecision != null) {
 
@@ -75,7 +75,7 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
             }
 
         } else {
-            return BigDecimal.valueOf(new DoubleGenerator.Builder(random).build().generate());
+            return BigDecimal.valueOf(new DoubleGenerator.Builder().build().generate(random));
         }
 
     }
@@ -91,14 +91,10 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
         return resultSet.getBigDecimal(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private Integer maxPrecision;
         private Integer maxDigits;
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder precision(Integer maxPrecision) {
             this.maxPrecision = maxPrecision;
@@ -117,7 +113,6 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     }
 
     private BigDecimalGenerator(Builder builder) {
-        super(builder.random);
         this.maxDigits = builder.maxDigits;
         this.maxPrecision = builder.maxPrecision;
     }

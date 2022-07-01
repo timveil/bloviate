@@ -30,7 +30,7 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
     private final int size;
 
     @Override
-    public Byte[] generate() {
+    public Byte[] generate(Random random) {
 
         int maxSize = Math.min(size, 25);
 
@@ -41,8 +41,8 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
     }
 
     @Override
-    public String generateAsString() {
-        return Arrays.toString(generate());
+    public String generateAsString(Random random) {
+        return Arrays.toString(generate(random));
     }
 
     @Override
@@ -55,13 +55,9 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
         return ArrayUtils.toObject(resultSet.getBytes(columnIndex));
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder implements io.bloviate.gen.Builder {
 
         private int size = 25;
-
-        public Builder(Random random) {
-            super(random);
-        }
 
         public Builder size(int size) {
             this.size = size;
@@ -75,7 +71,6 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
     }
 
     private ByteGenerator(Builder builder) {
-        super(builder.random);
         this.size = builder.size;
     }
 }

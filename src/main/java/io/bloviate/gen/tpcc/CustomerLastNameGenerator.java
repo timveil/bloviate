@@ -27,12 +27,9 @@ public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
             "EING" // 9
     };
 
-    public CustomerLastNameGenerator(Random random) {
-        super(random);
-    }
 
     @Override
-    public String generate() {
+    public String generate(Random random) {
         SeededRandomUtils randomUtils = new SeededRandomUtils(random);
         String randomNumber = StringUtils.leftPad(String.valueOf(randomUtils.nextInt(0, 1000)), 3, '0');
 

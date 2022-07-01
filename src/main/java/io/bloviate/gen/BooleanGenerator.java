@@ -25,7 +25,7 @@ import java.util.Random;
 public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
 
     @Override
-    public Boolean generate() {
+    public Boolean generate(Random random) {
         return random.nextBoolean();
     }
 
@@ -39,11 +39,7 @@ public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
         return resultSet.getBoolean(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
-
-        public Builder(Random random) {
-            super(random);
-        }
+    public static class Builder implements io.bloviate.gen.Builder {
 
         @Override
         public BooleanGenerator build() {
@@ -52,7 +48,5 @@ public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
     }
 
     private BooleanGenerator(Builder builder) {
-        super(builder.random);
-
     }
 }
