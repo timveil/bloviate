@@ -16,5 +16,21 @@
 
 package io.bloviate.db;
 
-public record TableConfiguration(String tableName, long rowCount) {
+import java.util.Set;
+
+public record TableConfiguration(String tableName, long rowCount, Set<ColumnConfiguration> columnConfigurations) {
+
+    public ColumnConfiguration columnConfiguration(String columnName) {
+        if (columnConfigurations != null && !columnConfigurations.isEmpty()) {
+            for (ColumnConfiguration columnConfiguration : columnConfigurations) {
+                if (columnConfiguration.columnName().equalsIgnoreCase(columnName)) {
+                    return columnConfiguration;
+                }
+            }
+        }
+
+        return null;
+    }
+
+
 }

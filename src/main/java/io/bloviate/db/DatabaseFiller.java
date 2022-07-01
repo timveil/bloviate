@@ -59,47 +59,51 @@ public class DatabaseFiller implements Fillable {
         StopWatch databaseWatch = new StopWatch(String.format("filled database [%s] in", database.catalog()));
         databaseWatch.start();
 
-        Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
-        for (Table table : database.tables()) {
+        try {
 
-            List<ForeignKey> foreignKeys = table.foreignKeys();
+            Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
+            for (Table table : database.tables()) {
 
-            graph.addVertex(table);
+                List<ForeignKey> foreignKeys = table.foreignKeys();
 
-            if (foreignKeys != null && !foreignKeys.isEmpty()) {
-                for (ForeignKey key : foreignKeys) {
-                    Table referencedTable = database.getTable(key.primaryKey().tableName());
-                    if (!graph.containsVertex(referencedTable)) {
-                        graph.addVertex(referencedTable);
-                    }
+                graph.addVertex(table);
 
-                    if (table.equals(referencedTable)) {
-                        logger.warn("this key is self referencing... will likely cause problems");
-                    }
+                if (foreignKeys != null && !foreignKeys.isEmpty()) {
+                    for (ForeignKey key : foreignKeys) {
+                        Table referencedTable = database.getTable(key.primaryKey().tableName());
+                        if (!graph.containsVertex(referencedTable)) {
+                            graph.addVertex(referencedTable);
+                        }
 
-                    try {
-                        graph.addEdge(table, referencedTable);
-                    } catch (IllegalArgumentException e) {
-                        logger.error(String.format("error adding edge between %s and %s: %s", table.name(), referencedTable.name(), e.getMessage()), e);
+                        if (table.equals(referencedTable)) {
+                            logger.warn("this key is self referencing... will likely cause problems");
+                        }
+
+                        try {
+                            graph.addEdge(table, referencedTable);
+                        } catch (IllegalArgumentException e) {
+                            logger.error(String.format("error adding edge between %s and %s: %s", table.name(), referencedTable.name(), e.getMessage()), e);
+                        }
                     }
                 }
             }
+
+
+            EdgeReversedGraph<Table, DefaultEdge> reversedGraph = new EdgeReversedGraph<>(graph);
+
+            visualizeGraph(reversedGraph, database.catalog());
+
+            TopologicalOrderIterator<Table, DefaultEdge> iterator = new TopologicalOrderIterator<>(reversedGraph);
+
+            while (iterator.hasNext()) {
+                new TableFiller.Builder(connection, database, configuration)
+                        .table(iterator.next())
+                        .build().fill();
+            }
+        } finally {
+            databaseWatch.stop();
         }
 
-
-        EdgeReversedGraph<Table, DefaultEdge> reversedGraph = new EdgeReversedGraph<>(graph);
-
-        visualizeGraph(reversedGraph, database.catalog());
-
-        TopologicalOrderIterator<Table, DefaultEdge> iterator = new TopologicalOrderIterator<>(reversedGraph);
-
-        while (iterator.hasNext()) {
-            new TableFiller.Builder(connection, database, configuration)
-                    .table(iterator.next())
-                    .build().fill();
-        }
-
-        databaseWatch.stop();
 
         logger.info(databaseWatch.toString());
 

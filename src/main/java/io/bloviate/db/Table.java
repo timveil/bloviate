@@ -35,6 +35,11 @@ public record Table(String name, PrimaryKey primaryKey, List<Column> columns, Li
 
     }
 
+    public String countString() {
+        return String.format("select count(*) from %s", name);
+
+    }
+
     public List<Column> filteredColumns() {
         List<Column> filtered = new ArrayList<>();
 

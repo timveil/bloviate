@@ -55,11 +55,24 @@ public class TableFiller implements Fillable {
 
         DatabaseSupport databaseSupport = databaseConfiguration.databaseSupport();
 
+        TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
+
+        int batchSize = databaseConfiguration.batchSize();
+        long rowCount = databaseConfiguration.defaultRowCount();
+
+        if (tableConfiguration != null) {
+            rowCount = tableConfiguration.rowCount();
+        }
+
+        logger.info("filling table [{}] with [{}] rows; batch size is [{}]", table.name(), rowCount, batchSize);
+
         for (Column column : filteredColumns) {
 
             long seed;
 
             Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(database, table, column);
+
+            DataGenerator<?> dataGenerator = null;
 
             if (associatedPrimaryKeyColumn != null) {
 
@@ -69,27 +82,37 @@ public class TableFiller implements Fillable {
                 if (primaryTableConfiguration != null) {
                     // this is the number of rows in the primary table.  a foreign key random generator can't be called more than this number of times.
                     maxInvocationMap.put(column, primaryTableConfiguration.rowCount());
+
+                    ColumnConfiguration<?> primaryKeyColumnConfiguration = primaryTableConfiguration.columnConfiguration(associatedPrimaryKeyColumn.name());
+
+                    if (primaryKeyColumnConfiguration != null) {
+                        dataGenerator = primaryKeyColumnConfiguration.dataGenerator();
+                    }
+
                 }
 
                 seed = associatedPrimaryKeyColumn.hashCode();
             } else {
+
+                if (tableConfiguration != null) {
+                    ColumnConfiguration<?> columnConfiguration = tableConfiguration.columnConfiguration(column.name());
+
+                    if (columnConfiguration != null) {
+                        dataGenerator = columnConfiguration.dataGenerator();
+                    }
+
+                }
+
                 seed = column.hashCode();
             }
 
-            generatorMap.put(column, databaseSupport.getDataGenerator(column, new Random(seed)));
+            if (dataGenerator != null) {
+                generatorMap.put(column, dataGenerator);
+            } else {
+                generatorMap.put(column, databaseSupport.getDataGenerator(column, new Random(seed)));
+            }
             seedMap.put(column, seed);
         }
-
-        int batchSize = databaseConfiguration.batchSize();
-
-        TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
-
-        long rowCount = databaseConfiguration.defaultRowCount();
-        if (tableConfiguration != null) {
-            rowCount = tableConfiguration.rowCount();
-        }
-
-        logger.info("filling table [{}] with [{}] rows", table.name(), rowCount);
 
         StopWatch tableWatch = new StopWatch(String.format("filled table [%s] in", table.name()));
         tableWatch.start();
@@ -125,9 +148,11 @@ public class TableFiller implements Fillable {
             }
 
             ps.executeBatch();
+
+        } finally {
+            tableWatch.stop();
         }
 
-        tableWatch.stop();
 
         logger.info(tableWatch.toString());
 
