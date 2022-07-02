@@ -18,6 +18,7 @@ package io.bloviate.db;
 
 import io.bloviate.ext.PostgresSupport;
 import io.bloviate.gen.*;
+import io.bloviate.gen.tpcc.CreditGenerator;
 import io.bloviate.gen.tpcc.CustomerLastNameGenerator;
 import io.bloviate.gen.tpcc.DataColumnGenerator;
 import io.bloviate.gen.tpcc.ZipCodeGenerator;
@@ -41,7 +42,7 @@ class PostgresFillerTest extends BasePostgresTest {
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
 
         Set<ColumnConfiguration> customerColumnConfiguration = new HashSet<>();
-        customerColumnConfiguration.add(new ColumnConfiguration("c_last", new CustomerLastNameGenerator()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_last", new CustomerLastNameGenerator())); //todo this is wrong
         customerColumnConfiguration.add(new ColumnConfiguration("c_middle", new StaticStringGenerator.Builder().value("OE").build()));
         customerColumnConfiguration.add(new ColumnConfiguration("c_first", new VariableStringGenerator.Builder().start(8).end(16).build()));
         customerColumnConfiguration.add(new ColumnConfiguration("c_street_1", new VariableStringGenerator.Builder().start(10).end(20).build()));
@@ -49,6 +50,15 @@ class PostgresFillerTest extends BasePostgresTest {
         customerColumnConfiguration.add(new ColumnConfiguration("c_city", new VariableStringGenerator.Builder().start(10).end(20).build()));
         customerColumnConfiguration.add(new ColumnConfiguration("c_state", new SimpleStringGenerator.Builder().size(2).build()));
         customerColumnConfiguration.add(new ColumnConfiguration("c_zip", new ZipCodeGenerator()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_phone", new SimpleStringGenerator.Builder().size(16).letters(false).numbers(true).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_credit", new CreditGenerator()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_credit_lim", new StaticDoubleGenerator.Builder().value(50000.00d).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_discount", new DoubleGenerator.Builder().start(0.0000d).end(0.5000d).maxDigits(4).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_balance", new StaticDoubleGenerator.Builder().value(-10.00d).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_ytd_payment", new StaticDoubleGenerator.Builder().value(10.00d).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_payment_cnt", new StaticIntegerGenerator.Builder().value(1).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_delivery_cnt", new StaticIntegerGenerator.Builder().value(0).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_data", new VariableStringGenerator.Builder().start(100).end(500).build()));
 
         Set<ColumnConfiguration> itemColumnConfiguration = new HashSet<>();
         itemColumnConfiguration.add(new ColumnConfiguration("i_im_id", new IntegerGenerator.Builder().start(1).end(10000).build()));
@@ -63,7 +73,7 @@ class PostgresFillerTest extends BasePostgresTest {
         warehouseColumnConfiguration.add(new ColumnConfiguration("w_city", new VariableStringGenerator.Builder().start(10).end(20).build()));
         warehouseColumnConfiguration.add(new ColumnConfiguration("w_state", new SimpleStringGenerator.Builder().size(2).build()));
         warehouseColumnConfiguration.add(new ColumnConfiguration("w_zip", new ZipCodeGenerator()));
-        warehouseColumnConfiguration.add(new ColumnConfiguration("w_tax", new DoubleGenerator.Builder().start(0.0d).end(0.2d).maxDigits(4).build()));
+        warehouseColumnConfiguration.add(new ColumnConfiguration("w_tax", new DoubleGenerator.Builder().start(0.0000d).end(0.2000d).maxDigits(4).build()));
         warehouseColumnConfiguration.add(new ColumnConfiguration("w_ytd", new StaticFloatGenerator.Builder().value(300000f).build()));
 
         Set<ColumnConfiguration> stockColumnConfiguration = new HashSet<>();
