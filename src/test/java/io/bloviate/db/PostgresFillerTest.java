@@ -51,6 +51,7 @@ class PostgresFillerTest extends BasePostgresTest {
         customerColumnConfiguration.add(new ColumnConfiguration("c_state", new SimpleStringGenerator.Builder().size(2).build()));
         customerColumnConfiguration.add(new ColumnConfiguration("c_zip", new ZipCodeGenerator()));
         customerColumnConfiguration.add(new ColumnConfiguration("c_phone", new SimpleStringGenerator.Builder().size(16).letters(false).numbers(true).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_since", new CurrentSqlTimestampGenerator()));
         customerColumnConfiguration.add(new ColumnConfiguration("c_credit", new CreditGenerator()));
         customerColumnConfiguration.add(new ColumnConfiguration("c_credit_lim", new StaticDoubleGenerator.Builder().value(50000.00d).build()));
         customerColumnConfiguration.add(new ColumnConfiguration("c_discount", new DoubleGenerator.Builder().start(0.0000d).end(0.5000d).maxDigits(4).build()));
@@ -90,18 +91,28 @@ class PostgresFillerTest extends BasePostgresTest {
         districtColumnConfiguration.add(new ColumnConfiguration("d_city", new VariableStringGenerator.Builder().start(10).end(20).build()));
         districtColumnConfiguration.add(new ColumnConfiguration("d_state", new SimpleStringGenerator.Builder().size(2).build()));
         districtColumnConfiguration.add(new ColumnConfiguration("d_zip", new ZipCodeGenerator()));
-        districtColumnConfiguration.add(new ColumnConfiguration("d_tax", new DoubleGenerator.Builder().start(0.0d).end(0.2d).maxDigits(4).build()));
+        districtColumnConfiguration.add(new ColumnConfiguration("d_tax", new DoubleGenerator.Builder().start(0.0000d).end(0.2000d).maxDigits(4).build()));
         districtColumnConfiguration.add(new ColumnConfiguration("d_ytd", new StaticFloatGenerator.Builder().value(30000f).build()));
         districtColumnConfiguration.add(new ColumnConfiguration("d_next_o_id", new StaticIntegerGenerator.Builder().value(3001).build()));
 
+        Set<ColumnConfiguration> historyColumnConfiguration = new HashSet<>();
+        historyColumnConfiguration.add(new ColumnConfiguration("h_date", new CurrentSqlTimestampGenerator()));
+        historyColumnConfiguration.add(new ColumnConfiguration("h_amount", new StaticDoubleGenerator.Builder().value(10.00d).build()));
+        historyColumnConfiguration.add(new ColumnConfiguration("h_data", new VariableStringGenerator.Builder().start(12).end(20).build()));
+
+        Set<ColumnConfiguration> orderColumnConfiguration = new HashSet<>();
+        historyColumnConfiguration.add(new ColumnConfiguration("o_entry_d", new CurrentSqlTimestampGenerator()));
+        //historyColumnConfiguration.add(new ColumnConfiguration("o_carrier_id", new CurrentSqlTimestampGenerator()));
+        historyColumnConfiguration.add(new ColumnConfiguration("o_ol_cnt", new IntegerGenerator.Builder().start(5).end(15).build()));
+        historyColumnConfiguration.add(new ColumnConfiguration("o_all_local", new StaticIntegerGenerator.Builder().value(1).build()));
 
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES, warehouseColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS, itemColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_STOCK, Constants.TPCC_NUM_STOCK, stockColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_DISTRICT, Constants.TPCC_NUM_DISTRICTS, districtColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_CUSTOMER, Constants.TPCC_NUM_CUSTOMERS, customerColumnConfiguration));
-        tableConfigurations.add(new TableConfiguration(Constants.TPCC_HISTORY, Constants.TPCC_NUM_HISTORY, null));
-        tableConfigurations.add(new TableConfiguration(Constants.TPCC_OPEN_ORDER, Constants.TPCC_NUM_OPEN_ORDER, null));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_HISTORY, Constants.TPCC_NUM_HISTORY, historyColumnConfiguration));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_OPEN_ORDER, Constants.TPCC_NUM_OPEN_ORDER, orderColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_NEW_ORDER, Constants.TPCC_NUM_NEW_ORDER, null));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_ORDER_LINE, Constants.TPCC_NUM_ORDER_LINE, null));
 
