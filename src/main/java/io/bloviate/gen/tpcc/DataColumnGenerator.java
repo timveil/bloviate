@@ -6,7 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Random;
 
-public class ItemDataGenerator extends AbstractDataGenerator<String> {
+public class DataColumnGenerator extends AbstractDataGenerator<String> {
 
 
     public static final String ORIGINAL = "ORIGINAL";

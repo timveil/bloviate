@@ -19,7 +19,7 @@ package io.bloviate.db;
 import io.bloviate.ext.PostgresSupport;
 import io.bloviate.gen.*;
 import io.bloviate.gen.tpcc.CustomerLastNameGenerator;
-import io.bloviate.gen.tpcc.ItemDataGenerator;
+import io.bloviate.gen.tpcc.DataColumnGenerator;
 import io.bloviate.gen.tpcc.ZipCodeGenerator;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +47,7 @@ class PostgresFillerTest extends BasePostgresTest {
         itemColumnConfiguration.add(new ColumnConfiguration("i_im_id", new IntegerGenerator.Builder().start(1).end(10000).build()));
         itemColumnConfiguration.add(new ColumnConfiguration("i_name", new VariableStringGenerator.Builder().start(14).end(24).build()));
         itemColumnConfiguration.add(new ColumnConfiguration("i_price", new DoubleGenerator.Builder().start(1d).end(100d).maxDigits(2).build()));
-        itemColumnConfiguration.add(new ColumnConfiguration("i_data", new ItemDataGenerator()));
+        itemColumnConfiguration.add(new ColumnConfiguration("i_data", new DataColumnGenerator()));
 
         Set<ColumnConfiguration> warehouseColumnConfiguration = new HashSet<>();
         warehouseColumnConfiguration.add(new ColumnConfiguration("w_name", new VariableStringGenerator.Builder().start(6).end(10).build()));
@@ -60,11 +60,18 @@ class PostgresFillerTest extends BasePostgresTest {
         warehouseColumnConfiguration.add(new ColumnConfiguration("w_ytd", new StaticFloatGenerator.Builder().value(300000f).build()));
 
         Set<ColumnConfiguration> stockColumnConfiguration = new HashSet<>();
+        stockColumnConfiguration.add(new ColumnConfiguration("s_quantity", new IntegerGenerator.Builder().start(10).end(100).build()));
+        stockColumnConfiguration.add(new ColumnConfiguration("s_ytd", new StaticFloatGenerator.Builder().value(0f).build()));
+        stockColumnConfiguration.add(new ColumnConfiguration("s_order_cnt", new StaticIntegerGenerator.Builder().value(0).build()));
+        stockColumnConfiguration.add(new ColumnConfiguration("s_remote_cnt", new StaticIntegerGenerator.Builder().value(0).build()));
+        stockColumnConfiguration.add(new ColumnConfiguration("s_data",  new DataColumnGenerator()));
+
+        Set<ColumnConfiguration> districtColumnConfiguration = new HashSet<>();
 
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES, warehouseColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS, itemColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_STOCK, Constants.TPCC_NUM_STOCK, stockColumnConfiguration));
-        tableConfigurations.add(new TableConfiguration(Constants.TPCC_DISTRICT, Constants.TPCC_NUM_DISTRICTS, null));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_DISTRICT, Constants.TPCC_NUM_DISTRICTS, districtColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_CUSTOMER, Constants.TPCC_NUM_CUSTOMERS, customerColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_HISTORY, Constants.TPCC_NUM_HISTORY, null));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_OPEN_ORDER, Constants.TPCC_NUM_OPEN_ORDER, null));

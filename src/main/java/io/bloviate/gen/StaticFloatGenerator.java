@@ -13,10 +13,10 @@ public class StaticFloatGenerator extends AbstractDataGenerator<Float> {
 
     public static class Builder implements io.bloviate.gen.Builder {
 
-        private Float staticFloat;
+        private Float staticValue;
 
-        public Builder value(Float staticFloat) {
-            this.staticFloat = staticFloat;
+        public Builder value(Float staticValue) {
+            this.staticValue = staticValue;
             return this;
         }
 
@@ -28,6 +28,6 @@ public class StaticFloatGenerator extends AbstractDataGenerator<Float> {
     }
 
     private StaticFloatGenerator(Builder builder) {
-        this.value = builder.staticFloat;
+        this.value = builder.staticValue;
     }
 }
