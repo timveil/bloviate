@@ -111,6 +111,6 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     private BigDecimalGenerator(Builder builder) {
         this.maxDigits = builder.maxDigits;
         this.maxPrecision = builder.maxPrecision;
-        this.doubleGenerator = new DoubleGenerator.Builder().build();
+        this.doubleGenerator = new DoubleGenerator.Builder().maxDigits(maxDigits).build();
     }
 }

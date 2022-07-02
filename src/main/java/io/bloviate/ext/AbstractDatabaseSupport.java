@@ -178,7 +178,7 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
     @Override
     public DataGenerator<?> buildDoubleGenerator(Column column) {
-        return new DoubleGenerator.Builder().build();
+        return new DoubleGenerator.Builder().maxDigits(column.maxDigits()).build();
     }
 
     @Override
