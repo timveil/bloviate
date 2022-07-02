@@ -37,7 +37,7 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
         double value = randomUtils.nextDouble(startInclusive, endExclusive);
 
         if (maxDigits != null) {
-            value =  new BigDecimal(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            value = new BigDecimal(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
         }
 
         return value;

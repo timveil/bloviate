@@ -105,7 +105,7 @@ public class TableFiller implements Fillable {
             }
 
             if (dataGenerator == null) {
-                dataGenerator =  databaseSupport.getDataGenerator(column);
+                dataGenerator = databaseSupport.getDataGenerator(column);
             }
 
             generatorMap.put(column, dataGenerator);
