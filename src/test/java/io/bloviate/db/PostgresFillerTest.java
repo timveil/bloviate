@@ -98,7 +98,7 @@ class PostgresFillerTest extends BasePostgresTest {
         Set<ColumnConfiguration> historyColumnConfiguration = new HashSet<>();
         historyColumnConfiguration.add(new ColumnConfiguration("h_date", new CurrentSqlTimestampGenerator()));
         historyColumnConfiguration.add(new ColumnConfiguration("h_amount", new StaticDoubleGenerator.Builder().value(10.00d).build()));
-        historyColumnConfiguration.add(new ColumnConfiguration("h_data", new VariableStringGenerator.Builder().start(12).end(20).build()));
+        historyColumnConfiguration.add(new ColumnConfiguration("h_data", new VariableStringGenerator.Builder().start(12).end(24).build()));
 
         Set<ColumnConfiguration> orderColumnConfiguration = new HashSet<>();
         historyColumnConfiguration.add(new ColumnConfiguration("o_entry_d", new CurrentSqlTimestampGenerator()));
