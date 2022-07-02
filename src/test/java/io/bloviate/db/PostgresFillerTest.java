@@ -42,6 +42,13 @@ class PostgresFillerTest extends BasePostgresTest {
 
         Set<ColumnConfiguration> customerColumnConfiguration = new HashSet<>();
         customerColumnConfiguration.add(new ColumnConfiguration("c_last", new CustomerLastNameGenerator()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_middle", new StaticStringGenerator.Builder().value("OE").build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_first", new VariableStringGenerator.Builder().start(8).end(16).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_street_1", new VariableStringGenerator.Builder().start(10).end(20).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_street_2", new VariableStringGenerator.Builder().start(10).end(20).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_city", new VariableStringGenerator.Builder().start(10).end(20).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_state", new SimpleStringGenerator.Builder().size(2).build()));
+        customerColumnConfiguration.add(new ColumnConfiguration("c_zip", new ZipCodeGenerator()));
 
         Set<ColumnConfiguration> itemColumnConfiguration = new HashSet<>();
         itemColumnConfiguration.add(new ColumnConfiguration("i_im_id", new IntegerGenerator.Builder().start(1).end(10000).build()));
@@ -67,6 +74,16 @@ class PostgresFillerTest extends BasePostgresTest {
         stockColumnConfiguration.add(new ColumnConfiguration("s_data",  new DataColumnGenerator()));
 
         Set<ColumnConfiguration> districtColumnConfiguration = new HashSet<>();
+        districtColumnConfiguration.add(new ColumnConfiguration("d_name", new VariableStringGenerator.Builder().start(6).end(10).build()));
+        districtColumnConfiguration.add(new ColumnConfiguration("d_street_1", new VariableStringGenerator.Builder().start(10).end(20).build()));
+        districtColumnConfiguration.add(new ColumnConfiguration("d_street_2", new VariableStringGenerator.Builder().start(10).end(20).build()));
+        districtColumnConfiguration.add(new ColumnConfiguration("d_city", new VariableStringGenerator.Builder().start(10).end(20).build()));
+        districtColumnConfiguration.add(new ColumnConfiguration("d_state", new SimpleStringGenerator.Builder().size(2).build()));
+        districtColumnConfiguration.add(new ColumnConfiguration("d_zip", new ZipCodeGenerator()));
+        districtColumnConfiguration.add(new ColumnConfiguration("d_tax", new DoubleGenerator.Builder().start(0.0d).end(0.2d).maxDigits(4).build()));
+        districtColumnConfiguration.add(new ColumnConfiguration("d_ytd", new StaticFloatGenerator.Builder().value(30000f).build()));
+        districtColumnConfiguration.add(new ColumnConfiguration("d_next_o_id", new StaticIntegerGenerator.Builder().value(3001).build()));
+
 
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES, warehouseColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS, itemColumnConfiguration));
