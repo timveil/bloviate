@@ -17,11 +17,10 @@
 package io.bloviate.db;
 
 import io.bloviate.ext.PostgresSupport;
-import io.bloviate.gen.DoubleGenerator;
-import io.bloviate.gen.IntegerGenerator;
-import io.bloviate.gen.VariableStringGenerator;
+import io.bloviate.gen.*;
 import io.bloviate.gen.tpcc.CustomerLastNameGenerator;
 import io.bloviate.gen.tpcc.ItemDataGenerator;
+import io.bloviate.gen.tpcc.ZipCodeGenerator;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -50,8 +49,18 @@ class PostgresFillerTest extends BasePostgresTest {
         itemColumnConfiguration.add(new ColumnConfiguration("i_price", new DoubleGenerator.Builder().start(1d).end(100d).maxDigits(2).build()));
         itemColumnConfiguration.add(new ColumnConfiguration("i_data", new ItemDataGenerator()));
 
+        Set<ColumnConfiguration> warehouseColumnConfiguration = new HashSet<>();
+        warehouseColumnConfiguration.add(new ColumnConfiguration("w_name", new VariableStringGenerator.Builder().start(6).end(10).build()));
+        warehouseColumnConfiguration.add(new ColumnConfiguration("w_street_1", new VariableStringGenerator.Builder().start(10).end(20).build()));
+        warehouseColumnConfiguration.add(new ColumnConfiguration("w_street_2", new VariableStringGenerator.Builder().start(10).end(20).build()));
+        warehouseColumnConfiguration.add(new ColumnConfiguration("w_city", new VariableStringGenerator.Builder().start(10).end(20).build()));
+        warehouseColumnConfiguration.add(new ColumnConfiguration("w_state", new SimpleStringGenerator.Builder().size(2).build()));
+        warehouseColumnConfiguration.add(new ColumnConfiguration("w_zip", new ZipCodeGenerator()));
+        warehouseColumnConfiguration.add(new ColumnConfiguration("w_tax", new DoubleGenerator.Builder().start(0.0d).end(0.2d).maxDigits(4).build()));
+        warehouseColumnConfiguration.add(new ColumnConfiguration("w_ytd", new StaticFloatGenerator.Builder().value(300000f).build()));
 
-        tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES, null));
+
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES, warehouseColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS, itemColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_STOCK, Constants.TPCC_NUM_STOCK, null));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_DISTRICT, Constants.TPCC_NUM_DISTRICTS, null));
