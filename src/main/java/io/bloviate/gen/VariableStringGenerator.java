@@ -20,27 +20,33 @@ import io.bloviate.util.SeededRandomUtils;
 
 import java.util.Random;
 
-public class SimpleStringGenerator extends AbstractDataGenerator<String> {
+public class VariableStringGenerator extends AbstractDataGenerator<String> {
 
-    private final int size;
+    private final int minSize;
+    private final int maxSize;
     private final boolean letters;
     private final boolean numbers;
 
     @Override
     public String generate(Random random) {
-        int maxSize = Math.min(size, 2000);
         SeededRandomUtils randomUtils = new SeededRandomUtils(random);
-        return randomUtils.random(maxSize, letters, numbers);
+        return randomUtils.random(randomUtils.nextInt(Math.max(minSize, 1), maxSize), letters, numbers);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {
 
-        private int size = 10;
+        private int minSize = 1;
+        private int maxSize = 10;
         private boolean letters = true;
         private boolean numbers = false;
 
-        public Builder size(int size) {
-            this.size = size;
+        public Builder end(int maxSize) {
+            this.maxSize = maxSize;
+            return this;
+        }
+
+        public Builder start(int minSize) {
+            this.minSize = minSize;
             return this;
         }
 
@@ -55,13 +61,14 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
         }
 
         @Override
-        public SimpleStringGenerator build() {
-            return new SimpleStringGenerator(this);
+        public VariableStringGenerator build() {
+            return new VariableStringGenerator(this);
         }
     }
 
-    private SimpleStringGenerator(Builder builder) {
-        this.size = builder.size;
+    private VariableStringGenerator(Builder builder) {
+        this.minSize = builder.minSize;
+        this.maxSize = builder.maxSize;
         this.letters = builder.letters;
         this.numbers = builder.numbers;
     }

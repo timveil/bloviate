@@ -33,6 +33,8 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     // digits to right of decimal point (fractional digits), can be null
     private final Integer maxDigits;
 
+    private final DoubleGenerator doubleGenerator;
+
     @Override
     public BigDecimal generate(Random random) {
 
@@ -74,7 +76,7 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
             }
 
         } else {
-            return BigDecimal.valueOf(new DoubleGenerator.Builder().build().generate(random));
+            return BigDecimal.valueOf(doubleGenerator.generate(random));
         }
 
     }
@@ -109,5 +111,6 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     private BigDecimalGenerator(Builder builder) {
         this.maxDigits = builder.maxDigits;
         this.maxPrecision = builder.maxPrecision;
+        this.doubleGenerator = new DoubleGenerator.Builder().build();
     }
 }

@@ -17,6 +17,9 @@
 package io.bloviate.db;
 
 import io.bloviate.ext.PostgresSupport;
+import io.bloviate.gen.DoubleGenerator;
+import io.bloviate.gen.IntegerGenerator;
+import io.bloviate.gen.VariableStringGenerator;
 import io.bloviate.gen.tpcc.CustomerLastNameGenerator;
 import org.junit.jupiter.api.Test;
 
@@ -40,8 +43,14 @@ class PostgresFillerTest extends BasePostgresTest {
         Set<ColumnConfiguration> customerColumnConfiguration = new HashSet<>();
         customerColumnConfiguration.add(new ColumnConfiguration("c_last", new CustomerLastNameGenerator()));
 
+        Set<ColumnConfiguration> itemColumnConfiguration = new HashSet<>();
+        itemColumnConfiguration.add(new ColumnConfiguration("i_im_id", new IntegerGenerator.Builder().start(1).end(10000).build()));
+        itemColumnConfiguration.add(new ColumnConfiguration("i_name", new VariableStringGenerator.Builder().start(14).end(24).build()));
+        itemColumnConfiguration.add(new ColumnConfiguration("i_price", new DoubleGenerator.Builder().start(1d).end(100d).maxDigits(2).build()));
+
+
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES, null));
-        tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS, null));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS, itemColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_STOCK, Constants.TPCC_NUM_STOCK, null));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_DISTRICT, Constants.TPCC_NUM_DISTRICTS, null));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_CUSTOMER, Constants.TPCC_NUM_CUSTOMERS, customerColumnConfiguration));

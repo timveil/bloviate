@@ -1,8 +1,6 @@
 package io.bloviate.gen.tpcc;
 
 import io.bloviate.gen.AbstractDataGenerator;
-import io.bloviate.util.SeededRandomUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,32 +10,14 @@ public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String[] syllables = new String[]{
-            "BAR", // 0
-            "OUGHT", // 1
-            "ABLE", // 2
-            "PRI", // 3
-            "PRES", // 4
-            "ESE", // 5
-            "ANTI", // 6
-            "CALLY", // 7
-            "ATION", // 8
-            "EING" // 9
-    };
+    private static final int C_LAST_LOAD_C = 157; // in range [0, 255]
+    private static final int C_LAST_RUN_C = 223; // in range [0, 255]
+
 
 
     @Override
     public String generate(Random random) {
-        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
-        String randomNumber = StringUtils.leftPad(String.valueOf(randomUtils.nextInt(0, 1000)), 3, '0');
-
-        String lastName = syllables[Integer.parseInt(randomNumber.substring(0, 1))]
-                   + syllables[Integer.parseInt(randomNumber.substring(1, 2))]
-                   + syllables[Integer.parseInt(randomNumber.substring(2, 3))];
-
-        logger.trace("last name = [{}] for number = [{}]", lastName, randomNumber);
-
-        return lastName;
+        return TPCCUtils.getNonUniformRandomLastName(random, C_LAST_LOAD_C);
     }
 
 }

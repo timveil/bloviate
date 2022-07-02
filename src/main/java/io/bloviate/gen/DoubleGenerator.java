@@ -18,6 +18,8 @@ package io.bloviate.gen;
 
 import io.bloviate.util.SeededRandomUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -27,11 +29,18 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
 
     private final double startInclusive;
     private final double endExclusive;
+    private final Integer maxDigits; // number of places to right of decimal
 
     @Override
     public Double generate(Random random) {
         SeededRandomUtils randomUtils = new SeededRandomUtils(random);
-        return randomUtils.nextDouble(startInclusive, endExclusive);
+        double value = randomUtils.nextDouble(startInclusive, endExclusive);
+
+        if (maxDigits != null) {
+            value =  new BigDecimal(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        }
+
+        return value;
     }
 
     @Override
@@ -42,6 +51,7 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
     public static class Builder implements io.bloviate.gen.Builder {
 
         private double startInclusive = 0;
+        private Integer maxDigits = null;
         private double endExclusive = Double.MAX_VALUE;
 
         public Builder start(double start) {
@@ -54,6 +64,12 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
             return this;
         }
 
+        public Builder maxDigits(Integer maxDigits) {
+            this.maxDigits = maxDigits;
+            return this;
+        }
+
+
         @Override
         public DoubleGenerator build() {
             return new DoubleGenerator(this);
@@ -63,5 +79,6 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
     private DoubleGenerator(Builder builder) {
         this.startInclusive = builder.startInclusive;
         this.endExclusive = builder.endExclusive;
+        this.maxDigits = builder.maxDigits;
     }
 }
