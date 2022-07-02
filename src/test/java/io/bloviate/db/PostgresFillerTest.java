@@ -21,6 +21,7 @@ import io.bloviate.gen.DoubleGenerator;
 import io.bloviate.gen.IntegerGenerator;
 import io.bloviate.gen.VariableStringGenerator;
 import io.bloviate.gen.tpcc.CustomerLastNameGenerator;
+import io.bloviate.gen.tpcc.ItemDataGenerator;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -47,6 +48,7 @@ class PostgresFillerTest extends BasePostgresTest {
         itemColumnConfiguration.add(new ColumnConfiguration("i_im_id", new IntegerGenerator.Builder().start(1).end(10000).build()));
         itemColumnConfiguration.add(new ColumnConfiguration("i_name", new VariableStringGenerator.Builder().start(14).end(24).build()));
         itemColumnConfiguration.add(new ColumnConfiguration("i_price", new DoubleGenerator.Builder().start(1d).end(100d).maxDigits(2).build()));
+        itemColumnConfiguration.add(new ColumnConfiguration("i_data", new ItemDataGenerator()));
 
 
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES, null));
