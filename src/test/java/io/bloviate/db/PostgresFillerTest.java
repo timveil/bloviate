@@ -102,9 +102,17 @@ class PostgresFillerTest extends BasePostgresTest {
 
         Set<ColumnConfiguration> orderColumnConfiguration = new HashSet<>();
         historyColumnConfiguration.add(new ColumnConfiguration("o_entry_d", new CurrentSqlTimestampGenerator()));
-        //historyColumnConfiguration.add(new ColumnConfiguration("o_carrier_id", new CurrentSqlTimestampGenerator()));
+        //historyColumnConfiguration.add(new ColumnConfiguration("o_carrier_id", null));
         historyColumnConfiguration.add(new ColumnConfiguration("o_ol_cnt", new IntegerGenerator.Builder().start(5).end(15).build()));
         historyColumnConfiguration.add(new ColumnConfiguration("o_all_local", new StaticIntegerGenerator.Builder().value(1).build()));
+
+        Set<ColumnConfiguration> orderLineColumnConfiguration = new HashSet<>();
+        //orderLineColumnConfiguration.add(new ColumnConfiguration("ol_number", null));
+        orderLineColumnConfiguration.add(new ColumnConfiguration("ol_i_id", new IntegerGenerator.Builder().start(1).end(100000).build())); // todo; i think this may cause problems
+        //orderLineColumnConfiguration.add(new ColumnConfiguration("ol_delivery_d", null));
+        orderLineColumnConfiguration.add(new ColumnConfiguration("ol_quantity", new StaticIntegerGenerator.Builder().value(5).build()));
+        //orderLineColumnConfiguration.add(new ColumnConfiguration("ol_amount", null));
+        orderLineColumnConfiguration.add(new ColumnConfiguration("ol_dist_info", new SimpleStringGenerator.Builder().size(24).build()));
 
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_WAREHOUSE, Constants.TPCC_NUM_WAREHOUSES, warehouseColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_ITEM, Constants.TPCC_NUM_ITEMS, itemColumnConfiguration));
@@ -114,7 +122,7 @@ class PostgresFillerTest extends BasePostgresTest {
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_HISTORY, Constants.TPCC_NUM_HISTORY, historyColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_OPEN_ORDER, Constants.TPCC_NUM_OPEN_ORDER, orderColumnConfiguration));
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_NEW_ORDER, Constants.TPCC_NUM_NEW_ORDER, null));
-        tableConfigurations.add(new TableConfiguration(Constants.TPCC_ORDER_LINE, Constants.TPCC_NUM_ORDER_LINE, null));
+        tableConfigurations.add(new TableConfiguration(Constants.TPCC_ORDER_LINE, Constants.TPCC_NUM_ORDER_LINE, orderLineColumnConfiguration));
 
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new PostgresSupport(), tableConfigurations);
         fillDatabase("create_tpcc.postgres.sql", configuration);
