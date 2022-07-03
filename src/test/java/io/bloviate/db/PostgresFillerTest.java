@@ -48,10 +48,20 @@ class PostgresFillerTest extends BasePostgresTest {
                 }
 
                 try (Statement statement = connection.createStatement();
-                     ResultSet rs = statement.executeQuery("select max(i_id) from item")) {
+                     ResultSet rs = statement.executeQuery("select max(i_id), min(i_id), max(char_length(i_name)), min(character_length(i_name)), max(i_price), min(i_price) from item")) {
                     rs.next();
                     int maxId = rs.getInt(1);
-                    Assertions.assertTrue(maxId <= 100000, String.format("max i_id is %d", maxId));
+                    int minId = rs.getInt(2);
+                    int maxNameLength = rs.getInt(3);
+                    int minNameLength = rs.getInt(4);
+                    double maxPrice = rs.getDouble(5);
+                    double minPrice = rs.getDouble(6);
+                    Assertions.assertTrue(maxId <= 100000, String.format("max i_id is greater than %d", maxId));
+                    Assertions.assertTrue(minId >= 1, String.format("min i_id is less than %d", minId));
+                    Assertions.assertTrue(maxNameLength <= 24 , String.format("max i_name is greater than %d", maxNameLength));
+                    Assertions.assertTrue(minNameLength >= 14 , String.format("min i_name is less than %d", minNameLength));
+                    Assertions.assertTrue(maxPrice <= 100.00d, String.format("max i_price is greater than %3.2f", maxPrice));
+                    Assertions.assertTrue(minPrice >= 1.00d, String.format("min i_price is less than %1.2f", minPrice));
                 }
             }
         });
