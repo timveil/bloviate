@@ -20,6 +20,7 @@ public class TPCCConfiguration {
         itemColumnConfiguration.add(new ColumnConfiguration("i_data", new DataColumnGenerator()));
 
         Set<ColumnConfiguration> warehouseColumnConfiguration = new HashSet<>();
+        warehouseColumnConfiguration.add(new ColumnConfiguration("w_id", new SequentialIntegerGenerator.Builder(1, scaleFactor).build()));
         warehouseColumnConfiguration.add(new ColumnConfiguration("w_name", new VariableStringGenerator.Builder().start(6).end(10).build()));
         warehouseColumnConfiguration.add(new ColumnConfiguration("w_street_1", new VariableStringGenerator.Builder().start(10).end(20).build()));
         warehouseColumnConfiguration.add(new ColumnConfiguration("w_street_2", new VariableStringGenerator.Builder().start(10).end(20).build()));
@@ -30,6 +31,7 @@ public class TPCCConfiguration {
         warehouseColumnConfiguration.add(new ColumnConfiguration("w_ytd", new StaticFloatGenerator.Builder().value(300000f).build()));
 
         Set<ColumnConfiguration> stockColumnConfiguration = new HashSet<>();
+        stockColumnConfiguration.add(new ColumnConfiguration("s_i_id", new SequentialIntegerGenerator.Builder(1, 100000).build()));
         stockColumnConfiguration.add(new ColumnConfiguration("s_quantity", new IntegerGenerator.Builder().start(10).end(100).build()));
         stockColumnConfiguration.add(new ColumnConfiguration("s_ytd", new StaticFloatGenerator.Builder().value(0f).build()));
         stockColumnConfiguration.add(new ColumnConfiguration("s_order_cnt", new StaticIntegerGenerator.Builder().value(0).build()));

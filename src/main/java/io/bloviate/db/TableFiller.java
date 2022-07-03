@@ -144,6 +144,7 @@ public class TableFiller implements Fillable {
                 ps.addBatch();
 
                 if (++rowCounter % batchSize == 0) {
+                    logger.info("executing batch for row count {} on table {}", rowCounter, table.name());
                     ps.executeBatch();
                 }
             }
