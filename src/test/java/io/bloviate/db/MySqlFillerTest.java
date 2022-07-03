@@ -29,7 +29,7 @@ class MySqlFillerTest extends BaseMySqlTest {
     void fillTPCC() throws SQLException {
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new MySQLSupport(), tableConfigurations);
-        fillDatabase("create_tpcc.mysql.sql", configuration);
+        fillDatabase("create_tpcc.mysql.sql", configuration, null);
     }
 
     @Test
@@ -46,6 +46,6 @@ class MySqlFillerTest extends BaseMySqlTest {
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_ORDER_LINE, Constants.TPCC_NUM_ORDER_LINE, null));
 
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new MySQLSupport(), tableConfigurations);
-        fillDatabase("create_tpcc.mysql.sql", configuration);
+        fillDatabase("create_tpcc.mysql.sql", configuration, null);
     }
 }

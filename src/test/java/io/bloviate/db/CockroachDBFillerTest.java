@@ -29,7 +29,7 @@ class CockroachDBFillerTest extends BaseCockroachTest {
     void fillTPCC() throws SQLException {
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
-        fillDatabase("create_tpcc.cockroachdb.sql", configuration);
+        fillDatabase("create_tpcc.cockroachdb.sql", configuration, null);
     }
 
     @Test
@@ -46,7 +46,7 @@ class CockroachDBFillerTest extends BaseCockroachTest {
         tableConfigurations.add(new TableConfiguration(Constants.TPCC_ORDER_LINE, Constants.TPCC_NUM_ORDER_LINE, null));
 
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new CockroachDBSupport(), tableConfigurations);
-        fillDatabase("create_tpcc.cockroachdb.sql", configuration);
+        fillDatabase("create_tpcc.cockroachdb.sql", configuration, null);
 
     }
 
@@ -54,35 +54,35 @@ class CockroachDBFillerTest extends BaseCockroachTest {
     void fillTestTables() throws SQLException {
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
-        fillDatabase("create_tables.cockroachdb.sql", configuration);
+        fillDatabase("create_tables.cockroachdb.sql", configuration, null);
     }
 
     @Test
     void fillAuctionmark() throws SQLException {
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
-        fillDatabase("create_auctionmark.cockroachdb.sql", configuration);
+        fillDatabase("create_auctionmark.cockroachdb.sql", configuration, null);
     }
 
     @Test
     void fillWikipedia() throws SQLException {
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
-        fillDatabase("create_wikipedia.cockroachdb.sql", configuration);
+        fillDatabase("create_wikipedia.cockroachdb.sql", configuration, null);
     }
 
     @Test
     void fillSeats() throws SQLException {
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
-        fillDatabase("create_seats.cockroachdb.sql", configuration);
+        fillDatabase("create_seats.cockroachdb.sql", configuration, null);
     }
 
     @Test
     void fillTwitter() throws SQLException {
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 5, new CockroachDBSupport(), tableConfigurations);
-        fillDatabase("create_twitter.cockroachdb.sql", configuration);
+        fillDatabase("create_twitter.cockroachdb.sql", configuration, null);
     }
 
 }

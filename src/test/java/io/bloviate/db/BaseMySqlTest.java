@@ -24,7 +24,8 @@ import java.sql.SQLException;
 
 class BaseMySqlTest extends BaseDatabaseTestCase {
 
-    protected void fillDatabase(String initScript, DatabaseConfiguration configuration) throws SQLException {
+    @Override
+    protected void fillDatabase(String initScript, DatabaseConfiguration configuration, Validator validator) throws SQLException {
 
         try (MySQLContainer<?> database = new MySQLContainer<>("mysql:latest")
                 .withDatabaseName("bloviate")
@@ -36,6 +37,9 @@ class BaseMySqlTest extends BaseDatabaseTestCase {
 
             try (Connection connection = dataSource.getConnection()) {
                 new DatabaseFiller.Builder(connection, configuration).build().fill();
+                if (validator != null) {
+                    validator.validate(connection, configuration);
+                }
             }
 
         }

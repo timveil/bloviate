@@ -23,10 +23,16 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 
-public class BaseDatabaseTestCase {
+public abstract class BaseDatabaseTestCase {
 
     protected static final Logger logger = LoggerFactory.getLogger(BaseDatabaseTestCase.class);
+
+    interface Validator {
+        void validate(Connection connection, DatabaseConfiguration configuration) throws SQLException;
+    }
 
     protected static DataSource getDataSource(JdbcDatabaseContainer<?> container) {
         HikariConfig hikariConfig = new HikariConfig();
@@ -36,4 +42,6 @@ public class BaseDatabaseTestCase {
         hikariConfig.setDriverClassName(container.getDriverClassName());
         return new HikariDataSource(hikariConfig);
     }
+
+    protected abstract void fillDatabase(String initScript, DatabaseConfiguration configuration, Validator validator) throws SQLException;
 }
