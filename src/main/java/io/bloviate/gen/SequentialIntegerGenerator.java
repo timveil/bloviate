@@ -36,14 +36,18 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
     @Override
     public Integer generate(Random random) {
 
-        int currentValue = counter.get();
+        int value = counter.get();;
 
-        if (currentValue > maxValue) {
+        if (value < maxValue) {
+            counter.set(value + 1);
+        } else if (value == maxValue) {
             logger.trace("max value of {} has been reached, counter will be reset to {}", maxValue, initialValue);
             counter.set(initialValue);
+        } else {
+            logger.warn("value {} is greater than max value {}", value, maxValue);
         }
 
-        return counter.incrementAndGet();
+        return value;
     }
 
     @Override

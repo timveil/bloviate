@@ -50,7 +50,7 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
         }
 
         public Builder numbers(boolean numbers) {
-            this.numbers = letters;
+            this.numbers = numbers;
             return this;
         }
 
