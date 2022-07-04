@@ -16,6 +16,7 @@
 
 package io.bloviate.gen;
 
+import io.bloviate.db.Column;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +33,14 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
     private final int initialValue;
     private final int maxValue;
     private final AtomicInteger counter;
+    private final Column dependsOn;
+
+    /*
+
+        if depends on
+
+
+     */
 
     @Override
     public Integer generate(Random random) {
@@ -59,10 +68,16 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
 
         private final int initialValue;
         private final int maxValue;
+        private Column dependsOn;
 
         public Builder(int initialValue, int maxValue) {
             this.initialValue = initialValue;
             this.maxValue = maxValue;
+        }
+
+        public Builder dependsOn(Column dependsOn) {
+            this.dependsOn = dependsOn;
+            return this;
         }
 
         @Override
@@ -74,6 +89,7 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
     private SequentialIntegerGenerator(Builder builder) {
         this.initialValue = builder.initialValue;
         this.maxValue = builder.maxValue;
+        this.dependsOn = builder.dependsOn;
         this.counter = new AtomicInteger(builder.initialValue);
     }
 }
