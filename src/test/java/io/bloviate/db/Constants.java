@@ -20,9 +20,9 @@ public class Constants {
     private static final int TPCC_DISTRICTS_PER_WAREHOUSE = 5;
     private static final int TPCC_CUSTOMERS_PER_DISTRICT = 10;
 
-    public static final int TPCC_NUM_WAREHOUSES = 1;
-    public static final int TPCC_NUM_ITEMS = 100;
-    public static final int TPCC_NUM_STOCK = 100;
+    public static final int TPCC_NUM_WAREHOUSES = 2;
+    public static final int TPCC_NUM_ITEMS = 100000;
+    public static final int TPCC_NUM_STOCK = TPCC_NUM_WAREHOUSES * TPCC_NUM_ITEMS;
     public static final int TPCC_NUM_DISTRICTS = TPCC_NUM_WAREHOUSES * TPCC_DISTRICTS_PER_WAREHOUSE;
     public static final int TPCC_NUM_CUSTOMERS = TPCC_NUM_DISTRICTS * TPCC_CUSTOMERS_PER_DISTRICT;
     public static final int TPCC_NUM_HISTORY = TPCC_NUM_CUSTOMERS;

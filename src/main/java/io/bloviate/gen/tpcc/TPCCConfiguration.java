@@ -9,23 +9,32 @@ import java.util.Set;
 
 public class TPCCConfiguration {
 
-    public static int ITEM_COUNT = 100000;
+    public static int DEFAULT_ITEM_COUNT = 100000;
+    public static int DEFAULT_DISTRICTS_PER_WAREHOUSE = 10;
+    public static int DEFAULT_CUSTOMERS_PER_DISTRICT = 3000;
+    public static int DEFAULT_HISTORY_PER_CUSTOMER = 1;
+    public static int DEFAULT_ORDERS_PER_DISTRICT = 3000;
 
+    public static Set<TableConfiguration> build(double scaleFactor) {
+        return build(scaleFactor, DEFAULT_ITEM_COUNT, DEFAULT_DISTRICTS_PER_WAREHOUSE, DEFAULT_CUSTOMERS_PER_DISTRICT, DEFAULT_HISTORY_PER_CUSTOMER, DEFAULT_ORDERS_PER_DISTRICT);
+    }
 
-    public static Set<TableConfiguration> build(int scaleFactor) {
+    public static Set<TableConfiguration> build(double scaleFactor, int itemCount, int districtsPerWarehouse, int customersPerDistrict, int historyPerCustomer, int ordersPerDistrict) {
 
-        int stock = scaleFactor * ITEM_COUNT;
-        int districts = scaleFactor * 10;
-        int customers = districts * 3000;
-        int history = customers * 1;
-        int orders = districts * 3000;
+        int warehouses = (int)Math.max(1, scaleFactor);
+        int items = Math.min((int)Math.round(itemCount * scaleFactor), DEFAULT_ITEM_COUNT);
+        int stock = warehouses * items;
+        int districts = warehouses *  Math.min((int)Math.round(districtsPerWarehouse * scaleFactor), DEFAULT_DISTRICTS_PER_WAREHOUSE);
+        int customers = districts * Math.min((int)Math.round(customersPerDistrict * scaleFactor), DEFAULT_CUSTOMERS_PER_DISTRICT);
+        int history = customers * historyPerCustomer;
+        int orders = districts * Math.min((int)Math.round(ordersPerDistrict * scaleFactor), DEFAULT_ORDERS_PER_DISTRICT);;
 
         // todo: add nice logging about sizes
 
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
 
-        tableConfigurations.add(new TableConfiguration("warehouse", scaleFactor, warehouseConfigurations(scaleFactor)));
-        tableConfigurations.add(new TableConfiguration("item", ITEM_COUNT, itemConfigurations()));
+        tableConfigurations.add(new TableConfiguration("warehouse", warehouses, warehouseConfigurations(warehouses)));
+        tableConfigurations.add(new TableConfiguration("item", items, itemConfigurations(itemCount)));
         tableConfigurations.add(new TableConfiguration("stock", stock, stockConfigurations()));
         tableConfigurations.add(new TableConfiguration("district", districts, districtConfigurations()));
         tableConfigurations.add(new TableConfiguration("customer", customers,  customerConfigurations()));
@@ -113,9 +122,9 @@ public class TPCCConfiguration {
         return configurations;
     }
 
-    private static Set<ColumnConfiguration> warehouseConfigurations(int scaleFactor) {
+    private static Set<ColumnConfiguration> warehouseConfigurations(int warehouseCount) {
         Set<ColumnConfiguration> configurations = new HashSet<>();
-        configurations.add(new ColumnConfiguration("w_id", new SequentialIntegerGenerator.Builder(1, scaleFactor).build()));
+        configurations.add(new ColumnConfiguration("w_id", new SequentialIntegerGenerator.Builder(1, warehouseCount).build()));
         configurations.add(new ColumnConfiguration("w_name", new VariableStringGenerator.Builder().start(6).end(10).build()));
         configurations.add(new ColumnConfiguration("w_street_1", new VariableStringGenerator.Builder().start(10).end(20).build()));
         configurations.add(new ColumnConfiguration("w_street_2", new VariableStringGenerator.Builder().start(10).end(20).build()));
@@ -127,9 +136,9 @@ public class TPCCConfiguration {
         return configurations;
     }
 
-    private static Set<ColumnConfiguration> itemConfigurations() {
+    private static Set<ColumnConfiguration> itemConfigurations(int itemCount) {
         Set<ColumnConfiguration> configurations = new HashSet<>();
-        configurations.add(new ColumnConfiguration("i_id", new SequentialIntegerGenerator.Builder(1, ITEM_COUNT).build()));
+        configurations.add(new ColumnConfiguration("i_id", new SequentialIntegerGenerator.Builder(1, itemCount).build()));
         configurations.add(new ColumnConfiguration("i_im_id", new IntegerGenerator.Builder().start(1).end(10000).build()));
         configurations.add(new ColumnConfiguration("i_name", new VariableStringGenerator.Builder().start(14).end(24).build()));
         configurations.add(new ColumnConfiguration("i_price", new DoubleGenerator.Builder().start(1d).end(100d).maxDigits(2).build()));
