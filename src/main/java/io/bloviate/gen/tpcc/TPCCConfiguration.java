@@ -9,11 +9,11 @@ import java.util.Set;
 
 public class TPCCConfiguration {
 
-    public static int DEFAULT_ITEM_COUNT = 100000;
-    public static int DEFAULT_DISTRICTS_PER_WAREHOUSE = 10;
-    public static int DEFAULT_CUSTOMERS_PER_DISTRICT = 3000;
-    public static int DEFAULT_HISTORY_PER_CUSTOMER = 1;
-    public static int DEFAULT_ORDERS_PER_DISTRICT = 3000;
+    public static final int DEFAULT_ITEM_COUNT = 100000;
+    public static final int DEFAULT_DISTRICTS_PER_WAREHOUSE = 10;
+    public static final int DEFAULT_CUSTOMERS_PER_DISTRICT = 3000;
+    public static final int DEFAULT_HISTORY_PER_CUSTOMER = 1;
+    public static final int DEFAULT_ORDERS_PER_DISTRICT = 3000;
 
     public static Set<TableConfiguration> build(double scaleFactor) {
         return build(scaleFactor, DEFAULT_ITEM_COUNT, DEFAULT_DISTRICTS_PER_WAREHOUSE, DEFAULT_CUSTOMERS_PER_DISTRICT, DEFAULT_HISTORY_PER_CUSTOMER, DEFAULT_ORDERS_PER_DISTRICT);
@@ -21,25 +21,25 @@ public class TPCCConfiguration {
 
     public static Set<TableConfiguration> build(double scaleFactor, int itemCount, int districtsPerWarehouse, int customersPerDistrict, int historyPerCustomer, int ordersPerDistrict) {
 
-        int warehouses = (int)Math.max(1, scaleFactor);
-        int items = Math.min((int)Math.round(itemCount * scaleFactor), DEFAULT_ITEM_COUNT);
+        int warehouses = (int) Math.max(1, scaleFactor);
+        int items = Math.min((int) Math.round(itemCount * scaleFactor), DEFAULT_ITEM_COUNT);
         int stock = warehouses * items;
-        int districts = warehouses *  Math.min((int)Math.round(districtsPerWarehouse * scaleFactor), DEFAULT_DISTRICTS_PER_WAREHOUSE);
-        int customers = districts * Math.min((int)Math.round(customersPerDistrict * scaleFactor), DEFAULT_CUSTOMERS_PER_DISTRICT);
+        int districts = warehouses * Math.min((int) Math.round(districtsPerWarehouse * scaleFactor), DEFAULT_DISTRICTS_PER_WAREHOUSE);
+        int customers = districts * Math.min((int) Math.round(customersPerDistrict * scaleFactor), DEFAULT_CUSTOMERS_PER_DISTRICT);
         int history = customers * historyPerCustomer;
-        int orders = districts * Math.min((int)Math.round(ordersPerDistrict * scaleFactor), DEFAULT_ORDERS_PER_DISTRICT);;
+        int orders = districts * Math.min((int) Math.round(ordersPerDistrict * scaleFactor), DEFAULT_ORDERS_PER_DISTRICT);
 
         // todo: add nice logging about sizes
 
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
 
-        tableConfigurations.add(new TableConfiguration("warehouse", warehouses, warehouseConfigurations(warehouses)));
-        tableConfigurations.add(new TableConfiguration("item", items, itemConfigurations(itemCount)));
-        tableConfigurations.add(new TableConfiguration("stock", stock, stockConfigurations()));
-        tableConfigurations.add(new TableConfiguration("district", districts, districtConfigurations()));
-        tableConfigurations.add(new TableConfiguration("customer", customers,  customerConfigurations()));
-        tableConfigurations.add(new TableConfiguration("history", history,  historyConfigurations()));
-        tableConfigurations.add(new TableConfiguration("order", orders, orderConfigurations()));
+        tableConfigurations.add(new TableConfiguration("warehouse", warehouses, null, warehouseConfigurations(warehouses)));
+        tableConfigurations.add(new TableConfiguration("item", items, null, itemConfigurations(itemCount)));
+        tableConfigurations.add(new TableConfiguration("stock", stock, null, stockConfigurations()));
+        tableConfigurations.add(new TableConfiguration("district", districts, null, districtConfigurations()));
+        tableConfigurations.add(new TableConfiguration("customer", customers, null, customerConfigurations()));
+        tableConfigurations.add(new TableConfiguration("history", history, null, historyConfigurations()));
+        tableConfigurations.add(new TableConfiguration("order", orders, null, orderConfigurations()));
         //tableConfigurations.add(new TableConfiguration("new_order", Constants.TPCC_NUM_NEW_ORDER, null));
         //tableConfigurations.add(new TableConfiguration("order_line", 0, orderLineConfigurations()));
 

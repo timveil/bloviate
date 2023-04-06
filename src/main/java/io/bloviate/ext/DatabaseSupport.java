@@ -16,90 +16,93 @@
 
 package io.bloviate.ext;
 
-import io.bloviate.db.Column;
+import io.bloviate.db.metadata.Column;
 import io.bloviate.gen.DataGenerator;
+
+import java.math.BigDecimal;
+import java.sql.*;
 
 public interface DatabaseSupport {
 
-    DataGenerator<?> getDataGenerator(Column column);
+    DataGenerator<Object> getDataGenerator(Column column);
 
-    DataGenerator<?> buildTinyIntGenerator(Column column);
+    DataGenerator<Short> buildTinyIntGenerator(Column column);
 
-    DataGenerator<?> buildSmallIntGenerator(Column column);
+    DataGenerator<Short> buildSmallIntGenerator(Column column);
 
-    DataGenerator<?> buildIntegerGenerator(Column column);
+    DataGenerator<Integer> buildIntegerGenerator(Column column);
 
-    DataGenerator<?> buildBigIntGenerator(Column column);
+    DataGenerator<Long> buildBigIntGenerator(Column column);
 
-    DataGenerator<?> buildFloatGenerator(Column column);
+    DataGenerator<Float> buildFloatGenerator(Column column);
 
-    DataGenerator<?> buildRealGenerator(Column column);
+    DataGenerator<Float> buildRealGenerator(Column column);
 
-    DataGenerator<?> buildDoubleGenerator(Column column);
+    DataGenerator<Double> buildDoubleGenerator(Column column);
 
-    DataGenerator<?> buildDecimalGenerator(Column column);
+    DataGenerator<BigDecimal> buildDecimalGenerator(Column column);
 
-    DataGenerator<?> buildCharGenerator(Column column);
+    DataGenerator<String> buildCharGenerator(Column column);
 
-    DataGenerator<?> buildNCharGenerator(Column column);
+    DataGenerator<String> buildNCharGenerator(Column column);
 
-    DataGenerator<?> buildVarcharGenerator(Column column);
+    DataGenerator<String> buildVarcharGenerator(Column column);
 
-    DataGenerator<?> buildNVarcharGenerator(Column column);
+    DataGenerator<String> buildNVarcharGenerator(Column column);
 
-    DataGenerator<?> buildLongVarcharGenerator(Column column);
+    DataGenerator<String> buildLongVarcharGenerator(Column column);
 
-    DataGenerator<?> buildLongNVarcharGenerator(Column column);
+    DataGenerator<String> buildLongNVarcharGenerator(Column column);
 
-    DataGenerator<?> buildDateGenerator(Column column);
+    DataGenerator<Date> buildDateGenerator(Column column);
 
-    DataGenerator<?> buildTimeGenerator(Column column);
+    DataGenerator<Time> buildTimeGenerator(Column column);
 
-    DataGenerator<?> buildTimeWithTimezoneGenerator(Column column);
+    DataGenerator<Time> buildTimeWithTimezoneGenerator(Column column);
 
-    DataGenerator<?> buildTimestampGenerator(Column column);
+    DataGenerator<Timestamp> buildTimestampGenerator(Column column);
 
-    DataGenerator<?> buildTimestampWithTimezoneGenerator(Column column);
+    DataGenerator<Timestamp> buildTimestampWithTimezoneGenerator(Column column);
 
-    DataGenerator<?> buildBinaryGenerator(Column column);
+    DataGenerator<Byte[]> buildBinaryGenerator(Column column);
 
-    DataGenerator<?> buildVarbinaryGenerator(Column column);
+    DataGenerator<Byte[]> buildVarbinaryGenerator(Column column);
 
-    DataGenerator<?> buildLongVarbinaryGenerator(Column column);
+    DataGenerator<Byte[]> buildLongVarbinaryGenerator(Column column);
 
-    DataGenerator<?> buildBlobGenerator(Column column);
+    DataGenerator<Blob> buildBlobGenerator(Column column);
 
-    DataGenerator<?> buildClobGenerator(Column column);
+    DataGenerator<Clob> buildClobGenerator(Column column);
 
-    DataGenerator<?> buildNClobGenerator(Column column);
+    DataGenerator<Clob> buildNClobGenerator(Column column);
 
-    DataGenerator<?> buildStructGenerator(Column column);
+    DataGenerator<Struct> buildStructGenerator(Column column);
 
     DataGenerator<?> buildArrayGenerator(Column column);
 
     DataGenerator<?> buildBitGenerator(Column column);
 
-    DataGenerator<?> buildBooleanGenerator(Column column);
+    DataGenerator<Boolean> buildBooleanGenerator(Column column);
 
-    DataGenerator<?> buildOtherGenerator(Column column);
+    DataGenerator<Object> buildOtherGenerator(Column column);
 
-    DataGenerator<?> buildNumericGenerator(Column column);
+    DataGenerator<BigDecimal> buildNumericGenerator(Column column);
 
-    DataGenerator<?> buildJavaObjectGenerator(Column column);
+    DataGenerator<Object> buildJavaObjectGenerator(Column column);
 
-    DataGenerator<?> buildDistinctGenerator(Column column);
+    DataGenerator<Object> buildDistinctGenerator(Column column);
 
-    DataGenerator<?> buildNullGenerator(Column column);
+    DataGenerator<Object> buildNullGenerator(Column column);
 
-    DataGenerator<?> buildRefGenerator(Column column);
+    DataGenerator<Object> buildRefGenerator(Column column);
 
-    DataGenerator<?> buildDataLinkGenerator(Column column);
+    DataGenerator<Object> buildDataLinkGenerator(Column column);
 
-    DataGenerator<?> buildRowIdGenerator(Column column);
+    DataGenerator<Object> buildRowIdGenerator(Column column);
 
-    DataGenerator<?> buildSqlXmlGenerator(Column column);
+    DataGenerator<Object> buildSqlXmlGenerator(Column column);
 
-    DataGenerator<?> buildRefCursorGenerator(Column column);
+    DataGenerator<Object> buildRefCursorGenerator(Column column);
 
 
 }

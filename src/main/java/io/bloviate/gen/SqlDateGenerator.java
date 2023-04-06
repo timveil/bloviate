@@ -38,8 +38,8 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Date value) throws SQLException {
-        statement.setDate(parameterIndex, value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setDate(parameterIndex, (Date) value);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

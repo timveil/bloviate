@@ -16,7 +16,7 @@
 
 package io.bloviate.util;
 
-import io.bloviate.db.*;
+import io.bloviate.db.metadata.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -16,13 +16,13 @@
 
 package io.bloviate.ext;
 
-import io.bloviate.db.Column;
+import io.bloviate.db.metadata.Column;
 import io.bloviate.gen.*;
 
 public class CockroachDBSupport extends AbstractDatabaseSupport {
 
     @Override
-    public DataGenerator<?> buildArrayGenerator(Column column) {
+    public DataGenerator buildArrayGenerator(Column column) {
         if ("_text".equalsIgnoreCase(column.typeName())) {
             return new StringArrayGenerator.Builder().build();
         } else if ("_int8".equalsIgnoreCase(column.typeName()) || "_int4".equalsIgnoreCase(column.typeName())) {
@@ -33,7 +33,7 @@ public class CockroachDBSupport extends AbstractDatabaseSupport {
     }
 
     @Override
-    public DataGenerator<?> buildOtherGenerator(Column column) {
+    public DataGenerator buildOtherGenerator(Column column) {
         if ("uuid".equalsIgnoreCase(column.typeName())) {
             return new UUIDGenerator.Builder().build();
         } else if ("varbit".equalsIgnoreCase(column.typeName())) {

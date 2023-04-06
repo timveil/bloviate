@@ -36,8 +36,8 @@ public class SqlBlobGenerator extends AbstractDataGenerator<Blob> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Blob value) throws SQLException {
-        statement.setBlob(parameterIndex, value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setBlob(parameterIndex, (Blob) value);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

@@ -16,6 +16,9 @@
 
 package io.bloviate.db;
 
+import io.bloviate.db.metadata.Database;
+import io.bloviate.db.metadata.ForeignKey;
+import io.bloviate.db.metadata.Table;
 import io.bloviate.util.DatabaseUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jgrapht.Graph;
@@ -96,7 +99,7 @@ public class DatabaseFiller implements Fillable {
             TopologicalOrderIterator<Table, DefaultEdge> iterator = new TopologicalOrderIterator<>(reversedGraph);
 
             while (iterator.hasNext()) {
-                new TableFiller.Builder(connection, database, configuration)
+                new TableFiller.Builder(connection, configuration, database)
                         .table(iterator.next())
                         .build().fill();
             }

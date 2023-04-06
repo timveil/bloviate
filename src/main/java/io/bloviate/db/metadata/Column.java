@@ -14,8 +14,16 @@
  * limitations under the License.
  */
 
-package io.bloviate.db;
+package io.bloviate.db.metadata;
 
-import java.util.List;
+import java.sql.JDBCType;
+import java.util.Comparator;
+import java.util.Objects;
 
-public record ForeignKey(List<KeyColumn> foreignKeyColumns, PrimaryKey primaryKey) {}
+public record Column(String name, String tableName, String schema, String catalog, JDBCType jdbcType, Integer maxSize, Integer maxDigits, String typeName, Boolean autoIncrement, Boolean nullable, String defaultValue, Integer ordinalPosition) implements Comparable<Column> {
+
+    @Override
+    public int compareTo(Column that) {
+        return Objects.compare(this, that, Comparator.comparing(Column::ordinalPosition));
+    }
+}

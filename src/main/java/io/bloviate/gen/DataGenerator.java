@@ -31,6 +31,6 @@ public interface DataGenerator<T> {
 
     void generateAndSet(Connection connection, PreparedStatement statement, int parameterIndex, Random random) throws SQLException;
 
-    void set(Connection connection, PreparedStatement statement, int parameterIndex, T value) throws SQLException;
+    void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException;
 
 }

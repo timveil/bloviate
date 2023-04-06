@@ -45,8 +45,8 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Byte[] value) throws SQLException {
-        statement.setBytes(parameterIndex, ArrayUtils.toPrimitive(value));
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setBytes(parameterIndex,  ArrayUtils.toPrimitive((Byte[])value));
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

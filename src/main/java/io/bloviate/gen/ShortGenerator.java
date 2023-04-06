@@ -31,8 +31,8 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Short value) throws SQLException {
-        statement.setShort(parameterIndex, value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setShort(parameterIndex, (Short) value);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

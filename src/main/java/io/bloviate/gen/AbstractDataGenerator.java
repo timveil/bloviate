@@ -35,7 +35,7 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, T value) throws SQLException {
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
         statement.setObject(parameterIndex, value);
     }
 

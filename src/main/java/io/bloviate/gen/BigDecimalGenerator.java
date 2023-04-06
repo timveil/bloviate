@@ -42,7 +42,7 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
 
             SeededRandomUtils randomUtils = new SeededRandomUtils(random);
 
-            // maxPrecision can be enormous (131089 for CRDB) and not helpful for testing therefore we significantly reduce
+            // maxPrecision can be enormous (131089 for CockroachDB) and not helpful for testing therefore we significantly reduce
             int minMaxPrecision = Math.min(maxPrecision, 25);
 
             if (maxDigits != null && maxDigits > maxPrecision) {
@@ -82,8 +82,8 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, BigDecimal value) throws SQLException {
-        statement.setBigDecimal(parameterIndex, value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setBigDecimal(parameterIndex, (BigDecimal) value);
     }
 
 

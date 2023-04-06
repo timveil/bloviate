@@ -16,7 +16,6 @@
 
 package io.bloviate.gen;
 
-import io.bloviate.db.Column;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,19 +32,11 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
     private final int initialValue;
     private final int maxValue;
     private final AtomicInteger counter;
-    private final Column dependsOn;
-
-    /*
-
-        if depends on
-
-
-     */
 
     @Override
     public Integer generate(Random random) {
 
-        int value = counter.get();;
+        int value = counter.get();
 
         if (value < maxValue) {
             counter.set(value + 1);
@@ -60,24 +51,18 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Integer value) throws SQLException {
-        statement.setInt(parameterIndex, value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setInt(parameterIndex, (Integer) value);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {
 
         private final int initialValue;
         private final int maxValue;
-        private Column dependsOn;
 
         public Builder(int initialValue, int maxValue) {
             this.initialValue = initialValue;
             this.maxValue = maxValue;
-        }
-
-        public Builder dependsOn(Column dependsOn) {
-            this.dependsOn = dependsOn;
-            return this;
         }
 
         @Override
@@ -89,7 +74,6 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
     private SequentialIntegerGenerator(Builder builder) {
         this.initialValue = builder.initialValue;
         this.maxValue = builder.maxValue;
-        this.dependsOn = builder.dependsOn;
         this.counter = new AtomicInteger(builder.initialValue);
     }
 }

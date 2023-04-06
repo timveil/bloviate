@@ -16,8 +16,12 @@
 
 package io.bloviate.db;
 
+import io.bloviate.db.metadata.*;
 import io.bloviate.ext.DatabaseSupport;
+import io.bloviate.gen.ColumnValue;
 import io.bloviate.gen.DataGenerator;
+import io.bloviate.gen.PrimaryKeyGenerator;
+import io.bloviate.gen.SimplePrimaryKeyGenerator;
 import io.bloviate.util.DatabaseUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
@@ -37,80 +41,133 @@ public class TableFiller implements Fillable {
     private final DatabaseConfiguration databaseConfiguration;
     private final Table table;
 
+    public void fillNew() throws SQLException {
+        List<Column> columns = table.filteredColumns(false, false, true);
+
+
+        DatabaseSupport databaseSupport = databaseConfiguration.databaseSupport();
+
+        TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
+        PrimaryKeyConfiguration primaryKeyConfiguration = tableConfiguration != null ? tableConfiguration.getPrimaryKeyConfiguration() : null;
+
+        int batchSize = databaseConfiguration.batchSize();
+        long rowCount = databaseConfiguration.defaultRowCount();
+        boolean tableHasPrimaryKey = table.hasPrimaryKey();
+
+        if (tableConfiguration != null) {
+            rowCount = tableConfiguration.getRowCount();
+        }
+
+        for (Column column : columns) {
+            ColumnGenerator generator = getColumnGenerator(databaseSupport, table, column, tableConfiguration);
+
+        }
+
+    }
+
+    ColumnGenerator getColumnGenerator(DatabaseSupport databaseSupport, Table table, Column column, TableConfiguration tableConfiguration) {
+
+        ColumnGenerator columnGenerator = null;
+
+        if (table.isForeignKey(column)) {
+            columnGenerator = getForeignKeyGenerator(databaseSupport, tableConfiguration, column);
+        } else {
+            columnGenerator = getNonForeignKeyGenerator(databaseSupport, tableConfiguration, column);
+        }
+
+        return columnGenerator;
+
+    }
+
     @Override
     public void fill() throws SQLException {
 
-        String sql = table.insertString();
+        List<Column> columns = table.filteredColumns(false, false, true);
+        String sql = table.insertString(columns);
 
         logger.trace(sql);
 
-        Map<Column, DataGenerator<?>> generatorMap = new HashMap<>();
+        TreeMap<Column, DataGenerator<?>> generatorMap = new TreeMap<>();
         Map<Column, Random> randomMap = new HashMap<>();
         Map<Column, Long> seedMap = new HashMap<>();
         Map<Column, Long> maxInvocationMap = new HashMap<>();
 
-        List<Column> filteredColumns = table.filteredColumns();
-
         DatabaseSupport databaseSupport = databaseConfiguration.databaseSupport();
 
-        Optional<TableConfiguration> tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
+        TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
+        PrimaryKeyConfiguration primaryKeyConfiguration = tableConfiguration != null ? tableConfiguration.getPrimaryKeyConfiguration() : null;
 
         int batchSize = databaseConfiguration.batchSize();
         long rowCount = databaseConfiguration.defaultRowCount();
+        boolean tableHasPrimaryKey = table.hasPrimaryKey();
 
-        if (tableConfiguration.isPresent()) {
-            rowCount = tableConfiguration.get().rowCount();
+        if (tableConfiguration != null) {
+            rowCount = tableConfiguration.getRowCount();
         }
 
         logger.info("filling table [{}] with [{}] rows; batch size is [{}]", table.name(), rowCount, batchSize);
 
-        for (Column column : filteredColumns) {
 
-            long seed;
+        PrimaryKeyGenerator primaryKeyGenerator = null;
 
-            Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(database, table, column);
+        // handle tables primary key which may include multiple columns.  a PK column can also be a FK and that should be handled here
+        if (tableHasPrimaryKey) {
 
-            DataGenerator<?> dataGenerator = null;
+            if (primaryKeyConfiguration != null) {
 
-            if (associatedPrimaryKeyColumn != null) {
+                primaryKeyGenerator = primaryKeyConfiguration.primaryKeyGenerator();
 
-                // check to see if table has custom configuration
-                Optional<TableConfiguration> primaryTableConfiguration = databaseConfiguration.tableConfiguration(associatedPrimaryKeyColumn.tableName());
-
-                if (primaryTableConfiguration.isPresent()) {
-                    // this is the number of rows in the primary table.  a foreign key random generator can't be called more than this number of times.
-                    maxInvocationMap.put(column, primaryTableConfiguration.get().rowCount());
-
-                    Optional<ColumnConfiguration> primaryKeyColumnConfiguration = primaryTableConfiguration.get().columnConfiguration(associatedPrimaryKeyColumn.name());
-
-                    if (primaryKeyColumnConfiguration.isPresent()) {
-                        dataGenerator = primaryKeyColumnConfiguration.get().dataGenerator();
-                    }
-
-                }
-
-                seed = associatedPrimaryKeyColumn.hashCode();
             } else {
 
-                if (tableConfiguration.isPresent()) {
-                    Optional<ColumnConfiguration> columnConfiguration = tableConfiguration.get().columnConfiguration(column.name());
+                PrimaryKey primaryKey = table.primaryKey();
 
-                    if (columnConfiguration.isPresent()) {
-                        dataGenerator = columnConfiguration.get().dataGenerator();
+                List<KeyColumn> keyColumns = primaryKey.keyColumns();
+
+                Map<KeyColumn, DataGenerator<?>> dataGenerators = new HashMap<>();
+
+                for (KeyColumn kc : keyColumns) {
+
+                    Column column = kc.column();
+
+                    DataGenerator<?> dataGenerator = null;
+
+                    if (table.isForeignKey(column)) {
+                        dataGenerator = getForeignKeyGenerator(databaseSupport, tableConfiguration, column);
+                    } else {
+                        dataGenerator = databaseSupport.getDataGenerator(column);
                     }
+
+                    dataGenerators.put(kc, dataGenerator);
 
                 }
 
-                seed = column.hashCode();
-            }
+                primaryKeyGenerator = new SimplePrimaryKeyGenerator.Builder(dataGenerators).build();
 
-            if (dataGenerator == null) {
-                dataGenerator = databaseSupport.getDataGenerator(column);
             }
+        }
 
-            generatorMap.put(column, dataGenerator);
-            randomMap.put(column, new Random(seed));
-            seedMap.put(column, seed);
+        // handle foreign keys that are not part of the primary key above
+        if (table.hasForeignKeys()) {
+            List<ForeignKey> foreignKeys = table.foreignKeys();
+
+            for (ForeignKey fk : foreignKeys) {
+                for (KeyColumn keyColumn : fk.foreignKeyColumns()) {
+                    Column column = keyColumn.column();
+
+                    if (!table.isPrimaryKey(column)) {
+                        generatorMap.put(column, getForeignKeyGenerator(databaseSupport, tableConfiguration, column));
+                    }
+                }
+            }
+        }
+
+        // handle remaining columns that need a value
+        for (Column column : table.filteredColumns(true, true, true)) {
+            if (tableConfiguration != null && tableConfiguration.columnConfiguration(column.name()) != null) {
+                generatorMap.put(column, tableConfiguration.columnConfiguration(column.name()).dataGenerator());
+            } else {
+                generatorMap.put(column, databaseSupport.getDataGenerator(column));
+            }
         }
 
         StopWatch tableWatch = new StopWatch(String.format("filled table [%s] in", table.name()));
@@ -121,22 +178,42 @@ public class TableFiller implements Fillable {
             int rowCounter = 0;
             for (long i = 0; i < rowCount; i++) {
 
+                Map<Column, ColumnValue<?>> primaryValues = null;
+
+                if (tableHasPrimaryKey) {
+                    PrimaryKey primaryKey = table.primaryKey();
+
+                    primaryValues = primaryKeyGenerator.generate(primaryKey, new Random());  // todo; can't create new must get existing
+                }
+
                 int colCounter = 1;
-                for (Column column : filteredColumns) {
+                for (Column column : table.filteredColumns(false, false, true)) {
 
-                    Random random = randomMap.get(column);
+                    if (table.isPrimaryKey(column)) {
 
-                    DataGenerator<?> dataGenerator = generatorMap.get(column);
+                        ColumnValue<?> columnValue = Objects.requireNonNull(primaryValues).get(column);
 
-                    if (maxInvocationMap.containsKey(column)) {
-                        long maxInvocations = maxInvocationMap.get(column);
+                        // we don't need to be terribly concerned about the correct generator here because value has already been generated.  all we really care about is type.
+                        DataGenerator<Object> dataGenerator = databaseSupport.getDataGenerator(column);
 
-                        if (rowCounter != 0 && rowCounter % maxInvocations == 0) {
-                            random.setSeed(seedMap.get(column));
+                        dataGenerator.set(connection, ps, colCounter, columnValue.value());
+
+                    } else {
+                        Random random = randomMap.get(column);
+
+                        if (maxInvocationMap.containsKey(column)) {
+                            long maxInvocations = maxInvocationMap.get(column);
+
+                            if (rowCounter != 0 && rowCounter % maxInvocations == 0) {
+                                random.setSeed(seedMap.get(column));
+                            }
                         }
-                    }
 
-                    dataGenerator.generateAndSet(connection, ps, colCounter, random);
+
+                        DataGenerator<?> dataGenerator = generatorMap.get(column);
+
+                        dataGenerator.generateAndSet(connection, ps, colCounter, random);
+                    }
 
                     colCounter++;
                 }
@@ -155,9 +232,49 @@ public class TableFiller implements Fillable {
             tableWatch.stop();
         }
 
-
         logger.info(tableWatch.toString());
 
+    }
+
+    private ColumnGenerator getForeignKeyGenerator(DatabaseSupport databaseSupport, TableConfiguration tableConfiguration, Column foreignKeyColumn) {
+
+        DataGenerator<?> dataGenerator = null;
+
+        if (tableConfiguration != null && tableConfiguration.columnConfiguration(foreignKeyColumn.name()) != null) {
+            return tableConfiguration.columnConfiguration(foreignKeyColumn.name()).dataGenerator();
+        } else {
+
+            Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(database, table, foreignKeyColumn);
+
+            Objects.requireNonNull(associatedPrimaryKeyColumn, String.format("no associated primary key column found for column %s", foreignKeyColumn));
+
+            TableConfiguration primaryTableConfiguration = databaseConfiguration.tableConfiguration(associatedPrimaryKeyColumn.tableName());
+
+            if (primaryTableConfiguration != null) {
+
+                ColumnConfiguration primaryKeyColumnConfiguration = primaryTableConfiguration.columnConfiguration(associatedPrimaryKeyColumn.name());
+
+                if (primaryKeyColumnConfiguration != null) {
+                    dataGenerator = primaryKeyColumnConfiguration.dataGenerator();
+                }
+
+            }
+
+            if (dataGenerator == null) {
+                dataGenerator = databaseSupport.getDataGenerator(associatedPrimaryKeyColumn);
+            }
+
+            return dataGenerator;
+        }
+    }
+
+    private DataGenerator<?> getNonForeignKeyGenerator(DatabaseSupport databaseSupport, TableConfiguration tableConfiguration, Column column) {
+
+        if (tableConfiguration != null && tableConfiguration.columnConfiguration(column.name()) != null) {
+            return tableConfiguration.columnConfiguration(column.name()).dataGenerator();
+        }
+
+        return databaseSupport.getDataGenerator(column);
     }
 
 
@@ -169,7 +286,7 @@ public class TableFiller implements Fillable {
 
         private Table table;
 
-        public Builder(Connection connection, Database database, DatabaseConfiguration databaseConfiguration) {
+        public Builder(Connection connection, DatabaseConfiguration databaseConfiguration, Database database) {
             this.connection = connection;
             this.database = database;
             this.databaseConfiguration = databaseConfiguration;

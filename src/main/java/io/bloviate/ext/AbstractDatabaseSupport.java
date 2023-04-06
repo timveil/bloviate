@@ -16,13 +16,16 @@
 
 package io.bloviate.ext;
 
-import io.bloviate.db.Column;
+import io.bloviate.db.metadata.Column;
 import io.bloviate.gen.*;
+
+import java.math.BigDecimal;
+import java.sql.*;
 
 public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
     @Override
-    public final DataGenerator<?> getDataGenerator(Column column) {
+    public final DataGenerator getDataGenerator(Column column) {
         switch (column.jdbcType()) {
             case BIT -> {
                 return buildBitGenerator(column);
@@ -147,142 +150,142 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
     }
 
     @Override
-    public DataGenerator<?> buildTinyIntGenerator(Column column) {
+    public DataGenerator<Short> buildTinyIntGenerator(Column column) {
         return new ShortGenerator.Builder().start(0).end(255).build();
     }
 
     @Override
-    public DataGenerator<?> buildSmallIntGenerator(Column column) {
+    public DataGenerator<Short> buildSmallIntGenerator(Column column) {
         return new ShortGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildIntegerGenerator(Column column) {
+    public DataGenerator<Integer> buildIntegerGenerator(Column column) {
         return new IntegerGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildBigIntGenerator(Column column) {
+    public DataGenerator<Long> buildBigIntGenerator(Column column) {
         return new LongGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildFloatGenerator(Column column) {
+    public DataGenerator<Float> buildFloatGenerator(Column column) {
         return new FloatGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildRealGenerator(Column column) {
+    public DataGenerator<Float> buildRealGenerator(Column column) {
         return new FloatGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildDoubleGenerator(Column column) {
+    public DataGenerator<Double> buildDoubleGenerator(Column column) {
         return new DoubleGenerator.Builder().maxDigits(column.maxDigits()).build();
     }
 
     @Override
-    public DataGenerator<?> buildDecimalGenerator(Column column) {
+    public DataGenerator<BigDecimal> buildDecimalGenerator(Column column) {
         return new BigDecimalGenerator.Builder().precision(column.maxSize()).digits(column.maxDigits()).build();
     }
 
     @Override
-    public DataGenerator<?> buildCharGenerator(Column column) {
+    public DataGenerator<String> buildCharGenerator(Column column) {
         return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildNCharGenerator(Column column) {
+    public DataGenerator<String> buildNCharGenerator(Column column) {
         return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildVarcharGenerator(Column column) {
+    public DataGenerator<String> buildVarcharGenerator(Column column) {
         return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildNVarcharGenerator(Column column) {
+    public DataGenerator<String> buildNVarcharGenerator(Column column) {
         return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildLongVarcharGenerator(Column column) {
+    public DataGenerator<String> buildLongVarcharGenerator(Column column) {
         return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildLongNVarcharGenerator(Column column) {
+    public DataGenerator<String> buildLongNVarcharGenerator(Column column) {
         return new SimpleStringGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildDateGenerator(Column column) {
+    public DataGenerator<Date> buildDateGenerator(Column column) {
         return new SqlDateGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildTimeGenerator(Column column) {
+    public DataGenerator<Time> buildTimeGenerator(Column column) {
         return new SqlTimeGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildTimeWithTimezoneGenerator(Column column) {
+    public DataGenerator<Time> buildTimeWithTimezoneGenerator(Column column) {
         return new SqlTimeGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildTimestampGenerator(Column column) {
+    public DataGenerator<Timestamp> buildTimestampGenerator(Column column) {
         return new SqlTimestampGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildTimestampWithTimezoneGenerator(Column column) {
+    public DataGenerator<Timestamp> buildTimestampWithTimezoneGenerator(Column column) {
         return new SqlTimestampGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildBinaryGenerator(Column column) {
+    public DataGenerator<Byte[]> buildBinaryGenerator(Column column) {
         return new ByteGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildVarbinaryGenerator(Column column) {
+    public DataGenerator<Byte[]> buildVarbinaryGenerator(Column column) {
         return new ByteGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildLongVarbinaryGenerator(Column column) {
+    public DataGenerator<Byte[]> buildLongVarbinaryGenerator(Column column) {
         return new ByteGenerator.Builder().size(column.maxSize()).build();
     }
 
     @Override
-    public DataGenerator<?> buildBlobGenerator(Column column) {
+    public DataGenerator<Blob> buildBlobGenerator(Column column) {
         return new SqlBlobGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildClobGenerator(Column column) {
+    public DataGenerator<Clob> buildClobGenerator(Column column) {
         return new SqlClobGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildNClobGenerator(Column column) {
+    public DataGenerator<Clob> buildNClobGenerator(Column column) {
         return new SqlClobGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildStructGenerator(Column column) {
+    public DataGenerator<Struct> buildStructGenerator(Column column) {
         return new SqlStructGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildArrayGenerator(Column column) {
+    public DataGenerator<Object> buildArrayGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildBitGenerator(Column column) {
+    public DataGenerator buildBitGenerator(Column column) {
         if (1 == column.maxSize()) {
             return new BitGenerator.Builder().build();
         } else {
@@ -291,57 +294,57 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
     }
 
     @Override
-    public DataGenerator<?> buildBooleanGenerator(Column column) {
+    public DataGenerator<Boolean> buildBooleanGenerator(Column column) {
         return new BooleanGenerator.Builder().build();
     }
 
     @Override
-    public DataGenerator<?> buildOtherGenerator(Column column) {
+    public DataGenerator<Object> buildOtherGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildNumericGenerator(Column column) {
+    public DataGenerator<BigDecimal> buildNumericGenerator(Column column) {
         return new BigDecimalGenerator.Builder().precision(column.maxSize()).digits(column.maxDigits()).build();
     }
 
     @Override
-    public DataGenerator<?> buildJavaObjectGenerator(Column column) {
+    public DataGenerator<Object> buildJavaObjectGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildDistinctGenerator(Column column) {
+    public DataGenerator<Object> buildDistinctGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildNullGenerator(Column column) {
+    public DataGenerator<Object> buildNullGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildRefGenerator(Column column) {
+    public DataGenerator<Object> buildRefGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildDataLinkGenerator(Column column) {
+    public DataGenerator<Object> buildDataLinkGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildRowIdGenerator(Column column) {
+    public DataGenerator<Object> buildRowIdGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildSqlXmlGenerator(Column column) {
+    public DataGenerator<Object> buildSqlXmlGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 
     @Override
-    public DataGenerator<?> buildRefCursorGenerator(Column column) {
+    public DataGenerator<Object> buildRefCursorGenerator(Column column) {
         throw new UnsupportedOperationException("generator not supported");
     }
 }

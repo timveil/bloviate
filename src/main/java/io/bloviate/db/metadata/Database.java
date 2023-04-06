@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.bloviate.db;
+package io.bloviate.db.metadata;
 
 import java.util.List;
 

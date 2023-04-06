@@ -16,21 +16,61 @@
 
 package io.bloviate.db;
 
-import java.util.Optional;
 import java.util.Set;
 
-public record TableConfiguration(String tableName, long rowCount, Set<ColumnConfiguration> columnConfigurations) {
+public class TableConfiguration {
 
-    public Optional<ColumnConfiguration> columnConfiguration(String columnName) {
+    private final String tableName;
+    private final long rowCount;
+    private final PrimaryKeyConfiguration primaryKeyConfiguration;
+    private final Set<ColumnConfiguration> columnConfigurations;
+
+    public TableConfiguration(String tableName, long rowCount) {
+        this.tableName = tableName;
+        this.rowCount = rowCount;
+        this.primaryKeyConfiguration = null;
+        this.columnConfigurations = null;
+    }
+    public TableConfiguration(String tableName, long rowCount, PrimaryKeyConfiguration primaryKeyConfiguration) {
+        this.tableName = tableName;
+        this.rowCount = rowCount;
+        this.primaryKeyConfiguration = primaryKeyConfiguration;
+        this.columnConfigurations = null;
+    }
+
+    public TableConfiguration(String tableName, long rowCount, PrimaryKeyConfiguration primaryKeyConfiguration, Set<ColumnConfiguration> columnConfigurations) {
+        this.tableName = tableName;
+        this.rowCount = rowCount;
+        this.primaryKeyConfiguration = primaryKeyConfiguration;
+        this.columnConfigurations = columnConfigurations;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public long getRowCount() {
+        return rowCount;
+    }
+
+    public PrimaryKeyConfiguration getPrimaryKeyConfiguration() {
+        return primaryKeyConfiguration;
+    }
+
+    public Set<ColumnConfiguration> getColumnConfigurations() {
+        return columnConfigurations;
+    }
+
+    public ColumnConfiguration columnConfiguration(String columnName) {
         if (columnConfigurations != null && !columnConfigurations.isEmpty()) {
             for (ColumnConfiguration columnConfiguration : columnConfigurations) {
                 if (columnConfiguration.columnName().equalsIgnoreCase(columnName)) {
-                    return Optional.of(columnConfiguration);
+                    return columnConfiguration;
                 }
             }
         }
 
-        return Optional.empty();
+        return null;
     }
 
 

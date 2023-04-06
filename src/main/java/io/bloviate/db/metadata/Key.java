@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package io.bloviate.db;
+package io.bloviate.db.metadata;
 
-import java.util.List;
+import java.util.Comparator;
+import java.util.Objects;
 
-
-public record PrimaryKey(String tableName, List<KeyColumn> keyColumns) {}
+public record Key(String primaryTableName, String primaryColumnName, String foreignTableName, String foreignColumnName, int sequence, String name) implements Comparable<Key>{
+    @Override
+    public int compareTo(Key that) {
+        return Objects.compare(this, that, Comparator.comparing(Key::sequence));
+    }
+}

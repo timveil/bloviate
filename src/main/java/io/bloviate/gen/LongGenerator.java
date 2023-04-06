@@ -35,8 +35,8 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Long value) throws SQLException {
-        statement.setLong(parameterIndex, value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setLong(parameterIndex, (Long) value);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

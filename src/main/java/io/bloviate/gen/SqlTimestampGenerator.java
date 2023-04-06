@@ -37,8 +37,8 @@ public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Timestamp value) throws SQLException {
-        statement.setTimestamp(parameterIndex, value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setTimestamp(parameterIndex, (Timestamp) value);
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

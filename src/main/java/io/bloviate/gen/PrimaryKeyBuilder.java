@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
-package io.bloviate.db;
+package io.bloviate.gen;
 
-public record KeyColumn(int sequence, Column column) {}
+public interface PrimaryKeyBuilder {
+    PrimaryKeyGenerator build();
+}

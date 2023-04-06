@@ -39,8 +39,8 @@ public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Integer[] value) throws SQLException {
-        statement.setArray(parameterIndex, connection.createArrayOf(JDBCType.INTEGER.getName(), value));
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
+        statement.setArray(parameterIndex, connection.createArrayOf(JDBCType.INTEGER.getName(), (Integer[]) value));
     }
 
     public static class Builder implements io.bloviate.gen.Builder {

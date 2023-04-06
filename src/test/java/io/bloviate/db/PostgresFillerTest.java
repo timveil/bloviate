@@ -65,7 +65,7 @@ class PostgresFillerTest extends BasePostgresTest {
                      ResultSet rs = statement.executeQuery("select count(*) from item")) {
                     rs.next();
                     int count = rs.getInt(1);
-                    Assertions.assertEquals(count, configuration.tableConfiguration("item").orElseThrow().rowCount());
+                    Assertions.assertEquals(configuration.tableConfiguration("item").getRowCount(), count);
                 }
 
                 try (Statement statement = connection.createStatement();
@@ -89,7 +89,7 @@ class PostgresFillerTest extends BasePostgresTest {
                      ResultSet rs = statement.executeQuery("select count(*) from warehouse")) {
                     rs.next();
                     int count = rs.getInt(1);
-                    Assertions.assertEquals(count, configuration.tableConfiguration("warehouse").orElseThrow().rowCount());
+                    Assertions.assertEquals(configuration.tableConfiguration("warehouse").getRowCount(), count);
                 }
 
                 try (Statement statement = connection.createStatement();

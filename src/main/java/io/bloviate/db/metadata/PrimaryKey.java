@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 
-package io.bloviate.db;
+package io.bloviate.db.metadata;
 
-public record Key(String primaryTableName, String primaryColumnName, String foreignTableName, String foreignColumnName, int sequence, String name) {
+import java.util.List;
+
+
+public record PrimaryKey(String tableName, List<KeyColumn> keyColumns) {
+
+    public int columnCount() {
+        return keyColumns.size();
+    }
 }
+
