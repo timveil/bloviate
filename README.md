@@ -36,8 +36,19 @@ A powerful Java library for generating realistic test data for JDBC-compatible r
 <dependency>
     <groupId>io.bloviate</groupId>
     <artifactId>bloviate-core</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>LATEST</version>
 </dependency>
+```
+
+To use GitHub Packages, add this repository to your `pom.xml`:
+
+```xml
+<repositories>
+    <repository>
+        <id>github</id>
+        <url>https://maven.pkg.github.com/timveil/bloviate</url>
+    </repository>
+</repositories>
 ```
 
 ### Requirements
@@ -237,9 +248,38 @@ cd docker/crdb && ./up.sh
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
+3. Make your changes following our commit message format
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+### Commit Message Format
+
+This project uses [Conventional Commits](https://conventionalcommits.org/) for automatic semantic versioning:
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Commit types and version impact:**
+- `feat:` → Minor version bump (new features)
+- `fix:` → Patch version bump (bug fixes) 
+- `perf:` → Patch version bump (performance improvements)
+- `refactor:` → Patch version bump (code refactoring)
+- `feat!:` or `BREAKING CHANGE:` → Major version bump
+
+**No version bump:**
+- `docs:`, `style:`, `test:`, `ci:`, `chore:`
+
+**Examples:**
+```bash
+git commit -m "feat(database): add connection pooling support"
+git commit -m "fix(generator): resolve null pointer in StringGenerator"  
+git commit -m "docs: update installation instructions"
+```
 
 ### Development Guidelines
 
@@ -247,6 +287,7 @@ cd docker/crdb && ./up.sh
 - Add tests for new features
 - Update documentation as needed
 - Ensure all tests pass before submitting PR
+- Use conventional commit messages for automatic versioning
 
 ## 📄 License
 

@@ -1,0 +1,37 @@
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+
+# IMPORTANT: This project uses semantic versioning based on commit messages
+# Format: <type>(<optional scope>): <description>
+#
+# Types and their version impact:
+# feat:     New feature (MINOR version bump)
+# fix:      Bug fix (PATCH version bump)
+# perf:     Performance improvement (PATCH version bump)
+# refactor: Code refactoring (PATCH version bump)
+# build:    Build system changes (PATCH version bump)
+# revert:   Revert previous commit (PATCH version bump)
+#
+# No version bump:
+# docs:     Documentation only changes
+# style:    Code style changes (whitespace, formatting)
+# test:     Adding or updating tests
+# ci:       CI configuration changes
+# chore:    Maintenance tasks
+#
+# Breaking Changes (MAJOR version bump):
+# Add "!" after type: feat!: remove deprecated API
+# OR add "BREAKING CHANGE:" in footer
+#
+# Examples with version impact:
+# feat(database): add PostgreSQL connection pooling     → 1.1.0
+# fix(generator): resolve null pointer exception       → 1.0.1
+# feat!: remove deprecated FileGenerator methods       → 2.0.0
+# docs: update README installation instructions         → no release
+# chore: update dependencies                            → no release
+#
+# Scopes (optional but recommended):
+# database, generator, file, api, build, ci, test
