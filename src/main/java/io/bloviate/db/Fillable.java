@@ -18,7 +18,19 @@ package io.bloviate.db;
 
 import java.sql.SQLException;
 
+/**
+ * Interface for objects that can be filled with generated data.
+ * Implementations of this interface can populate database tables
+ * or other data structures with synthetic data.
+ *
+ * @since 1.0.0
+ */
 public interface Fillable {
 
+    /**
+     * Fills the target with generated data.
+     *
+     * @throws SQLException if a database access error occurs during the fill operation
+     */
     void fill() throws SQLException;
 }

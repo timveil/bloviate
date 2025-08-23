@@ -21,6 +21,13 @@ import java.sql.SQLException;
 import java.util.Random;
 import java.util.UUID;
 
+/**
+ * Generator for UUID (Universally Unique Identifier) values.
+ * Produces random UUIDs for database columns that store unique identifiers.
+ * The generated UUIDs are deterministic based on the provided random seed.
+ *
+ * @since 1.0.0
+ */
 public class UUIDGenerator extends AbstractDataGenerator<UUID> {
 
     @Override
@@ -41,8 +48,16 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
         return null;
     }
 
+    /**
+     * Builder for creating UUIDGenerator instances.
+     */
     public static class Builder extends AbstractBuilder {
 
+        /**
+         * Constructs a new Builder for UUIDGenerator.
+         *
+         * @param random the random number generator to use
+         */
         public Builder(Random random) {
             super(random);
         }

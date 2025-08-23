@@ -18,4 +18,13 @@ package io.bloviate.file;
 
 import io.bloviate.gen.DataGenerator;
 
+/**
+ * Defines a column for flat file generation.
+ * This record pairs a column name with its corresponding data generator,
+ * specifying how data should be generated for that column in the output file.
+ *
+ * @param name the name of the column
+ * @param dataGenerator the generator used to produce values for this column
+ * @since 1.0.0
+ */
 public record ColumnDefinition(String name, DataGenerator<?> dataGenerator) {}

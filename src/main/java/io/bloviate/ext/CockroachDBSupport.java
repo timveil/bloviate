@@ -21,6 +21,16 @@ import io.bloviate.gen.*;
 
 import java.util.Random;
 
+/**
+ * CockroachDB-specific implementation of database support.
+ * Provides CockroachDB-specific data generation and type mapping logic,
+ * including support for CockroachDB's PostgreSQL-compatible types and
+ * specialized data types like arrays, UUID, JSONB, and intervals.
+ *
+ * @since 1.0.0
+ * @see AbstractDatabaseSupport
+ * @see DatabaseSupport
+ */
 public class CockroachDBSupport extends AbstractDatabaseSupport {
 
     @Override

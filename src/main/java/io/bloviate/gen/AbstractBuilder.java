@@ -18,9 +18,24 @@ package io.bloviate.gen;
 
 import java.util.Random;
 
+/**
+ * Abstract base class for data generator builders.
+ * Provides common functionality for all builder implementations,
+ * including random number generation support.
+ *
+ * @since 1.0.0
+ */
 public abstract class AbstractBuilder implements Builder {
+    /**
+     * The random number generator used for creating data.
+     */
     protected final Random random;
 
+    /**
+     * Constructs a new AbstractBuilder with the specified random number generator.
+     *
+     * @param random the random number generator to use for data generation
+     */
     public AbstractBuilder(Random random) {
         this.random = random;
     }

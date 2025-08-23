@@ -16,5 +16,14 @@
 
 package io.bloviate.db;
 
+/**
+ * Configuration for customizing how a specific table should be filled with data.
+ * This record allows users to specify custom row counts for individual tables,
+ * overriding the default row count specified in the DatabaseConfiguration.
+ *
+ * @param tableName the name of the table to configure
+ * @param rowCount the number of rows to generate for this table
+ * @since 1.0.0
+ */
 public record TableConfiguration(String tableName, long rowCount) {
 }

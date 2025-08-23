@@ -31,6 +31,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ * Fills a database table with generated data.
+ * This class handles the population of a single table with synthetic data,
+ * respecting foreign key constraints and using appropriate data generators
+ * for each column type.
+ *
+ * @since 1.0.0
+ */
 public class TableFiller implements Fillable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -39,6 +47,21 @@ public class TableFiller implements Fillable {
     private final Database database;
     private final DatabaseConfiguration databaseConfiguration;
     private final Table table;
+
+    /**
+     * Constructs a new TableFiller.
+     *
+     * @param connection the database connection to use for filling the table
+     * @param database the database metadata containing table relationships
+     * @param databaseConfiguration the configuration settings for the fill operation
+     * @param table the table to be filled with data
+     */
+    public TableFiller(Connection connection, Database database, DatabaseConfiguration databaseConfiguration, Table table) {
+        this.connection = connection;
+        this.database = database;
+        this.databaseConfiguration = databaseConfiguration;
+        this.table = table;
+    }
 
     @Override
     public void fill() throws SQLException {

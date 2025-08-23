@@ -16,4 +16,12 @@
 
 package io.bloviate.db;
 
+/**
+ * Represents a column that is part of a key (primary or foreign) in a database table.
+ * This record pairs a column with its position in a composite key.
+ *
+ * @param sequence the ordinal position of this column in a composite key (1-based)
+ * @param column the column that is part of the key
+ * @since 1.0.0
+ */
 public record KeyColumn(int sequence, Column column) {}

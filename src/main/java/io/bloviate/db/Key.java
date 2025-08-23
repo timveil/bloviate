@@ -16,5 +16,18 @@
 
 package io.bloviate.db;
 
+/**
+ * Represents a key relationship between two database tables.
+ * This record encapsulates the metadata about a foreign key constraint,
+ * including the tables and columns involved in the relationship.
+ *
+ * @param primaryTableName the name of the table containing the primary key
+ * @param primaryColumnName the name of the primary key column
+ * @param foreignTableName the name of the table containing the foreign key
+ * @param foreignColumnName the name of the foreign key column
+ * @param sequence the ordinal position of this column in a composite key (1-based)
+ * @param name the name of the foreign key constraint
+ * @since 1.0.0
+ */
 public record Key(String primaryTableName, String primaryColumnName, String foreignTableName, String foreignColumnName, int sequence, String name) {
 }

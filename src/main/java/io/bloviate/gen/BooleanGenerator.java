@@ -22,6 +22,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
+/**
+ * Generator for Boolean values.
+ * Produces random true/false values for database columns that store boolean data.
+ *
+ * @since 1.0.0
+ */
 public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
 
     @Override
@@ -39,8 +45,16 @@ public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
         return resultSet.getBoolean(columnIndex);
     }
 
+    /**
+     * Builder for creating BooleanGenerator instances.
+     */
     public static class Builder extends AbstractBuilder {
 
+        /**
+         * Constructs a new Builder for BooleanGenerator.
+         *
+         * @param random the random number generator to use
+         */
         public Builder(Random random) {
             super(random);
         }

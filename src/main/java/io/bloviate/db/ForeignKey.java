@@ -18,4 +18,13 @@ package io.bloviate.db;
 
 import java.util.List;
 
+/**
+ * Represents a foreign key constraint in a database table.
+ * A foreign key establishes a link between data in two tables by referencing
+ * the primary key of another table.
+ *
+ * @param foreignKeyColumns the columns that make up the foreign key
+ * @param primaryKey the primary key that this foreign key references
+ * @since 1.0.0
+ */
 public record ForeignKey(List<KeyColumn> foreignKeyColumns, PrimaryKey primaryKey) {}

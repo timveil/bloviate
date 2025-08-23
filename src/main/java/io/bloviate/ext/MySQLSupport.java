@@ -16,6 +16,16 @@
 
 package io.bloviate.ext;
 
+/**
+ * MySQL-specific implementation of database support.
+ * Provides MySQL-specific data generation and type mapping logic.
+ * This class inherits default behavior from AbstractDatabaseSupport
+ * and can be extended to handle MySQL-specific data types and constraints.
+ *
+ * @since 1.0.0
+ * @see AbstractDatabaseSupport
+ * @see DatabaseSupport
+ */
 public class MySQLSupport extends AbstractDatabaseSupport {
 
 

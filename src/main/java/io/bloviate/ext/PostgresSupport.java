@@ -16,6 +16,16 @@
 
 package io.bloviate.ext;
 
+/**
+ * PostgreSQL-specific implementation of database support.
+ * Provides PostgreSQL-specific data generation and type mapping logic.
+ * This class inherits default behavior from AbstractDatabaseSupport
+ * and can be extended to handle PostgreSQL-specific data types and constraints.
+ *
+ * @since 1.0.0
+ * @see AbstractDatabaseSupport
+ * @see DatabaseSupport
+ */
 public class PostgresSupport extends AbstractDatabaseSupport {
 
 

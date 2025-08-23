@@ -18,5 +18,13 @@ package io.bloviate.db;
 
 import java.util.List;
 
-
+/**
+ * Represents a primary key constraint in a database table.
+ * A primary key uniquely identifies each record in a table and can consist
+ * of one or more columns (composite key).
+ *
+ * @param tableName the name of the table containing this primary key
+ * @param keyColumns the ordered list of columns that comprise this primary key
+ * @since 1.0.0
+ */
 public record PrimaryKey(String tableName, List<KeyColumn> keyColumns) {}

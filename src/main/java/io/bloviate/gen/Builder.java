@@ -16,6 +16,18 @@
 
 package io.bloviate.gen;
 
+/**
+ * Builder interface for creating data generator instances.
+ * Implementations of this interface follow the Builder pattern to construct
+ * configured data generators.
+ *
+ * @since 1.0.0
+ */
 public interface Builder {
+    /**
+     * Builds and returns a configured data generator.
+     *
+     * @return a new instance of AbstractDataGenerator configured with the builder's settings
+     */
     AbstractDataGenerator<?> build();
 }
