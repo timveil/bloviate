@@ -39,6 +39,35 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Main entry point for filling database tables with generated data.
+ * 
+ * <p>The DatabaseFiller orchestrates the entire database filling process by:
+ * <ul>
+ *   <li>Analyzing database metadata to discover tables, columns, and relationships</li>
+ *   <li>Building a dependency graph based on foreign key relationships</li>
+ *   <li>Using topological sorting to determine the proper fill order</li>
+ *   <li>Delegating individual table filling to {@link TableFiller} instances</li>
+ * </ul>
+ * 
+ * <p>The filling process respects foreign key constraints by ensuring parent tables
+ * are populated before their dependent child tables. Self-referencing tables are
+ * detected and logged as potential issues.
+ * 
+ * <p>Example usage:
+ * <pre>{@code
+ * DatabaseConfiguration config = new DatabaseConfiguration(batchSize, recordCount, 
+ *     databaseSupport, tableConfigs);
+ * new DatabaseFiller.Builder(connection, config)
+ *     .build()
+ *     .fill();
+ * }</pre>
+ * 
+ * @author Tim Veil
+ * @see TableFiller
+ * @see DatabaseConfiguration
+ * @see Fillable
+ */
 public class DatabaseFiller implements Fillable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -46,6 +75,22 @@ public class DatabaseFiller implements Fillable {
     private final Connection connection;
     private final DatabaseConfiguration configuration;
 
+    /**
+     * Fills all tables in the database with generated data.
+     * 
+     * <p>This method performs the complete database filling workflow:
+     * <ol>
+     *   <li>Retrieves database metadata including tables, columns, and foreign keys</li>
+     *   <li>Builds a directed graph representing table dependencies</li>
+     *   <li>Performs topological sorting to determine fill order</li>
+     *   <li>Fills each table in dependency order using {@link TableFiller}</li>
+     * </ol>
+     * 
+     * <p>Progress and timing information is logged throughout the process.
+     * A visualization link for the dependency graph is also provided in the logs.
+     * 
+     * @throws SQLException if any database operation fails during the filling process
+     */
     @Override
     public void fill() throws SQLException {
 
@@ -105,6 +150,16 @@ public class DatabaseFiller implements Fillable {
 
     }
 
+    /**
+     * Generates a DOT notation visualization of the table dependency graph.
+     * 
+     * <p>Creates a Graphviz-compatible DOT representation of the table relationships
+     * and provides a URL to view the graph online. The graph shows the order in
+     * which tables will be filled to satisfy foreign key constraints.
+     * 
+     * @param graph the table dependency graph to visualize
+     * @param databaseName the name of the database for graph labeling
+     */
     private void visualizeGraph(Graph<Table, DefaultEdge> graph, String databaseName) {
         DOTExporter<Table, DefaultEdge> exporter = new DOTExporter<>(Table::name);
         exporter.setVertexAttributeProvider((v) -> {
@@ -127,21 +182,44 @@ public class DatabaseFiller implements Fillable {
         logger.info("Use this link to visualize the database graph:  https://dreampuf.github.io/GraphvizOnline/#{}", encodedDiagram);
     }
 
+    /**
+     * Builder for constructing DatabaseFiller instances.
+     * 
+     * <p>Follows the builder pattern to provide a clean API for creating
+     * DatabaseFiller objects with required dependencies.
+     */
     public static class Builder {
 
         private final Connection connection;
         private final DatabaseConfiguration configuration;
 
+        /**
+         * Creates a new builder with the required dependencies.
+         * 
+         * @param connection the database connection to use for filling operations
+         * @param configuration the configuration specifying batch sizes, record counts, and table settings
+         * @throws NullPointerException if either parameter is null
+         */
         public Builder(Connection connection, DatabaseConfiguration configuration) {
             this.connection = connection;
             this.configuration = configuration;
         }
 
+        /**
+         * Builds a new DatabaseFiller instance with the configured parameters.
+         * 
+         * @return a new DatabaseFiller ready to fill the database
+         */
         public DatabaseFiller build() {
             return new DatabaseFiller(this);
         }
     }
 
+    /**
+     * Private constructor used by the Builder to create DatabaseFiller instances.
+     * 
+     * @param builder the builder containing the configured parameters
+     */
     private DatabaseFiller(Builder builder) {
         this.connection = builder.connection;
         this.configuration = builder.configuration;

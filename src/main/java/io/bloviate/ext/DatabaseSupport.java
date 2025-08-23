@@ -21,10 +21,53 @@ import io.bloviate.gen.DataGenerator;
 
 import java.util.Random;
 
+/**
+ * Database-specific support interface for data generation and SQL handling.
+ * 
+ * <p>This interface defines the contract for database-specific implementations
+ * that handle the creation of appropriate {@link DataGenerator} instances for
+ * different JDBC data types. Each database may have unique type mappings,
+ * constraints, and behavioral differences that require specialized handling.
+ * 
+ * <p>Implementations should provide database-specific logic for:
+ * <ul>
+ *   <li>Mapping JDBC types to appropriate data generators</li>
+ *   <li>Handling database-specific data type variations</li>
+ *   <li>Applying database-specific constraints and limits</li>
+ *   <li>Managing database-specific SQL generation requirements</li>
+ * </ul>
+ * 
+ * <p>Common implementations include {@link PostgresSupport}, {@link MySQLSupport},
+ * {@link CockroachDBSupport}, and {@link DefaultSupport} for generic databases.
+ * 
+ * @author Tim Veil
+ * @see DataGenerator
+ * @see Column
+ * @see AbstractDatabaseSupport
+ */
 public interface DatabaseSupport {
 
+    /**
+     * Creates an appropriate data generator for the given column.
+     * 
+     * <p>This is the main entry point for obtaining a data generator
+     * that matches the column's JDBC type and database-specific requirements.
+     * Implementations should delegate to the appropriate build method based
+     * on the column's {@link java.sql.JDBCType}.
+     * 
+     * @param column the column metadata including type and constraints
+     * @param random the random number generator for seeded data generation
+     * @return a data generator appropriate for the column type
+     * @throws IllegalArgumentException if the column type is not supported
+     */
     DataGenerator<?> getDataGenerator(Column column, Random random);
 
+    /**
+     * Creates a data generator for TINYINT columns.
+     * @param column the column metadata
+     * @param random the random number generator
+     * @return a data generator for TINYINT values
+     */
     DataGenerator<?> buildTinyIntGenerator(Column column, Random random);
 
     DataGenerator<?> buildSmallIntGenerator(Column column, Random random);

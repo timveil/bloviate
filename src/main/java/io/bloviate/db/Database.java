@@ -18,8 +18,36 @@ package io.bloviate.db;
 
 import java.util.List;
 
+/**
+ * Represents a database instance with its metadata and contained tables.
+ * 
+ * <p>This immutable record encapsulates database-level information including
+ * the database product name, version, catalog, schema, and all tables within
+ * the database. It provides convenient access to tables by name with
+ * case-insensitive lookup.
+ * 
+ * <p>Database instances are typically created by {@link io.bloviate.util.DatabaseUtils}
+ * when analyzing database metadata through JDBC.
+ * 
+ * @param product the database product name (e.g., "PostgreSQL", "MySQL")
+ * @param productVersion the version string of the database product
+ * @param catalog the catalog name, may be null for databases that don't use catalogs
+ * @param schema the schema name, may be null for databases that don't use schemas
+ * @param tables the list of tables contained in this database
+ * 
+ * @author Tim Veil
+ * @see Table
+ * @see io.bloviate.util.DatabaseUtils
+ */
 public record Database(String product, String productVersion, String catalog, String schema, List<Table> tables) {
 
+    /**
+     * Retrieves a table by name using case-insensitive comparison.
+     * 
+     * @param tableName the name of the table to find
+     * @return the table with the specified name
+     * @throws IllegalArgumentException if no table with the given name exists
+     */
     public Table getTable(String tableName) {
         for (Table table : tables) {
             if (table.name().equalsIgnoreCase(tableName)) {

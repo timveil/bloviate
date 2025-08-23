@@ -24,16 +24,60 @@ import javax.sql.DataSource;
 import java.sql.*;
 import java.util.*;
 
+/**
+ * Utility class for extracting database metadata through JDBC.
+ * 
+ * <p>DatabaseUtils provides static methods for analyzing database structure
+ * and relationships by interrogating JDBC metadata. It converts raw JDBC
+ * metadata into structured {@link Database}, {@link Table}, {@link Column},
+ * and key relationship objects.
+ * 
+ * <p>Key capabilities include:
+ * <ul>
+ *   <li>Database metadata extraction from connections or data sources</li>
+ *   <li>Table discovery and column analysis</li>
+ *   <li>Primary and foreign key relationship mapping</li>
+ *   <li>Foreign key chain traversal for data generation dependencies</li>
+ * </ul>
+ * 
+ * <p>The extracted metadata is used by {@link DatabaseFiller} to understand
+ * table dependencies and generate appropriate test data that respects
+ * referential integrity constraints.
+ * 
+ * @author Tim Veil
+ * @see Database
+ * @see Table
+ * @see Column
+ * @see DatabaseFiller
+ */
 public class DatabaseUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseUtils.class);
 
+    /**
+     * Extracts complete database metadata from a DataSource.
+     * 
+     * @param dataSource the data source to analyze
+     * @return a Database object containing all discovered metadata
+     * @throws SQLException if database access fails
+     */
     public static Database getMetadata(DataSource dataSource) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             return getMetadata(connection);
         }
     }
 
+    /**
+     * Extracts complete database metadata from a Connection.
+     * 
+     * <p>Analyzes the database structure including tables, columns, primary keys,
+     * and foreign key relationships. The resulting Database object provides a
+     * complete view of the database schema suitable for data generation planning.
+     * 
+     * @param connection the database connection to analyze
+     * @return a Database object containing all discovered metadata
+     * @throws SQLException if database access fails
+     */
     public static Database getMetadata(Connection connection) throws SQLException {
         String catalog = connection.getCatalog();
         String schema = connection.getSchema();
@@ -251,7 +295,21 @@ public class DatabaseUtils {
         return new Column(columnName, tableName, schema, catalog, jdbcType, maxSize, maxDigits, typeName, autoIncrement, nullable, defaultValue, ordinalPosition);
     }
 
-    // get the primary key column (column on other table) for the associated foreign key column (on this table)
+    /**
+     * Traverses foreign key relationships to find the root primary key column.
+     * 
+     * <p>Given a column that may be part of a foreign key, this method follows
+     * the foreign key chain to find the ultimate primary key column that should
+     * be used as the source for generating related data values.
+     * 
+     * <p>This is particularly useful for ensuring referential integrity when
+     * generating test data across related tables.
+     * 
+     * @param database the database containing all table metadata
+     * @param table the table containing the column to analyze
+     * @param column the column to find the associated primary key for
+     * @return the root primary key column, or null if no foreign key relationship exists
+     */
     public static Column getAssociatedPrimaryKeyColumn(Database database, Table table, Column column) {
 
         // get this tables foreign keys

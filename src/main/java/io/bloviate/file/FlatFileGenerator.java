@@ -33,6 +33,42 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Generator for creating flat files (CSV, TSV, pipe-delimited) with synthetic data.
+ * 
+ * <p>The FlatFileGenerator creates delimited text files containing randomly generated
+ * data based on configurable column definitions. It supports multiple output formats
+ * including CSV, tab-delimited (TSV), and pipe-delimited files.
+ * 
+ * <p>Key features:
+ * <ul>
+ *   <li>Support for CSV, TSV, and pipe-delimited output formats</li>
+ *   <li>Configurable number of rows and columns</li>
+ *   <li>Automatic header generation with column names</li>
+ *   <li>Integration with {@link ColumnDefinition} and {@link io.bloviate.gen.DataGenerator}</li>
+ *   <li>YAML configuration export capability</li>
+ * </ul>
+ * 
+ * <p>Example usage:
+ * <pre>{@code
+ * List<ColumnDefinition> columns = Arrays.asList(
+ *     new ColumnDefinition("id", new IntegerGenerator(random)),
+ *     new ColumnDefinition("name", new StringGenerator(random))
+ * );
+ * 
+ * new FlatFileGenerator.Builder("output-file")
+ *     .addAll(columns)
+ *     .rows(1000)
+ *     .output(new CsvFile())
+ *     .build()
+ *     .generate();
+ * }</pre>
+ * 
+ * @author Tim Veil
+ * @see ColumnDefinition
+ * @see FileDefinition
+ * @see FileGenerator
+ */
 public class FlatFileGenerator implements FileGenerator {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
