@@ -33,8 +33,8 @@ jobs:
           java-version: '16'
           distribution: 'temurin'
           server-id: github
-          server-username: ${{ github.actor }}
-          server-password: ${{ secrets.GITHUB_TOKEN }}
+          server-username: timveil
+          server-password: GITHUB_TOKEN
 
       - name: Cache Maven dependencies
         uses: actions/cache@v4
@@ -137,6 +137,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ github.actor }}
           MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          timveil: ${{ github.actor }}
         run: semantic-release
         
       - name: Log release info
