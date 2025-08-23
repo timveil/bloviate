@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/timveil/bloviate/compare/v1.0.1...v1.0.2) (2025-08-23)
+
+### 🐛 Bug Fixes
+
+* correct Maven server-id configuration for GitHub Packages authentication ([324145f](https://github.com/timveil/bloviate/commit/324145f6344095b40539b0a2874c1b5d0ad48410))
+
 ## [1.0.1](https://github.com/timveil/bloviate/compare/v1.0.0...v1.0.1) (2025-08-23)
 
 ### 🐛 Bug Fixes
