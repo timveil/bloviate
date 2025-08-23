@@ -43,6 +43,13 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
+      
+      - name: Verify Maven settings
+        run: |
+          echo "Maven settings.xml content:"
+          cat ~/.m2/settings.xml || echo "No settings.xml found"
+          echo "GitHub actor: ${{ github.actor }}"
+          echo "Token exists: ${{ secrets.GITHUB_TOKEN != '' }}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
