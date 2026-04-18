@@ -20,7 +20,7 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Auto-merge Dependabot PRs
-        if: contains(steps.metadata.outputs.dependency-names, 'com.zaxxer') || contains(steps.metadata.outputs.dependency-names, 'org.apache.commons') || contains(steps.metadata.outputs.dependency-names, 'com.fasterxml.jackson') || contains(steps.metadata.outputs.dependency-names, 'org.slf4j') || contains(steps.metadata.outputs.dependency-names, 'org.junit.jupiter') || contains(steps.metadata.outputs.dependency-names, 'org.testcontainers') || contains(steps.metadata.outputs.dependency-names, 'org.postgresql') || contains(steps.metadata.outputs.dependency-names, 'mysql')
+        if: contains(steps.metadata.outputs.dependency-names, 'com.zaxxer') || contains(steps.metadata.outputs.dependency-names, 'org.apache.commons') || contains(steps.metadata.outputs.dependency-names, 'com.fasterxml.jackson') || contains(steps.metadata.outputs.dependency-names, 'org.slf4j') || contains(steps.metadata.outputs.dependency-names, 'org.junit.jupiter') || contains(steps.metadata.outputs.dependency-names, 'org.testcontainers') || contains(steps.metadata.outputs.dependency-names, 'org.postgresql') || contains(steps.metadata.outputs.dependency-names, 'mysql') || contains(steps.metadata.outputs.dependency-names, 'org.jgrapht') || contains(steps.metadata.outputs.dependency-names, 'org.apache.maven.plugins') || contains(steps.metadata.outputs.dependency-names, 'org.codehaus.mojo')
         run: gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
