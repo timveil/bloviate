@@ -38,7 +38,8 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
 
     @Override
     public Short get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getShort(columnIndex);
+        short value = resultSet.getShort(columnIndex);
+        return resultSet.wasNull() ? null : value;
     }
 
     public static class Builder extends AbstractBuilder<Short> {
