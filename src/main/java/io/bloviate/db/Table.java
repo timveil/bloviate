@@ -78,7 +78,9 @@ public record Table(String name, PrimaryKey primaryKey, List<Column> columns, Li
         List<Column> filtered = new ArrayList<>();
 
         for (Column column : columns) {
-            if (!column.autoIncrement()) {
+            // autoIncrement() is a nullable Boolean (JDBC IS_AUTOINCREMENT may be reported
+            // as ""/unknown); treat anything other than an explicit TRUE as not auto-increment
+            if (!Boolean.TRUE.equals(column.autoIncrement())) {
                 filtered.add(column);
             }
         }

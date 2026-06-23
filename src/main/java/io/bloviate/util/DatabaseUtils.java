@@ -171,28 +171,6 @@ public class DatabaseUtils {
     }
 
 
-    private static List<Key> getExportedKeys(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {
-
-        List<Key> keys = new ArrayList<>();
-
-        try (ResultSet rs = metaData.getExportedKeys(catalog, schema, tableName)) {
-
-            while (rs.next()) {
-                String primaryKeyTableName = rs.getString("PKTABLE_NAME");
-                String primaryKeyColumnName = rs.getString("PKCOLUMN_NAME");
-                String fkTableName = rs.getString("FKTABLE_NAME");
-                String fkColumnName = rs.getString("FKCOLUMN_NAME");
-                int seq = rs.getInt("KEY_SEQ");
-                String pkName = rs.getString("PK_NAME");
-
-                keys.add(new Key(primaryKeyTableName, primaryKeyColumnName, fkTableName, fkColumnName, seq, pkName));
-            }
-        }
-
-        return keys;
-    }
-
-
     private static PrimaryKey getPrimaryKey(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {
 
         try (ResultSet primaryKeyResultSet = metaData.getPrimaryKeys(catalog, schema, tableName)) {
@@ -223,7 +201,7 @@ public class DatabaseUtils {
             }
         }
 
-        throw new RuntimeException(String.format("can't find column in table [%s] with name [%s]", tableName, columnName));
+        throw new IllegalStateException(String.format("can't find column in table [%s] with name [%s]", tableName, columnName));
     }
 
     private static List<Column> getColumns(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {

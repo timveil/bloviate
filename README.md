@@ -3,7 +3,7 @@
 [![Java CI with Maven](https://github.com/timveil/bloviate/actions/workflows/maven.yml/badge.svg)](https://github.com/timveil/bloviate/actions/workflows/maven.yml)
 [![CodeQL](https://github.com/timveil/bloviate/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/timveil/bloviate/actions/workflows/codeql-analysis.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Java](https://img.shields.io/badge/Java-16+-orange.svg)](https://openjdk.java.net/)
+[![Java](https://img.shields.io/badge/Java-25+-orange.svg)](https://openjdk.java.net/)
 
 A powerful Java library for generating realistic test data for JDBC-compatible relational databases and flat files. Bloviate automatically analyzes your database schema and generates appropriate data while respecting foreign key relationships and constraints.
 
@@ -53,7 +53,7 @@ To use GitHub Packages, add this repository to your `pom.xml`:
 
 ### Requirements
 
-- Java 16 or higher
+- Java 25 or higher
 - JDBC-compatible database (for database filling)
 
 ## 🚀 Quick Start
