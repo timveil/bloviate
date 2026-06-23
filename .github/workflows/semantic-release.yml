@@ -25,7 +25,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # PAT (not GITHUB_TOKEN) so the release commit can be pushed back to the
+          # protected main branch; persisted credentials are reused by the git push.
+          token: ${{ secrets.RELEASE_PAT }}
+          persist-credentials: true
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -44,12 +47,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       
+      - name: Verify release token
+        run: |
+          if [ -z "${{ secrets.RELEASE_PAT }}" ]; then
+            echo "::error::RELEASE_PAT secret is not set. semantic-release needs a PAT that is" \
+                 "allowed to push to the protected main branch (see the workflow comments)."
+            exit 1
+          fi
+          echo "RELEASE_PAT is configured."
+
       - name: Verify Maven settings
         run: |
           echo "Maven settings.xml content:"
           cat ~/.m2/settings.xml || echo "No settings.xml found"
           echo "GitHub actor: ${{ github.actor }}"
-          echo "Token exists: ${{ secrets.GITHUB_TOKEN != '' }}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -134,7 +145,10 @@ jobs:
       - name: Run semantic-release
         id: semantic
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PAT drives both the @semantic-release/git push to main and the
+          # @semantic-release/github release API calls.
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
+          # Maven deploy to GitHub Packages still uses the built-in token (packages:write).
           MAVEN_USERNAME: ${{ github.actor }}
           MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
           timveil: ${{ github.actor }}
