@@ -35,6 +35,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,6 +105,36 @@ public class DatabaseFiller implements Fillable {
         StopWatch databaseWatch = new StopWatch(String.format("filled database [%s] in", database.catalog()));
         databaseWatch.start();
 
+        Graph<Table, DefaultEdge> reversedGraph = buildReversedDependencyGraph(database);
+
+        visualizeGraph(reversedGraph, database.catalog());
+
+        TopologicalOrderIterator<Table, DefaultEdge> iterator = new TopologicalOrderIterator<>(reversedGraph);
+
+        while (iterator.hasNext()) {
+            new TableFiller.Builder(connection, database, configuration)
+                    .table(iterator.next())
+                    .build().fill();
+        }
+
+        databaseWatch.stop();
+
+        logger.info(databaseWatch.toString());
+
+    }
+
+    /**
+     * Builds the table dependency graph used to determine fill order.
+     *
+     * <p>An edge is added from each table to every table it references through a foreign
+     * key, then the graph is reversed so that a topological traversal yields referenced
+     * (parent) tables before the tables that depend on them. Self-referencing tables are
+     * logged as likely problematic.
+     *
+     * @param database the database whose tables and foreign keys define the dependencies
+     * @return the reversed dependency graph, ready for topological ordering
+     */
+    Graph<Table, DefaultEdge> buildReversedDependencyGraph(Database database) {
         Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
         for (Table table : database.tables()) {
 
@@ -131,23 +162,20 @@ public class DatabaseFiller implements Fillable {
             }
         }
 
+        return new EdgeReversedGraph<>(graph);
+    }
 
-        EdgeReversedGraph<Table, DefaultEdge> reversedGraph = new EdgeReversedGraph<>(graph);
-
-        visualizeGraph(reversedGraph, database.catalog());
-
-        TopologicalOrderIterator<Table, DefaultEdge> iterator = new TopologicalOrderIterator<>(reversedGraph);
-
-        while (iterator.hasNext()) {
-            new TableFiller.Builder(connection, database, configuration)
-                    .table(iterator.next())
-                    .build().fill();
-        }
-
-        databaseWatch.stop();
-
-        logger.info(databaseWatch.toString());
-
+    /**
+     * Computes the order in which tables will be filled, with referenced (parent) tables
+     * appearing before the tables that depend on them.
+     *
+     * @param database the database to order
+     * @return the tables in dependency-respecting fill order
+     */
+    List<Table> fillOrder(Database database) {
+        List<Table> ordered = new ArrayList<>();
+        new TopologicalOrderIterator<>(buildReversedDependencyGraph(database)).forEachRemaining(ordered::add);
+        return ordered;
     }
 
     /**
