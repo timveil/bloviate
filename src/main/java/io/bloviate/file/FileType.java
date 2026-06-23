@@ -18,7 +18,8 @@ package io.bloviate.file;
 
 /**
  * Enumeration of supported file types for data export.
- * Each file type defines its delimiter character and file extension.
+ * Each file type defines its file extension; the actual delimiter is applied by
+ * {@link FlatFileGenerator} via Commons CSV {@code CSVFormat}.
  *
  * @since 1.0.0
  */
@@ -26,40 +27,27 @@ public enum FileType {
     /**
      * Comma-separated values format.
      */
-    CSV(',', "csv"),
-    
+    CSV("csv"),
+
     /**
      * Tab-delimited values format.
      */
-    TDV('\t', "txt"),
-    
+    TDV("txt"),
+
     /**
      * Pipe-delimited values format.
      */
-    PIPE('|', "txt");
-
-    private final char delimiter;
+    PIPE("txt");
 
     private final String extension;
 
     /**
-     * Constructs a FileType with the specified delimiter and extension.
+     * Constructs a FileType with the specified extension.
      *
-     * @param delimiter the character used to separate values
      * @param extension the file extension for this format
      */
-    FileType(char delimiter, String extension) {
-        this.delimiter = delimiter;
+    FileType(String extension) {
         this.extension = extension;
-    }
-
-    /**
-     * Returns the delimiter character for this file type.
-     *
-     * @return the delimiter character
-     */
-    public char getDelimiter() {
-        return delimiter;
     }
 
     /**

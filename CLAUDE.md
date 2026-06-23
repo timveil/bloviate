@@ -8,7 +8,7 @@ Bloviate is a Java library for generating dummy data for JDBC-compatible relatio
 
 ## Build System and Commands
 
-This is a Maven-based Java 16 project. Common commands:
+This is a Maven-based Java 25 project. Common commands:
 
 ```bash
 # Build the project

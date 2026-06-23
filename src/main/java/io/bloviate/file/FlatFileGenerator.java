@@ -83,7 +83,6 @@ public class FlatFileGenerator implements FileGenerator {
 
     private final String fileName;
     private final FileDefinition definition;
-    private final boolean compress;
     private final List<ColumnDefinition> columnDefinitions;
     private final long rows;
 
@@ -135,10 +134,6 @@ public class FlatFileGenerator implements FileGenerator {
         return definition;
     }
 
-    public boolean isCompress() {
-        return compress;
-    }
-
     public List<ColumnDefinition> getColumnDefinitions() {
         return columnDefinitions;
     }
@@ -167,7 +162,6 @@ public class FlatFileGenerator implements FileGenerator {
         private final String fileName;
 
         private FileDefinition definition = new CsvFile();
-        private boolean compress;
         private List<ColumnDefinition> columnDefinitions = new ArrayList<>();
         private long rows = 1000;
 
@@ -178,11 +172,6 @@ public class FlatFileGenerator implements FileGenerator {
 
         public Builder output(FileDefinition fileDefinition) {
             this.definition = fileDefinition;
-            return this;
-        }
-
-        public Builder compress() {
-            this.compress = true;
             return this;
         }
 
@@ -209,7 +198,6 @@ public class FlatFileGenerator implements FileGenerator {
     private FlatFileGenerator(Builder builder) {
         this.fileName = builder.fileName;
         this.columnDefinitions = builder.columnDefinitions;
-        this.compress = builder.compress;
         this.definition = builder.definition;
         this.rows = builder.rows;
     }

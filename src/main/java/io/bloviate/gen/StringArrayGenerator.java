@@ -72,7 +72,6 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
 
         private int length = 3;
         private int elementLength = 10;
-        private DataGenerator<? extends String> elementGenerator;
 
         public Builder(Random random) {
             super(random);
