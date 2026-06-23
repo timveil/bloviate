@@ -151,7 +151,7 @@ public class FlatFileGenerator implements FileGenerator {
         return switch (fileType) {
             case CSV -> CSVFormat.DEFAULT;
             case TDV -> CSVFormat.TDF;
-            case PIPE -> CSVFormat.Builder.create().setDelimiter('|').build();
+            case PIPE -> CSVFormat.Builder.create().setDelimiter('|').get();
         };
     }
 

@@ -36,8 +36,8 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setDouble(parameterIndex, (Double) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Double value) throws SQLException {
+        statement.setDouble(parameterIndex, value);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
         return resultSet.getDouble(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Double> {
 
         private double startInclusive = 0;
         private double endExclusive = Double.MAX_VALUE;

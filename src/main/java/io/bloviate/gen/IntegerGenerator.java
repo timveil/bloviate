@@ -36,8 +36,8 @@ public class IntegerGenerator extends AbstractDataGenerator<Integer> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setInt(parameterIndex, (Integer) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Integer value) throws SQLException {
+        statement.setInt(parameterIndex, value);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class IntegerGenerator extends AbstractDataGenerator<Integer> {
         return resultSet.getInt(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Integer> {
 
         private int startInclusive = 0;
         private int endExclusive = Integer.MAX_VALUE;

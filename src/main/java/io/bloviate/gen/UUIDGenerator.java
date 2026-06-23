@@ -51,7 +51,7 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
     /**
      * Builder for creating UUIDGenerator instances.
      */
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<UUID> {
 
         /**
          * Constructs a new Builder for UUIDGenerator.

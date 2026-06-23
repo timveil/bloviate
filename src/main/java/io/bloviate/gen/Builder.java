@@ -21,13 +21,14 @@ package io.bloviate.gen;
  * Implementations of this interface follow the Builder pattern to construct
  * configured data generators.
  *
+ * @param <T> the Java type of values produced by the built generator
  * @since 1.0.0
  */
-public interface Builder {
+public interface Builder<T> {
     /**
      * Builds and returns a configured data generator.
      *
-     * @return a new instance of AbstractDataGenerator configured with the builder's settings
+     * @return a new {@link DataGenerator} configured with the builder's settings
      */
-    AbstractDataGenerator<?> build();
+    DataGenerator<T> build();
 }

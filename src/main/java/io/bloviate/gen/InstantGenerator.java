@@ -39,7 +39,7 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Instant> {
 
         private Instant startInclusive = Instant.EPOCH;
         private Instant endExclusive = Instant.now().plus(100, ChronoUnit.DAYS);

@@ -39,7 +39,7 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Struct> {
 
         public Builder(Random random) {
             super(random);

@@ -36,8 +36,8 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setFloat(parameterIndex, (Float) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Float value) throws SQLException {
+        statement.setFloat(parameterIndex, value);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
         return resultSet.getFloat(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Float> {
 
         private float startInclusive = 0;
         private float endExclusive = Float.MAX_VALUE;

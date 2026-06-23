@@ -46,8 +46,8 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setBytes(parameterIndex, ArrayUtils.toPrimitive((Byte[]) value));
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Byte[] value) throws SQLException {
+        statement.setBytes(parameterIndex, ArrayUtils.toPrimitive(value));
     }
 
     @Override
@@ -55,7 +55,7 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
         return ArrayUtils.toObject(resultSet.getBytes(columnIndex));
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Byte[]> {
 
         private int size = 25;
 

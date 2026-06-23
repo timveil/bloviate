@@ -86,7 +86,7 @@ public interface DataGenerator<T> {
      * @param value the value to set
      * @throws SQLException if the database operation fails
      */
-    void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException;
+    void set(Connection connection, PreparedStatement statement, int parameterIndex, T value) throws SQLException;
 
     /**
      * Retrieves a value from a ResultSet column.

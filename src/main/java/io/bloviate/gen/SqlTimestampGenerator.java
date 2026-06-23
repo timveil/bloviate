@@ -34,8 +34,8 @@ public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setTimestamp(parameterIndex, (Timestamp) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Timestamp value) throws SQLException {
+        statement.setTimestamp(parameterIndex, value);
     }
 
     @Override
@@ -43,7 +43,7 @@ public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
         return resultSet.getTimestamp(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Timestamp> {
 
         private Timestamp startInclusive = Timestamp.from(Instant.now().minus(100, ChronoUnit.DAYS));
         private Timestamp endExclusive = Timestamp.from(Instant.now().plus(100, ChronoUnit.DAYS));

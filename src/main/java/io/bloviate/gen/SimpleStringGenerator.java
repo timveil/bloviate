@@ -40,7 +40,7 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<String> {
 
         private int size = 10;
 

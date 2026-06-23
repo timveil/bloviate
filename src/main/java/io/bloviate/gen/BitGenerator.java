@@ -34,7 +34,7 @@ public class BitGenerator extends AbstractDataGenerator<Integer> {
         return resultSet.getInt(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Integer> {
 
         public Builder(Random random) {
             super(random);

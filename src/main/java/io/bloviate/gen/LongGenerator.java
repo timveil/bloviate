@@ -36,8 +36,8 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setLong(parameterIndex, (Long) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Long value) throws SQLException {
+        statement.setLong(parameterIndex, value);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
         return resultSet.getLong(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Long> {
 
         private long startInclusive = 0;
         private long endExclusive = Long.MAX_VALUE;

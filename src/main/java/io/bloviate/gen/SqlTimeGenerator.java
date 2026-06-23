@@ -34,8 +34,8 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setTime(parameterIndex, (Time) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Time value) throws SQLException {
+        statement.setTime(parameterIndex, value);
     }
 
     @Override
@@ -43,7 +43,7 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
         return resultSet.getTime(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Time> {
 
         private Time startInclusive = new Time(Instant.EPOCH.toEpochMilli());
         private Time endExclusive = new Time(Instant.now().plus(100, ChronoUnit.HOURS).toEpochMilli());
