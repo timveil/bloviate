@@ -16,9 +16,9 @@
 
 package io.bloviate.db;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.testcontainers.containers.CockroachContainer;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -28,7 +28,6 @@ class BaseCockroachTest extends BaseDatabaseTestCase {
         fillDatabase(initScript, configuration, null);
     }
 
-    @SuppressWarnings("resource")
     protected void fillDatabase(String initScript, DatabaseConfiguration configuration, Verifier verifier) throws SQLException {
 
         try (CockroachContainer database = new CockroachContainer("cockroachdb/cockroach:latest")
@@ -38,9 +37,8 @@ class BaseCockroachTest extends BaseDatabaseTestCase {
 
             database.start();
 
-            DataSource dataSource = getDataSource(database);
-
-            try (Connection connection = dataSource.getConnection()) {
+            try (HikariDataSource dataSource = (HikariDataSource) getDataSource(database);
+                 Connection connection = dataSource.getConnection()) {
                 new DatabaseFiller.Builder(connection, configuration).build().fill();
 
                 if (verifier != null) {

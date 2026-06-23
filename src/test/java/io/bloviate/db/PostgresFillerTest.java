@@ -21,7 +21,6 @@ import io.bloviate.gen.IntegerGenerator;
 import io.bloviate.gen.tpcc.TPCCConfiguration;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
