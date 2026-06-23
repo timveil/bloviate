@@ -114,22 +114,36 @@ new FlatFileGenerator.Builder("output/users")
 | CockroachDB | `CockroachDBSupport` | ✅ Full Support |
 | Generic JDBC | `DefaultSupport` | ⚠️ Basic Support |
 
+You can let Bloviate pick the support implementation from the connection's
+metadata instead of hardcoding it:
+
+```java
+DatabaseSupport support = DatabaseSupport.forConnection(connection);
+```
+
+> **Note:** CockroachDB is reached through the PostgreSQL JDBC driver and
+> reports its product name as `PostgreSQL`, so auto-selection resolves it to
+> `PostgresSupport`. To use the CockroachDB-specific generators, pass
+> `new CockroachDBSupport()` explicitly.
+
 ## 📖 Usage Examples
 
 ### Advanced Database Configuration
 
 ```java
 import io.bloviate.db.*;
+import java.util.Set;
 
-// Custom table configuration
-Map<String, TableConfiguration> tableConfigs = new HashMap<>();
-tableConfigs.put("users", new TableConfiguration(50)); // 50 records for users table
+// Per-table overrides (each TableConfiguration names its table; 50 rows for "users")
+Set<TableConfiguration> tableConfigs = Set.of(
+    new TableConfiguration("users", 50)
+);
 
 DatabaseConfiguration config = new DatabaseConfiguration(
     10,                    // batch size
     100,                   // default records per table
     new PostgresSupport(), // database support
-    tableConfigs          // table-specific overrides
+    tableConfigs           // table-specific overrides
 );
 
 DatabaseFiller filler = new DatabaseFiller.Builder(connection, config)
@@ -164,13 +178,14 @@ new FlatFileGenerator.Builder("data/output")
 Bloviate includes generators for all common database types:
 
 ```java
-// Numeric generators
-new IntegerGenerator.Builder(random).min(1).max(1000).build()
-new DoubleGenerator.Builder(random).min(0.0).max(100.0).build()
-new BigDecimalGenerator.Builder(random).precision(10).scale(2).build()
+// Numeric generators (ranges are [start, end))
+new IntegerGenerator.Builder(random).start(1).end(1000).build()
+new DoubleGenerator.Builder(random).start(0.0).end(100.0).build()
+new BigDecimalGenerator.Builder(random).precision(10).digits(2).build()
 
 // String generators
-new SimpleStringGenerator.Builder(random).minLength(5).maxLength(50).build()
+new SimpleStringGenerator.Builder(random).size(20).build()
+new VariableStringGenerator.Builder(random).minLength(5).maxLength(50).build()
 new UUIDGenerator.Builder(random).build()
 
 // Date/Time generators
@@ -197,7 +212,6 @@ new InetGenerator.Builder(random).build()
 
 - **Output Format**: CSV, TSV, or pipe-delimited
 - **Row Count**: Number of rows to generate
-- **Compression**: Optional file compression
 - **Custom Column Definitions**: Full control over data generation
 
 ## 🛠️ Development
