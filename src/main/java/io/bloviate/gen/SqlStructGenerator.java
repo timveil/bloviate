@@ -36,7 +36,7 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
 
     @Override
     public Struct get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return null;
+        return (Struct) resultSet.getObject(columnIndex);
     }
 
     public static class Builder extends AbstractBuilder<Struct> {

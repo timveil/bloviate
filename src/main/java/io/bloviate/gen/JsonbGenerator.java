@@ -30,7 +30,7 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
 
     @Override
     public String get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return null;
+        return resultSet.getString(columnIndex);
     }
 
     public static class Builder extends AbstractBuilder<String> {
