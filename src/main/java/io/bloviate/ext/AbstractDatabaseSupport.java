@@ -19,331 +19,108 @@ package io.bloviate.ext;
 import io.bloviate.db.Column;
 import io.bloviate.gen.*;
 
+import java.sql.JDBCType;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Random;
 
+/**
+ * Base {@link DatabaseSupport} that maps columns to generators through a
+ * {@link JDBCType}-keyed registry of {@link GeneratorFactory} entries.
+ *
+ * <p>The constructor seeds the registry with cross-database defaults and then invokes
+ * {@link #configure(Map)}, which database-specific subclasses override to add or replace
+ * entries (for example, to handle driver-specific type names). Types absent from the
+ * registry are unsupported and cause {@link #getDataGenerator(Column, Random)} to throw.
+ *
+ * @see GeneratorFactory
+ */
 public abstract class AbstractDatabaseSupport implements DatabaseSupport {
+
+    private final Map<JDBCType, GeneratorFactory> registry;
+
+    protected AbstractDatabaseSupport() {
+        Map<JDBCType, GeneratorFactory> defaults = new EnumMap<>(JDBCType.class);
+        registerDefaults(defaults);
+        configure(defaults);
+        this.registry = defaults;
+    }
 
     @Override
     public final DataGenerator<?> getDataGenerator(Column column, Random random) {
-        switch (column.jdbcType()) {
-            case BIT -> {
-                return buildBitGenerator(column, random);
-            }
-            case TINYINT -> {
-                return buildTinyIntGenerator(column, random);
-            }
-            case SMALLINT -> {
-                return buildSmallIntGenerator(column, random);
-            }
-            case INTEGER -> {
-                return buildIntegerGenerator(column, random);
-            }
-            case BIGINT -> {
-                return buildBigIntGenerator(column, random);
-            }
-            case FLOAT -> {
-                return buildFloatGenerator(column, random);
-            }
-            case REAL -> {
-                return buildRealGenerator(column, random);
-            }
-            case DOUBLE -> {
-                return buildDoubleGenerator(column, random);
-            }
-            case NUMERIC -> {
-                return buildNumericGenerator(column, random);
-            }
-            case DECIMAL -> {
-                return buildDecimalGenerator(column, random);
-            }
-            case CHAR -> {
-                return buildCharGenerator(column, random);
-            }
-            case VARCHAR -> {
-                return buildVarcharGenerator(column, random);
-            }
-            case LONGVARCHAR -> {
-                return buildLongVarcharGenerator(column, random);
-            }
-            case DATE -> {
-                return buildDateGenerator(column, random);
-            }
-            case TIME -> {
-                return buildTimeGenerator(column, random);
-            }
-            case TIMESTAMP -> {
-                return buildTimestampGenerator(column, random);
-            }
-            case BINARY -> {
-                return buildBinaryGenerator(column, random);
-            }
-            case VARBINARY -> {
-                return buildVarbinaryGenerator(column, random);
-            }
-            case LONGVARBINARY -> {
-                return buildLongVarbinaryGenerator(column, random);
-            }
-            case NULL -> {
-                return buildNullGenerator(column, random);
-            }
-            case OTHER -> {
-                return buildOtherGenerator(column, random);
-            }
-            case JAVA_OBJECT -> {
-                return buildJavaObjectGenerator(column, random);
-            }
-            case DISTINCT -> {
-                return buildDistinctGenerator(column, random);
-            }
-            case STRUCT -> {
-                return buildStructGenerator(column, random);
-            }
-            case ARRAY -> {
-                return buildArrayGenerator(column, random);
-            }
-            case BLOB -> {
-                return buildBlobGenerator(column, random);
-            }
-            case CLOB -> {
-                return buildClobGenerator(column, random);
-            }
-            case REF -> {
-                return buildRefGenerator(column, random);
-            }
-            case DATALINK -> {
-                return buildDataLinkGenerator(column, random);
-            }
-            case BOOLEAN -> {
-                return buildBooleanGenerator(column, random);
-            }
-            case ROWID -> {
-                return buildRowIdGenerator(column, random);
-            }
-            case NCHAR -> {
-                return buildNCharGenerator(column, random);
-            }
-            case NVARCHAR -> {
-                return buildNVarcharGenerator(column, random);
-            }
-            case LONGNVARCHAR -> {
-                return buildLongNVarcharGenerator(column, random);
-            }
-            case NCLOB -> {
-                return buildNClobGenerator(column, random);
-            }
-            case SQLXML -> {
-                return buildSqlXmlGenerator(column, random);
-            }
-            case REF_CURSOR -> {
-                return buildRefCursorGenerator(column, random);
-            }
-            case TIME_WITH_TIMEZONE -> {
-                return buildTimeWithTimezoneGenerator(column, random);
-            }
-            case TIMESTAMP_WITH_TIMEZONE -> {
-                return buildTimestampWithTimezoneGenerator(column, random);
-            }
+        GeneratorFactory factory = registry.get(column.jdbcType());
+        if (factory == null) {
+            throw new UnsupportedOperationException("JDBCType [" + column.jdbcType() + "] not supported");
         }
-
-        throw new UnsupportedOperationException("JDBCType [" + column.jdbcType() + "] not supported");
+        return factory.create(column, random);
     }
 
-    @Override
-    public DataGenerator<?> buildTinyIntGenerator(Column column, Random random) {
-        return new ShortGenerator.Builder(random).start(0).end(255).build();
+    /**
+     * Hook for subclasses to add or replace generator factories for specific JDBC types.
+     * The supplied registry already holds the cross-database defaults; subclasses with no
+     * customizations need not override this method. Implementations must not retain a
+     * reference to the map beyond the call.
+     *
+     * @param registry the mutable registry to customize, keyed by {@link JDBCType}
+     */
+    protected void configure(Map<JDBCType, GeneratorFactory> registry) {
+        // no customizations by default
     }
 
-    @Override
-    public DataGenerator<?> buildSmallIntGenerator(Column column, Random random) {
-        return new ShortGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildIntegerGenerator(Column column, Random random) {
-        return new IntegerGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildBigIntGenerator(Column column, Random random) {
-        return new LongGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildFloatGenerator(Column column, Random random) {
-        return new FloatGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildRealGenerator(Column column, Random random) {
-        return new FloatGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildDoubleGenerator(Column column, Random random) {
-        return new DoubleGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildDecimalGenerator(Column column, Random random) {
-        return new BigDecimalGenerator.Builder(random).precision(column.maxSize()).digits(column.maxDigits()).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildCharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildNCharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildNVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildLongVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildLongNVarcharGenerator(Column column, Random random) {
-        return new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildDateGenerator(Column column, Random random) {
-        return new SqlDateGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildTimeGenerator(Column column, Random random) {
-        return new SqlTimeGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildTimeWithTimezoneGenerator(Column column, Random random) {
-        return new SqlTimeGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildTimestampGenerator(Column column, Random random) {
-        return new SqlTimestampGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildTimestampWithTimezoneGenerator(Column column, Random random) {
-        return new SqlTimestampGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildBinaryGenerator(Column column, Random random) {
-        return new ByteGenerator.Builder(random).size(column.maxSize()).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildVarbinaryGenerator(Column column, Random random) {
-        return new ByteGenerator.Builder(random).size(column.maxSize()).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildLongVarbinaryGenerator(Column column, Random random) {
-        return new ByteGenerator.Builder(random).size(column.maxSize()).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildBlobGenerator(Column column, Random random) {
-        return new SqlBlobGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildClobGenerator(Column column, Random random) {
-        return new SqlClobGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildNClobGenerator(Column column, Random random) {
-        return new SqlClobGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildStructGenerator(Column column, Random random) {
-        return new SqlStructGenerator.Builder(random).build();
-    }
-
-    @Override
-    public DataGenerator<?> buildArrayGenerator(Column column, Random random) {
-        throw new UnsupportedOperationException("generator not supported");
-    }
-
-    @Override
-    public DataGenerator<?> buildBitGenerator(Column column, Random random) {
-        if (1 == column.maxSize()) {
-            return new BitGenerator.Builder(random).build();
-        } else {
+    private void registerDefaults(Map<JDBCType, GeneratorFactory> map) {
+        map.put(JDBCType.BIT, (column, random) -> {
+            if (1 == column.maxSize()) {
+                return new BitGenerator.Builder(random).build();
+            }
             return new BitStringGenerator.Builder(random).size(column.maxSize()).build();
-        }
-    }
+        });
 
-    @Override
-    public DataGenerator<?> buildBooleanGenerator(Column column, Random random) {
-        return new BooleanGenerator.Builder(random).build();
-    }
+        map.put(JDBCType.TINYINT, (column, random) -> new ShortGenerator.Builder(random).start(0).end(255).build());
+        map.put(JDBCType.SMALLINT, (column, random) -> new ShortGenerator.Builder(random).build());
+        map.put(JDBCType.INTEGER, (column, random) -> new IntegerGenerator.Builder(random).build());
+        map.put(JDBCType.BIGINT, (column, random) -> new LongGenerator.Builder(random).build());
 
-    @Override
-    public DataGenerator<?> buildOtherGenerator(Column column, Random random) {
-        throw new UnsupportedOperationException("generator not supported");
-    }
+        map.put(JDBCType.FLOAT, (column, random) -> new FloatGenerator.Builder(random).build());
+        map.put(JDBCType.REAL, (column, random) -> new FloatGenerator.Builder(random).build());
+        map.put(JDBCType.DOUBLE, (column, random) -> new DoubleGenerator.Builder(random).build());
 
-    @Override
-    public DataGenerator<?> buildNumericGenerator(Column column, Random random) {
-        return new BigDecimalGenerator.Builder(random).precision(column.maxSize()).digits(column.maxDigits()).build();
-    }
+        GeneratorFactory bigDecimal = (column, random) ->
+                new BigDecimalGenerator.Builder(random).precision(column.maxSize()).digits(column.maxDigits()).build();
+        map.put(JDBCType.NUMERIC, bigDecimal);
+        map.put(JDBCType.DECIMAL, bigDecimal);
 
-    @Override
-    public DataGenerator<?> buildJavaObjectGenerator(Column column, Random random) {
-        throw new UnsupportedOperationException("generator not supported");
-    }
+        GeneratorFactory string = (column, random) ->
+                new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
+        map.put(JDBCType.CHAR, string);
+        map.put(JDBCType.NCHAR, string);
+        map.put(JDBCType.VARCHAR, string);
+        map.put(JDBCType.NVARCHAR, string);
+        map.put(JDBCType.LONGVARCHAR, string);
+        map.put(JDBCType.LONGNVARCHAR, string);
 
-    @Override
-    public DataGenerator<?> buildDistinctGenerator(Column column, Random random) {
-        throw new UnsupportedOperationException("generator not supported");
-    }
+        map.put(JDBCType.DATE, (column, random) -> new SqlDateGenerator.Builder(random).build());
 
-    @Override
-    public DataGenerator<?> buildNullGenerator(Column column, Random random) {
-        throw new UnsupportedOperationException("generator not supported");
-    }
+        GeneratorFactory time = (column, random) -> new SqlTimeGenerator.Builder(random).build();
+        map.put(JDBCType.TIME, time);
+        map.put(JDBCType.TIME_WITH_TIMEZONE, time);
 
-    @Override
-    public DataGenerator<?> buildRefGenerator(Column column, Random random) {
-        throw new UnsupportedOperationException("generator not supported");
-    }
+        GeneratorFactory timestamp = (column, random) -> new SqlTimestampGenerator.Builder(random).build();
+        map.put(JDBCType.TIMESTAMP, timestamp);
+        map.put(JDBCType.TIMESTAMP_WITH_TIMEZONE, timestamp);
 
-    @Override
-    public DataGenerator<?> buildDataLinkGenerator(Column column, Random random) {
-        throw new UnsupportedOperationException("generator not supported");
-    }
+        GeneratorFactory bytes = (column, random) ->
+                new ByteGenerator.Builder(random).size(column.maxSize()).build();
+        map.put(JDBCType.BINARY, bytes);
+        map.put(JDBCType.VARBINARY, bytes);
+        map.put(JDBCType.LONGVARBINARY, bytes);
 
-    @Override
-    public DataGenerator<?> buildRowIdGenerator(Column column, Random random) {
-        throw new UnsupportedOperationException("generator not supported");
-    }
+        map.put(JDBCType.BLOB, (column, random) -> new SqlBlobGenerator.Builder(random).build());
 
-    @Override
-    public DataGenerator<?> buildSqlXmlGenerator(Column column, Random random) {
-        throw new UnsupportedOperationException("generator not supported");
-    }
+        GeneratorFactory clob = (column, random) -> new SqlClobGenerator.Builder(random).build();
+        map.put(JDBCType.CLOB, clob);
+        map.put(JDBCType.NCLOB, clob);
 
-    @Override
-    public DataGenerator<?> buildRefCursorGenerator(Column column, Random random) {
-        throw new UnsupportedOperationException("generator not supported");
+        map.put(JDBCType.STRUCT, (column, random) -> new SqlStructGenerator.Builder(random).build());
+        map.put(JDBCType.BOOLEAN, (column, random) -> new BooleanGenerator.Builder(random).build());
     }
 }
