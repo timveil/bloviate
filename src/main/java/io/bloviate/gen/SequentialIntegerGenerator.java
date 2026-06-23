@@ -74,6 +74,10 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
 
         @Override
         public SequentialIntegerGenerator build() {
+            if (endInclusive < startInclusive) {
+                throw new IllegalArgumentException(
+                        "end (" + endInclusive + ") must be >= start (" + startInclusive + ")");
+            }
             return new SequentialIntegerGenerator(this);
         }
     }

@@ -23,8 +23,15 @@ import java.util.Random;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SequentialIntegerGeneratorTest {
+
+    @Test
+    void rejectsAnInvalidRange() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new SequentialIntegerGenerator.Builder(new Random()).start(5).end(3).build());
+    }
 
     @Test
     void emitsInclusiveRangeThenWraps() {
