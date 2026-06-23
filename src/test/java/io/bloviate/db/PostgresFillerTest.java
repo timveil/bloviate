@@ -17,11 +17,18 @@
 package io.bloviate.db;
 
 import io.bloviate.ext.PostgresSupport;
+import io.bloviate.gen.IntegerGenerator;
 import org.junit.jupiter.api.Test;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PostgresFillerTest extends BasePostgresTest {
 
@@ -48,5 +55,41 @@ class PostgresFillerTest extends BasePostgresTest {
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 10, new PostgresSupport(), tableConfigurations);
         fillDatabase("create_tpcc.postgres.sql", configuration);
 
+    }
+
+    @Test
+    void fillWithColumnConfiguration() throws SQLException {
+
+        long rows = 25;
+
+        // override the "code" column with a generator that always produces 7 (start inclusive, end exclusive)
+        Set<ColumnConfiguration> columnConfigurations = Set.of(
+                new ColumnConfiguration("code", random -> new IntegerGenerator.Builder(random).start(7).end(8).build()));
+
+        Set<TableConfiguration> tableConfigurations = Set.of(
+                new TableConfiguration("widget", rows, columnConfigurations));
+
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, rows, new PostgresSupport(), tableConfigurations);
+
+        fillDatabase("create_column_config_test.postgres.sql", configuration, connection -> {
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery("select code, label from widget")) {
+
+                long actualRows = 0;
+                while (resultSet.next()) {
+                    actualRows++;
+
+                    // overridden column: always 7
+                    assertEquals(7, resultSet.getInt("code"));
+
+                    // non-configured column: still auto-generated within the varchar(50) bound
+                    String label = resultSet.getString("label");
+                    assertNotNull(label);
+                    assertTrue(label.length() <= 50, "label exceeded column size: " + label);
+                }
+
+                assertEquals(rows, actualRows, "row count should match the table configuration");
+            }
+        });
     }
 }

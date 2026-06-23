@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 public class BaseDatabaseTestCase {
 
@@ -35,5 +37,14 @@ public class BaseDatabaseTestCase {
         hikariConfig.setPassword(container.getPassword());
         hikariConfig.setDriverClassName(container.getDriverClassName());
         return new HikariDataSource(hikariConfig);
+    }
+
+    /**
+     * Callback invoked against the live connection after a database has been filled,
+     * allowing a test to assert on the generated data before the container is torn down.
+     */
+    @FunctionalInterface
+    protected interface Verifier {
+        void verify(Connection connection) throws SQLException;
     }
 }
