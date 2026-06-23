@@ -88,7 +88,9 @@ public record SeededRandomUtils(Random random) {
             return startInclusive;
         }
 
-        return (long) nextDouble(startInclusive, endExclusive);
+        // generate the long directly rather than via double; routing through double
+        // would quantize values above 2^53 and make the top of wide ranges unreachable
+        return random.nextLong(startInclusive, endExclusive);
     }
 
 }

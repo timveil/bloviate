@@ -39,40 +39,37 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
 
         if (maxPrecision != null) {
 
-            SeededRandomUtils randomUtils = new SeededRandomUtils(random);
-
-            // maxPrecision can be enormous (131089 for CRDB) and not helpful for testing therefore we significantly reduce
-            int minMaxPrecision = Math.min(maxPrecision, 25);
-
             if (maxDigits != null && maxDigits > maxPrecision) {
                 throw new IllegalArgumentException("max digits cannot be larger than max precision");
-            } else if (maxDigits != null && maxDigits.equals(maxPrecision)) {
-                // if these are equal then all digits are to the right of the decimal place
-                String bigDecimalString = "." + randomUtils.randomNumeric(1, maxDigits + 1);
-
-                return new BigDecimal(bigDecimalString);
-            } else {
-
-                if (maxDigits != null) {
-
-                    int adjustedPrecision = minMaxPrecision - maxDigits;
-
-                    // generate random numeric string then strip leading zeros.  if this results in empty string, default to "1"
-                    String left = StringUtils.stripStart(randomUtils.randomNumeric(1, (adjustedPrecision) + 1), "0");
-
-                    if (left.isEmpty()) {
-                        left = "1";
-                    }
-
-                    String right = randomUtils.randomNumeric(1, maxDigits + 1);
-
-                    String bigDecimalString = left + "." + right;
-
-                    return new BigDecimal(bigDecimalString);
-                } else {
-                    return new BigDecimal(randomUtils.randomNumeric(1, minMaxPrecision + 1));
-                }
             }
+
+            SeededRandomUtils randomUtils = new SeededRandomUtils(random);
+
+            // maxPrecision can be enormous (131089 for CRDB) and not helpful for testing therefore we significantly reduce.
+            // the scale must be capped to the same bound so the integer part never ends up with a negative length.
+            int precision = Math.min(maxPrecision, 25);
+            int scale = maxDigits == null ? 0 : Math.min(maxDigits, precision);
+            int integerDigits = precision - scale;
+
+            if (integerDigits == 0) {
+                // all digits are to the right of the decimal point
+                return new BigDecimal("." + randomUtils.randomNumeric(1, scale + 1));
+            }
+
+            // generate random numeric string then strip leading zeros.  if this results in empty string, default to "1"
+            String left = StringUtils.stripStart(randomUtils.randomNumeric(1, integerDigits + 1), "0");
+
+            if (left.isEmpty()) {
+                left = "1";
+            }
+
+            if (scale == 0) {
+                return new BigDecimal(left);
+            }
+
+            String right = randomUtils.randomNumeric(1, scale + 1);
+
+            return new BigDecimal(left + "." + right);
 
         } else {
             return BigDecimal.valueOf(new DoubleGenerator.Builder(random).build().generate());
