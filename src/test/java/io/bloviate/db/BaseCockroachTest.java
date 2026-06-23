@@ -25,6 +25,11 @@ import java.sql.SQLException;
 class BaseCockroachTest extends BaseDatabaseTestCase {
 
     protected void fillDatabase(String initScript, DatabaseConfiguration configuration) throws SQLException {
+        fillDatabase(initScript, configuration, null);
+    }
+
+    @SuppressWarnings("resource")
+    protected void fillDatabase(String initScript, DatabaseConfiguration configuration, Verifier verifier) throws SQLException {
 
         try (CockroachContainer database = new CockroachContainer("cockroachdb/cockroach:latest")
                 .withUrlParam("rewriteBatchedInserts", "true")
@@ -37,6 +42,10 @@ class BaseCockroachTest extends BaseDatabaseTestCase {
 
             try (Connection connection = dataSource.getConnection()) {
                 new DatabaseFiller.Builder(connection, configuration).build().fill();
+
+                if (verifier != null) {
+                    verifier.verify(connection);
+                }
             }
 
         }

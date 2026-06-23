@@ -24,7 +24,11 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BaseDatabaseTestCase {
 
@@ -46,5 +50,17 @@ public class BaseDatabaseTestCase {
     @FunctionalInterface
     protected interface Verifier {
         void verify(Connection connection) throws SQLException;
+    }
+
+    protected static void assertRowCount(Connection connection, String table, long expected) throws SQLException {
+        assertCount(connection, "select count(*) from " + table, expected);
+    }
+
+    protected static void assertCount(Connection connection, String query, long expected) throws SQLException {
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+            resultSet.next();
+            assertEquals(expected, resultSet.getLong(1), query);
+        }
     }
 }
