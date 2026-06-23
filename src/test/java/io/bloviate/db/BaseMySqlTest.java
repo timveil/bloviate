@@ -26,7 +26,8 @@ class BaseMySqlTest extends BaseDatabaseTestCase {
 
     protected void fillDatabase(String initScript, DatabaseConfiguration configuration) throws SQLException {
 
-        try (MySQLContainer<?> database = new MySQLContainer<>("mysql:latest")
+        try (MySQLContainer<?> database = new MySQLContainer<>("mysql:9.7")
+                .withConfigurationOverride("mysql-conf")
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedStatements", "true")
                 .withInitScript(initScript)) {

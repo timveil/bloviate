@@ -18,14 +18,14 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '16'
+          java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
 
       - name: Configure Maven settings
         uses: actions/setup-java@v4
         with:
-          java-version: '16'
+          java-version: '25'
           distribution: 'temurin'
           server-id: github
           server-username: MAVEN_USERNAME
