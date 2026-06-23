@@ -42,7 +42,7 @@ final class StubResultSet {
                 StubResultSet.class.getClassLoader(),
                 new Class<?>[]{ResultSet.class},
                 (proxy, method, args) -> {
-                    if (method.getName().equals(getterName)) {
+                    if (method.getName().equals(getterName) && isSingleIntArg(args)) {
                         return value;
                     }
                     if (method.getName().equals("wasNull")) {
@@ -67,6 +67,10 @@ final class StubResultSet {
                 });
     }
 
+    private static boolean isSingleIntArg(Object[] args) {
+        return args != null && args.length == 1 && args[0] instanceof Integer;
+    }
+
     private static Object defaultValue(Class<?> returnType) {
         if (!returnType.isPrimitive()) {
             return null;
@@ -74,9 +78,28 @@ final class StubResultSet {
         if (returnType == boolean.class) {
             return false;
         }
-        if (returnType == void.class) {
-            return null;
+        if (returnType == byte.class) {
+            return (byte) 0;
         }
-        return 0;
+        if (returnType == short.class) {
+            return (short) 0;
+        }
+        if (returnType == int.class) {
+            return 0;
+        }
+        if (returnType == long.class) {
+            return 0L;
+        }
+        if (returnType == float.class) {
+            return 0f;
+        }
+        if (returnType == double.class) {
+            return 0d;
+        }
+        if (returnType == char.class) {
+            return '\0';
+        }
+        // void.class
+        return null;
     }
 }
