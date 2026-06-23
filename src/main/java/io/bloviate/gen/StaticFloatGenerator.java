@@ -41,7 +41,8 @@ public class StaticFloatGenerator extends AbstractDataGenerator<Float> {
 
     @Override
     public Float get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getFloat(columnIndex);
+        float value = resultSet.getFloat(columnIndex);
+        return resultSet.wasNull() ? null : value;
     }
 
     public static class Builder extends AbstractBuilder<Float> {

@@ -41,7 +41,8 @@ public class StaticDoubleGenerator extends AbstractDataGenerator<Double> {
 
     @Override
     public Double get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getDouble(columnIndex);
+        double value = resultSet.getDouble(columnIndex);
+        return resultSet.wasNull() ? null : value;
     }
 
     public static class Builder extends AbstractBuilder<Double> {

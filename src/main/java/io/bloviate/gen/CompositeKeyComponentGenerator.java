@@ -65,7 +65,8 @@ public class CompositeKeyComponentGenerator extends AbstractDataGenerator<Intege
 
     @Override
     public Integer get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getInt(columnIndex);
+        int value = resultSet.getInt(columnIndex);
+        return resultSet.wasNull() ? null : value;
     }
 
     public static class Builder extends AbstractBuilder<Integer> {

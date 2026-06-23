@@ -39,7 +39,8 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
 
     @Override
     public Long get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getLong(columnIndex);
+        long value = resultSet.getLong(columnIndex);
+        return resultSet.wasNull() ? null : value;
     }
 
     public static class Builder extends AbstractBuilder<Long> {

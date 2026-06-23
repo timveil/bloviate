@@ -42,7 +42,8 @@ public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
 
     @Override
     public Boolean get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getBoolean(columnIndex);
+        boolean value = resultSet.getBoolean(columnIndex);
+        return resultSet.wasNull() ? null : value;
     }
 
     /**

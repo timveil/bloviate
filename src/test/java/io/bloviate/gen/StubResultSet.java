@@ -43,6 +43,11 @@ final class StubResultSet {
                 new Class<?>[]{ResultSet.class},
                 (proxy, method, args) -> {
                     if (method.getName().equals(getterName) && isSingleIntArg(args)) {
+                        // a SQL NULL on a primitive getter (getInt, getLong, ...) returns the
+                        // primitive default with wasNull() == true, not null
+                        if (value == null && method.getReturnType().isPrimitive()) {
+                            return defaultValue(method.getReturnType());
+                        }
                         return value;
                     }
                     if (method.getName().equals("wasNull")) {

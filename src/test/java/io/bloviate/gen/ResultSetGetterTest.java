@@ -139,6 +139,90 @@ class ResultSetGetterTest {
         assertNull(generator.get(StubResultSet.returning("getObject", null), COLUMN));
     }
 
+    @Test
+    void integerGeneratorReadsValueAndNull() throws SQLException {
+        IntegerGenerator generator = new IntegerGenerator.Builder(RANDOM).build();
+        assertEquals(7, generator.get(StubResultSet.returning("getInt", 7), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getInt", null), COLUMN));
+    }
+
+    @Test
+    void longGeneratorReadsValueAndNull() throws SQLException {
+        LongGenerator generator = new LongGenerator.Builder(RANDOM).build();
+        assertEquals(7L, generator.get(StubResultSet.returning("getLong", 7L), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getLong", null), COLUMN));
+    }
+
+    @Test
+    void shortGeneratorReadsValueAndNull() throws SQLException {
+        ShortGenerator generator = new ShortGenerator.Builder(RANDOM).build();
+        assertEquals((short) 7, generator.get(StubResultSet.returning("getShort", (short) 7), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getShort", null), COLUMN));
+    }
+
+    @Test
+    void doubleGeneratorReadsValueAndNull() throws SQLException {
+        DoubleGenerator generator = new DoubleGenerator.Builder(RANDOM).build();
+        assertEquals(1.5d, generator.get(StubResultSet.returning("getDouble", 1.5d), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getDouble", null), COLUMN));
+    }
+
+    @Test
+    void floatGeneratorReadsValueAndNull() throws SQLException {
+        FloatGenerator generator = new FloatGenerator.Builder(RANDOM).build();
+        assertEquals(1.5f, generator.get(StubResultSet.returning("getFloat", 1.5f), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getFloat", null), COLUMN));
+    }
+
+    @Test
+    void booleanGeneratorReadsValueAndNull() throws SQLException {
+        BooleanGenerator generator = new BooleanGenerator.Builder(RANDOM).build();
+        assertEquals(true, generator.get(StubResultSet.returning("getBoolean", true), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getBoolean", null), COLUMN));
+    }
+
+    @Test
+    void bitGeneratorReadsValueAndNull() throws SQLException {
+        BitGenerator generator = new BitGenerator.Builder(RANDOM).build();
+        assertEquals(1, generator.get(StubResultSet.returning("getInt", 1), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getInt", null), COLUMN));
+    }
+
+    @Test
+    void staticIntegerGeneratorReadsValueAndNull() throws SQLException {
+        StaticIntegerGenerator generator = new StaticIntegerGenerator.Builder(RANDOM).value(5).build();
+        assertEquals(7, generator.get(StubResultSet.returning("getInt", 7), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getInt", null), COLUMN));
+    }
+
+    @Test
+    void staticDoubleGeneratorReadsValueAndNull() throws SQLException {
+        StaticDoubleGenerator generator = new StaticDoubleGenerator.Builder(RANDOM).value(5d).build();
+        assertEquals(1.5d, generator.get(StubResultSet.returning("getDouble", 1.5d), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getDouble", null), COLUMN));
+    }
+
+    @Test
+    void staticFloatGeneratorReadsValueAndNull() throws SQLException {
+        StaticFloatGenerator generator = new StaticFloatGenerator.Builder(RANDOM).value(5f).build();
+        assertEquals(1.5f, generator.get(StubResultSet.returning("getFloat", 1.5f), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getFloat", null), COLUMN));
+    }
+
+    @Test
+    void sequentialIntegerGeneratorReadsValueAndNull() throws SQLException {
+        SequentialIntegerGenerator generator = new SequentialIntegerGenerator.Builder(RANDOM).start(1).end(10).build();
+        assertEquals(7, generator.get(StubResultSet.returning("getInt", 7), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getInt", null), COLUMN));
+    }
+
+    @Test
+    void compositeKeyComponentGeneratorReadsValueAndNull() throws SQLException {
+        CompositeKeyComponentGenerator generator = new CompositeKeyComponentGenerator.Builder(RANDOM).cycle(10).build();
+        assertEquals(7, generator.get(StubResultSet.returning("getInt", 7), COLUMN));
+        assertNull(generator.get(StubResultSet.returning("getInt", null), COLUMN));
+    }
+
     private static Struct stubStruct() {
         return (Struct) Proxy.newProxyInstance(
                 ResultSetGetterTest.class.getClassLoader(),
