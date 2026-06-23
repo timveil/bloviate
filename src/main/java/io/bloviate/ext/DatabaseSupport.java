@@ -19,6 +19,9 @@ package io.bloviate.ext;
 import io.bloviate.db.Column;
 import io.bloviate.gen.DataGenerator;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -51,5 +54,54 @@ public interface DatabaseSupport {
      * @throws UnsupportedOperationException if the column type is not supported
      */
     DataGenerator<?> getDataGenerator(Column column, Random random);
+
+    /**
+     * Selects a {@link DatabaseSupport} for the given JDBC product name (as reported by
+     * {@link java.sql.DatabaseMetaData#getDatabaseProductName()}), so callers don't have
+     * to hardcode a specific implementation.
+     *
+     * <p>Matching is case-insensitive and substring-based: names containing
+     * {@code "cockroach"} map to {@link CockroachDBSupport}, {@code "mysql"} to
+     * {@link MySQLSupport}, and {@code "postgres"} to {@link PostgresSupport}. Anything
+     * else (including {@code null}) falls back to {@link DefaultSupport}.
+     *
+     * <p><strong>CockroachDB caveat:</strong> CockroachDB is typically reached through the
+     * PostgreSQL JDBC driver, which reports its product name as {@code "PostgreSQL"}. Such
+     * connections therefore resolve to {@link PostgresSupport}, not
+     * {@link CockroachDBSupport}. To use the CockroachDB-specific generators (jsonb, inet,
+     * arrays, bit strings, ...), pass {@code new CockroachDBSupport()} explicitly rather
+     * than relying on auto-selection.
+     *
+     * @param productName the database product name, may be null
+     * @return the matching support, or {@link DefaultSupport} if none matches
+     */
+    static DatabaseSupport forProduct(String productName) {
+        if (productName != null) {
+            String name = productName.toLowerCase(Locale.ROOT);
+            if (name.contains("cockroach")) {
+                return new CockroachDBSupport();
+            }
+            if (name.contains("mysql")) {
+                return new MySQLSupport();
+            }
+            if (name.contains("postgres")) {
+                return new PostgresSupport();
+            }
+        }
+        return new DefaultSupport();
+    }
+
+    /**
+     * Selects a {@link DatabaseSupport} by reading the product name from the connection's
+     * metadata. See {@link #forProduct(String)} for the matching rules and the CockroachDB
+     * caveat.
+     *
+     * @param connection an open database connection
+     * @return the matching support, or {@link DefaultSupport} if none matches
+     * @throws SQLException if the connection metadata cannot be read
+     */
+    static DatabaseSupport forConnection(Connection connection) throws SQLException {
+        return forProduct(connection.getMetaData().getDatabaseProductName());
+    }
 
 }
