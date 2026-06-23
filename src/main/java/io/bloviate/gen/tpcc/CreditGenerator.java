@@ -18,7 +18,6 @@ package io.bloviate.gen.tpcc;
 
 import io.bloviate.gen.AbstractBuilder;
 import io.bloviate.gen.AbstractDataGenerator;
-import io.bloviate.util.SeededRandomUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,7 +34,6 @@ public class CreditGenerator extends AbstractDataGenerator<String> {
 
     @Override
     public String generate() {
-        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
         return randomUtils.nextInt(1, 101) <= 10 ? BAD_CREDIT : GOOD_CREDIT;
     }
 

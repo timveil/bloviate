@@ -18,7 +18,6 @@ package io.bloviate.gen.tpcc;
 
 import io.bloviate.gen.AbstractBuilder;
 import io.bloviate.gen.AbstractDataGenerator;
-import io.bloviate.util.SeededRandomUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -41,7 +40,6 @@ public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
 
     @Override
     public String generate() {
-        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
         int num = TPCCUtils.nonUniformRandom(255, C_LOAD, 0, 999, randomUtils);
         return SYLLABLES[num / 100] + SYLLABLES[(num / 10) % 10] + SYLLABLES[num % 10];
     }

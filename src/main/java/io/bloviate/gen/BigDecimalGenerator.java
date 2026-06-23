@@ -16,7 +16,6 @@
 
 package io.bloviate.gen;
 
-import io.bloviate.util.SeededRandomUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
@@ -42,8 +41,6 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
             if (maxDigits != null && maxDigits > maxPrecision) {
                 throw new IllegalArgumentException("max digits cannot be larger than max precision");
             }
-
-            SeededRandomUtils randomUtils = new SeededRandomUtils(random);
 
             // maxPrecision can be enormous (131089 for CRDB) and not helpful for testing therefore we significantly reduce.
             // the scale must be capped to the same bound so the integer part never ends up with a negative length.
@@ -81,7 +78,6 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     public void set(Connection connection, PreparedStatement statement, int parameterIndex, BigDecimal value) throws SQLException {
         statement.setBigDecimal(parameterIndex, value);
     }
-
 
     @Override
     public BigDecimal get(ResultSet resultSet, int columnIndex) throws SQLException {

@@ -16,8 +16,6 @@
 
 package io.bloviate.gen;
 
-import io.bloviate.util.SeededRandomUtils;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,7 +29,6 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
 
     @Override
     public Float generate() {
-        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
         return randomUtils.nextFloat(startInclusive, endExclusive);
     }
 
