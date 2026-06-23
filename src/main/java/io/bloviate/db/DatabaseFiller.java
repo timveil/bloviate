@@ -125,7 +125,7 @@ public class DatabaseFiller implements Fillable {
                     try {
                         graph.addEdge(table, referencedTable);
                     } catch (IllegalArgumentException e) {
-                        logger.error(String.format("error adding edge between %s and %s: %s", table.name(), referencedTable.name(), e.getMessage()), e);
+                        logger.error("error adding edge between {} and {}: {}", table.name(), referencedTable.name(), e.getMessage(), e);
                     }
                 }
             }

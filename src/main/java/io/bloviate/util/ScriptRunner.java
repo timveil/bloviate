@@ -187,7 +187,7 @@ public class ScriptRunner {
     }
 
     private void checkForMissingLineTerminator(StringBuilder command) {
-        if (command != null && command.toString().trim().length() > 0) {
+        if (command != null && !command.toString().trim().isEmpty()) {
             throw new RuntimeException("Line missing end-of-line terminator (" + delimiter + ") => " + command);
         }
     }
@@ -206,7 +206,7 @@ public class ScriptRunner {
             println(command);
             executeStatement(command.toString());
             command.setLength(0);
-        } else if (trimmedLine.length() > 0) {
+        } else if (!trimmedLine.isEmpty()) {
             command.append(line);
             command.append(LINE_SEPARATOR);
         }

@@ -32,7 +32,7 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
         // BIT/VARBIT columns must contain at least one bit; an unbounded VARBIT
         // reports a maxSize of 0, which would otherwise yield an empty (invalid)
         // bit string. Clamp to the range [1, 25].
-        int maxSize = Math.max(1, Math.min(size, 25));
+        int maxSize = Math.clamp(size, 1, 25);
 
         StringBuilder builder = new StringBuilder();
 
