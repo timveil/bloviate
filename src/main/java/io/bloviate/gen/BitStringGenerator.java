@@ -48,7 +48,7 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<String> {
         private int size = 1;
 
         public Builder(Random random) {

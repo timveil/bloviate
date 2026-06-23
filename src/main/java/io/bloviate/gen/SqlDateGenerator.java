@@ -35,8 +35,8 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setDate(parameterIndex, (Date) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Date value) throws SQLException {
+        statement.setDate(parameterIndex, value);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
         return resultSet.getDate(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Date> {
 
         private Date startInclusive = new Date(Instant.now().minus(100, ChronoUnit.DAYS).toEpochMilli());
         private Date endExclusive = new Date(Instant.now().plus(100, ChronoUnit.DAYS).toEpochMilli());

@@ -33,7 +33,7 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<String> {
 
         public Builder(Random random) {
             super(random);

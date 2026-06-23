@@ -46,7 +46,7 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<String> {
 
         public Builder(Random random) {
             super(random);

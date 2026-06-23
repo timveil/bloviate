@@ -46,7 +46,7 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
         return null;
     }
 
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Character> {
         public Builder(Random random) {
             super(random);
         }

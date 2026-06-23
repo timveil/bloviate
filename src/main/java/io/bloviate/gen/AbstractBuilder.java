@@ -23,9 +23,10 @@ import java.util.Random;
  * Provides common functionality for all builder implementations,
  * including random number generation support.
  *
+ * @param <T> the Java type of values produced by the built generator
  * @since 1.0.0
  */
-public abstract class AbstractBuilder implements Builder {
+public abstract class AbstractBuilder<T> implements Builder<T> {
     /**
      * The random number generator used for creating data.
      */

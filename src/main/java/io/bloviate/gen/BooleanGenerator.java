@@ -36,8 +36,8 @@ public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
     }
 
     @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Object value) throws SQLException {
-        statement.setBoolean(parameterIndex, (Boolean) value);
+    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Boolean value) throws SQLException {
+        statement.setBoolean(parameterIndex, value);
     }
 
     @Override
@@ -48,7 +48,7 @@ public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
     /**
      * Builder for creating BooleanGenerator instances.
      */
-    public static class Builder extends AbstractBuilder {
+    public static class Builder extends AbstractBuilder<Boolean> {
 
         /**
          * Constructs a new Builder for BooleanGenerator.
