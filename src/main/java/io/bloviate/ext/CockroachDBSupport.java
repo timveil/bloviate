@@ -16,10 +16,10 @@
 
 package io.bloviate.ext;
 
-import io.bloviate.db.Column;
 import io.bloviate.gen.*;
 
-import java.util.Random;
+import java.sql.JDBCType;
+import java.util.Map;
 
 /**
  * CockroachDB-specific implementation of database support.
@@ -34,41 +34,36 @@ import java.util.Random;
 public class CockroachDBSupport extends AbstractDatabaseSupport {
 
     @Override
-    public DataGenerator<?> buildBitGenerator(Column column, Random random) {
-        // CockroachDB BIT and BIT(n) are bit strings, not integers/booleans, so
-        // always generate a bit string -- including the single-bit case (the
-        // generic implementation would emit an integer for BIT(1), which
-        // CockroachDB rejects).
-        return new BitStringGenerator.Builder(random).size(column.maxSize()).build();
-    }
+    protected void configure(Map<JDBCType, GeneratorFactory> registry) {
+        // CockroachDB BIT and BIT(n) are bit strings, not integers/booleans, so always
+        // generate a bit string -- including the single-bit case (the generic default
+        // would emit an integer for BIT(1), which CockroachDB rejects).
+        registry.put(JDBCType.BIT, (column, random) ->
+                new BitStringGenerator.Builder(random).size(column.maxSize()).build());
 
-    @Override
-    public DataGenerator<?> buildArrayGenerator(Column column, Random random) {
-        if ("_text".equalsIgnoreCase(column.typeName())) {
-            return new StringArrayGenerator.Builder(random).build();
-        } else if ("_int8".equalsIgnoreCase(column.typeName()) || "_int4".equalsIgnoreCase(column.typeName())) {
-            return new IntegerArrayGenerator.Builder(random).build();
-        } else {
+        // ARRAY and OTHER are dispatched on the driver-reported type name.
+        registry.put(JDBCType.ARRAY, (column, random) -> {
+            if ("_text".equalsIgnoreCase(column.typeName())) {
+                return new StringArrayGenerator.Builder(random).build();
+            } else if ("_int8".equalsIgnoreCase(column.typeName()) || "_int4".equalsIgnoreCase(column.typeName())) {
+                return new IntegerArrayGenerator.Builder(random).build();
+            }
             throw new UnsupportedOperationException("Data Type [" + column.typeName() + "] for ARRAY not supported");
-        }
-    }
+        });
 
-    @Override
-    public DataGenerator<?> buildOtherGenerator(Column column, Random random) {
-        if ("uuid".equalsIgnoreCase(column.typeName())) {
-            return new UUIDGenerator.Builder(random).build();
-        } else if ("varbit".equalsIgnoreCase(column.typeName())) {
-            return new BitStringGenerator.Builder(random).size(column.maxSize()).build();
-        } else if ("inet".equalsIgnoreCase(column.typeName())) {
-            return new InetGenerator.Builder(random).build();
-        } else if ("interval".equalsIgnoreCase(column.typeName())) {
-            return new IntervalGenerator.Builder(random).build();
-        } else if ("jsonb".equalsIgnoreCase(column.typeName())) {
-            return new JsonbGenerator.Builder(random).build();
-        } else {
+        registry.put(JDBCType.OTHER, (column, random) -> {
+            if ("uuid".equalsIgnoreCase(column.typeName())) {
+                return new UUIDGenerator.Builder(random).build();
+            } else if ("varbit".equalsIgnoreCase(column.typeName())) {
+                return new BitStringGenerator.Builder(random).size(column.maxSize()).build();
+            } else if ("inet".equalsIgnoreCase(column.typeName())) {
+                return new InetGenerator.Builder(random).build();
+            } else if ("interval".equalsIgnoreCase(column.typeName())) {
+                return new IntervalGenerator.Builder(random).build();
+            } else if ("jsonb".equalsIgnoreCase(column.typeName())) {
+                return new JsonbGenerator.Builder(random).build();
+            }
             throw new UnsupportedOperationException("Data Type [" + column.typeName() + "] for OTHER not supported");
-        }
+        });
     }
-
-
 }
