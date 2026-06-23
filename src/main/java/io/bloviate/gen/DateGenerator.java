@@ -18,6 +18,7 @@ package io.bloviate.gen;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -38,7 +39,8 @@ public class DateGenerator extends AbstractDataGenerator<Date> {
 
     @Override
     public Date get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return null;
+        Timestamp timestamp = resultSet.getTimestamp(columnIndex);
+        return timestamp != null ? new Date(timestamp.getTime()) : null;
     }
 
     public static class Builder extends AbstractBuilder<Date> {

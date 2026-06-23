@@ -51,9 +51,7 @@ class FlatFileTest {
         definitions.add(new ColumnDefinition("sql_uuid_col", new UUIDGenerator.Builder(random).build()));
         definitions.add(new ColumnDefinition("instant_col", new InstantGenerator.Builder(random).build()));
         definitions.add(new ColumnDefinition("interval_col", new IntervalGenerator.Builder(random).build()));
-
-        // need to implement as JsonbGenerator still returns null
-        //definitions.add(new ColumnDefinition("jsonb_col", new JsonbGenerator.Builder().build()));
+        definitions.add(new ColumnDefinition("jsonb_col", new JsonbGenerator.Builder(random).build()));
 
         FlatFileGenerator csv = new FlatFileGenerator.Builder("target/csv-test").addAll(definitions).build();
         csv.generate();

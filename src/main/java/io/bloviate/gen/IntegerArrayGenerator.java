@@ -42,7 +42,20 @@ public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
 
     @Override
     public Integer[] get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return null;
+        Array array = resultSet.getArray(columnIndex);
+
+        if (array == null) {
+            return null;
+        }
+
+        Object[] elements = (Object[]) array.getArray();
+        Integer[] result = new Integer[elements.length];
+
+        for (int i = 0; i < elements.length; i++) {
+            result[i] = elements[i] != null ? ((Number) elements[i]).intValue() : null;
+        }
+
+        return result;
     }
 
     public static class Builder extends AbstractBuilder<Integer[]> {

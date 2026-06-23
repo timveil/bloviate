@@ -52,7 +52,20 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
 
     @Override
     public String[] get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return null;
+        Array array = resultSet.getArray(columnIndex);
+
+        if (array == null) {
+            return null;
+        }
+
+        Object[] elements = (Object[]) array.getArray();
+        String[] result = new String[elements.length];
+
+        for (int i = 0; i < elements.length; i++) {
+            result[i] = elements[i] != null ? elements[i].toString() : null;
+        }
+
+        return result;
     }
 
     public static class Builder extends AbstractBuilder<String[]> {
