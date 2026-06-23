@@ -34,6 +34,15 @@ import java.util.Random;
 public class CockroachDBSupport extends AbstractDatabaseSupport {
 
     @Override
+    public DataGenerator<?> buildBitGenerator(Column column, Random random) {
+        // CockroachDB BIT and BIT(n) are bit strings, not integers/booleans, so
+        // always generate a bit string -- including the single-bit case (the
+        // generic implementation would emit an integer for BIT(1), which
+        // CockroachDB rejects).
+        return new BitStringGenerator.Builder(random).size(column.maxSize()).build();
+    }
+
+    @Override
     public DataGenerator<?> buildArrayGenerator(Column column, Random random) {
         if ("_text".equalsIgnoreCase(column.typeName())) {
             return new StringArrayGenerator.Builder(random).build();
