@@ -16,9 +16,9 @@
 
 package io.bloviate.db;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -28,7 +28,6 @@ class BasePostgresTest extends BaseDatabaseTestCase {
         fillDatabase(initScript, configuration, null);
     }
 
-    @SuppressWarnings("resource")
     protected void fillDatabase(String initScript, DatabaseConfiguration configuration, Verifier verifier) throws SQLException {
 
         try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:14-alpine")
@@ -38,9 +37,8 @@ class BasePostgresTest extends BaseDatabaseTestCase {
 
             database.start();
 
-            DataSource dataSource = getDataSource(database);
-
-            try (Connection connection = dataSource.getConnection()) {
+            try (HikariDataSource dataSource = (HikariDataSource) getDataSource(database);
+                 Connection connection = dataSource.getConnection()) {
                 new DatabaseFiller.Builder(connection, configuration).build().fill();
 
                 if (verifier != null) {
