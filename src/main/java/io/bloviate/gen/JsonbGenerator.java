@@ -16,16 +16,52 @@
 
 package io.bloviate.gen;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.bloviate.util.SeededRandomUtils;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
+/**
+ * Generator for JSON / JSONB columns. Produces a JSON object literal (as a {@link String}) with a
+ * configurable number of randomly named fields whose values cycle through the common JSON scalar
+ * types (string, integer, double, boolean). Generation is deterministic for a given seed.
+ *
+ * <p>The value is emitted as a {@code String}; databases that accept a textual JSON representation
+ * (e.g. PostgreSQL / CockroachDB {@code jsonb}) consume it via the default {@code setObject}
+ * binding, mirroring the other textual generators ({@code InetGenerator}, {@code IntervalGenerator}).
+ */
 public class JsonbGenerator extends AbstractDataGenerator<String> {
-    // todo
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private final int fields;
 
     @Override
     public String generate() {
-        return null;
+        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
+        ObjectNode node = MAPPER.createObjectNode();
+
+        for (int i = 0; i < fields; i++) {
+            String key = randomUtils.randomAlphabetic(8);
+
+            switch (i % 4) {
+                case 0 -> node.put(key, randomUtils.randomAlphabetic(12));
+                case 1 -> node.put(key, randomUtils.nextInt(0, Integer.MAX_VALUE));
+                case 2 -> node.put(key, randomUtils.nextDouble(0, Double.MAX_VALUE));
+                default -> node.put(key, random.nextBoolean());
+            }
+        }
+
+        try {
+            return MAPPER.writeValueAsString(node);
+        } catch (JsonProcessingException e) {
+            // ObjectNode built here is always serializable; treat any failure as fatal
+            throw new IllegalStateException("unable to serialize generated JSON", e);
+        }
     }
 
     @Override
@@ -35,8 +71,15 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
 
     public static class Builder extends AbstractBuilder<String> {
 
+        private int fields = 3;
+
         public Builder(Random random) {
             super(random);
+        }
+
+        public Builder fields(int fields) {
+            this.fields = fields;
+            return this;
         }
 
         @Override
@@ -47,6 +90,6 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
 
     private JsonbGenerator(Builder builder) {
         super(builder.random);
-
+        this.fields = builder.fields;
     }
 }

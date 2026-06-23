@@ -21,9 +21,29 @@ import java.sql.SQLException;
 import java.sql.Struct;
 import java.util.Random;
 
+/**
+ * Generator for SQL {@code STRUCT} (structured / user-defined type) columns.
+ *
+ * <p><strong>{@link #generate()} intentionally returns {@code null}.</strong> A {@link Struct}
+ * cannot be synthesized in memory: the only portable way to create one is
+ * {@code Connection.createStruct(typeName, attributes)}, which requires a live {@link
+ * java.sql.Connection}, the SQL type name, and one correctly typed value per attribute. The
+ * {@link #generate()} contract exposes none of these, and the JDBC drivers this library targets
+ * (PostgreSQL, MySQL, CockroachDB) do not implement {@code createStruct} — it throws
+ * {@link java.sql.SQLFeatureNotSupportedException}. Returning {@code null} lets nullable
+ * {@code STRUCT} columns fill; a non-nullable one will fail at insert.
+ *
+ * <p>{@link #get(ResultSet, int)} reads an existing {@code Struct} normally, so round-tripping a
+ * value already present in a {@link ResultSet} works.
+ */
 public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
-    //todo
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Always returns {@code null}; see the class documentation for why a {@code Struct} cannot
+     * be generated.
+     */
     @Override
     public Struct generate() {
         return null;
