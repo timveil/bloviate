@@ -1,8 +1,14 @@
 name: Dependabot Auto-Merge
 
 on:
+  # Primary path: enable auto-merge as soon as Dependabot opens/updates a PR.
   pull_request_target:
     types: [opened, synchronize, reopened]
+  # Fallback path: retry enabling auto-merge once CI finishes, in case the PR was
+  # still in an "unstable" merge state when the primary path ran (race condition).
+  workflow_run:
+    workflows: ["Java CI with Maven"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -11,7 +17,7 @@ permissions:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
     steps:
       - name: Dependabot metadata
         id: metadata
@@ -25,3 +31,41 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Fallback: re-attempt auto-merge after the CI workflow completes successfully.
+  # fetch-metadata can't run on workflow_run events (no pull_request payload), so
+  # the allowlist is re-applied by matching the Dependabot branch name, which
+  # encodes "<group>-<artifact>" (e.g. dependabot/maven/com.fasterxml.jackson...).
+  auto-merge-retry:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    steps:
+      - name: Enable auto-merge for the originating PR
+        env:
+          GH_REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          case "$HEAD_BRANCH" in
+            *com.zaxxer*|*org.apache.commons*|*com.fasterxml.jackson*|*org.slf4j*|*org.junit.jupiter*|*org.testcontainers*|*org.postgresql*|*mysql*|*org.jgrapht*|*org.apache.maven.plugins*|*org.codehaus.mojo*) ;;
+            *)
+              echo "Branch '$HEAD_BRANCH' is not in the auto-merge allowlist; skipping."
+              exit 0
+              ;;
+          esac
+
+          PR_URL=$(gh pr list --head "$HEAD_BRANCH" --state open --json url --jq '.[0].url')
+          if [ -z "$PR_URL" ]; then
+            echo "No open PR found for branch '$HEAD_BRANCH'; nothing to do."
+            exit 0
+          fi
+
+          # If checks are still pending the PR is "blocked" and --auto enables
+          # auto-merge; if everything is already green the PR is "clean" and
+          # --auto is rejected, so fall back to merging directly.
+          gh pr merge --auto --merge "$PR_URL" || gh pr merge --merge "$PR_URL"
