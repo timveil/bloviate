@@ -16,8 +16,6 @@
 
 package io.bloviate.gen;
 
-import io.bloviate.util.SeededRandomUtils;
-
 import java.sql.*;
 import java.util.Random;
 
@@ -29,8 +27,6 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
     @Override
     public String[] generate() {
         String[] randomArray = new String[length];
-
-        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
 
         for (int i = 0; i < length; i++) {
             randomArray[i] = randomUtils.randomAlphabetic(elementLength);

@@ -19,7 +19,6 @@ package io.bloviate.gen;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.bloviate.util.SeededRandomUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -42,7 +41,6 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
 
     @Override
     public String generate() {
-        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
         ObjectNode node = MAPPER.createObjectNode();
 
         for (int i = 0; i < fields; i++) {

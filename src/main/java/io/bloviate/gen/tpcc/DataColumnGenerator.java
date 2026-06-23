@@ -18,7 +18,6 @@ package io.bloviate.gen.tpcc;
 
 import io.bloviate.gen.AbstractBuilder;
 import io.bloviate.gen.AbstractDataGenerator;
-import io.bloviate.util.SeededRandomUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,7 +34,6 @@ public class DataColumnGenerator extends AbstractDataGenerator<String> {
 
     @Override
     public String generate() {
-        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
 
         int dataLength = randomUtils.nextInt(26, 51);
         String data = randomUtils.randomAlphabetic(dataLength);

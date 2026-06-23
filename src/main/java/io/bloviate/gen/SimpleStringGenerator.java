@@ -16,8 +16,6 @@
 
 package io.bloviate.gen;
 
-import io.bloviate.util.SeededRandomUtils;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
@@ -31,7 +29,6 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
     @Override
     public String generate() {
         int maxSize = Math.min(size, 2000);
-        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
         return randomUtils.random(maxSize, letters, numbers);
     }
 

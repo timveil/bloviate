@@ -16,6 +16,7 @@
 
 package io.bloviate.gen;
 
+import io.bloviate.util.SeededRandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +53,17 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
 
     protected final Random random;
 
+    /**
+     * A reusable {@link SeededRandomUtils} view over {@link #random}, created once per
+     * generator so subclasses don't allocate a fresh wrapper on every {@code generate()}
+     * call. Because it holds the same {@code random} reference, it observes any
+     * {@link #setSeed(long)} reseeding.
+     */
+    protected final SeededRandomUtils randomUtils;
+
     public AbstractDataGenerator(Random random) {
         this.random = random;
+        this.randomUtils = new SeededRandomUtils(random);
     }
 
     @Override
