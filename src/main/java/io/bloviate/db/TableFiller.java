@@ -78,6 +78,8 @@ public class TableFiller implements Fillable {
 
         DatabaseSupport databaseSupport = databaseConfiguration.databaseSupport();
 
+        TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
+
         for (Column column : filteredColumns) {
 
             long seed;
@@ -99,13 +101,21 @@ public class TableFiller implements Fillable {
                 seed = column.hashCode();
             }
 
-            generatorMap.put(column, databaseSupport.getDataGenerator(column, new Random(seed)));
+            // an explicit per-column configuration overrides the auto-detected generator;
+            // either way the generator is seeded by the engine so it stays reproducible
+            ColumnConfiguration columnConfiguration = tableConfiguration != null
+                    ? tableConfiguration.columnConfiguration(column.name())
+                    : null;
+
+            DataGenerator<?> dataGenerator = columnConfiguration != null
+                    ? columnConfiguration.generatorFactory().create(new Random(seed))
+                    : databaseSupport.getDataGenerator(column, new Random(seed));
+
+            generatorMap.put(column, dataGenerator);
             seedMap.put(column, seed);
         }
 
         int batchSize = databaseConfiguration.batchSize();
-
-        TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
 
         long rowCount = databaseConfiguration.defaultRowCount();
         if (tableConfiguration != null) {
