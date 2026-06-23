@@ -16,23 +16,20 @@
 
 package io.bloviate.gen;
 
-import io.bloviate.util.SeededRandomUtils;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
-public class SimpleStringGenerator extends AbstractDataGenerator<String> {
+/**
+ * Always generates the same configured string value. The random source is ignored.
+ */
+public class StaticStringGenerator extends AbstractDataGenerator<String> {
 
-    private final int size;
-    private final boolean letters;
-    private final boolean numbers;
+    private final String value;
 
     @Override
     public String generate() {
-        int maxSize = Math.min(size, 2000);
-        SeededRandomUtils randomUtils = new SeededRandomUtils(random);
-        return randomUtils.random(maxSize, letters, numbers);
+        return value;
     }
 
     @Override
@@ -42,41 +39,25 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
 
     public static class Builder extends AbstractBuilder<String> {
 
-        private int size = 10;
-
-        private boolean letters = true;
-
-        private boolean numbers = false;
+        private String value = "";
 
         public Builder(Random random) {
             super(random);
         }
 
-        public Builder size(int size) {
-            this.size = size;
-            return this;
-        }
-
-        public Builder letters(boolean letters) {
-            this.letters = letters;
-            return this;
-        }
-
-        public Builder numbers(boolean numbers) {
-            this.numbers = numbers;
+        public Builder value(String value) {
+            this.value = value;
             return this;
         }
 
         @Override
-        public SimpleStringGenerator build() {
-            return new SimpleStringGenerator(this);
+        public StaticStringGenerator build() {
+            return new StaticStringGenerator(this);
         }
     }
 
-    private SimpleStringGenerator(Builder builder) {
+    private StaticStringGenerator(Builder builder) {
         super(builder.random);
-        this.size = builder.size;
-        this.letters = builder.letters;
-        this.numbers = builder.numbers;
+        this.value = builder.value;
     }
 }

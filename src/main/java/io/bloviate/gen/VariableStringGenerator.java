@@ -22,17 +22,23 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
-public class SimpleStringGenerator extends AbstractDataGenerator<String> {
+/**
+ * Generates strings whose length varies randomly within an inclusive
+ * {@code [minLength, maxLength]} range. The character set (letters and/or
+ * numbers) is configurable.
+ */
+public class VariableStringGenerator extends AbstractDataGenerator<String> {
 
-    private final int size;
+    private final int minLength;
+    private final int maxLength;
     private final boolean letters;
     private final boolean numbers;
 
     @Override
     public String generate() {
-        int maxSize = Math.min(size, 2000);
         SeededRandomUtils randomUtils = new SeededRandomUtils(random);
-        return randomUtils.random(maxSize, letters, numbers);
+        int length = randomUtils.nextInt(Math.max(minLength, 1), maxLength + 1);
+        return randomUtils.random(length, letters, numbers);
     }
 
     @Override
@@ -42,18 +48,22 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
 
     public static class Builder extends AbstractBuilder<String> {
 
-        private int size = 10;
-
+        private int minLength = 1;
+        private int maxLength = 10;
         private boolean letters = true;
-
         private boolean numbers = false;
 
         public Builder(Random random) {
             super(random);
         }
 
-        public Builder size(int size) {
-            this.size = size;
+        public Builder minLength(int minLength) {
+            this.minLength = minLength;
+            return this;
+        }
+
+        public Builder maxLength(int maxLength) {
+            this.maxLength = maxLength;
             return this;
         }
 
@@ -68,14 +78,15 @@ public class SimpleStringGenerator extends AbstractDataGenerator<String> {
         }
 
         @Override
-        public SimpleStringGenerator build() {
-            return new SimpleStringGenerator(this);
+        public VariableStringGenerator build() {
+            return new VariableStringGenerator(this);
         }
     }
 
-    private SimpleStringGenerator(Builder builder) {
+    private VariableStringGenerator(Builder builder) {
         super(builder.random);
-        this.size = builder.size;
+        this.minLength = builder.minLength;
+        this.maxLength = builder.maxLength;
         this.letters = builder.letters;
         this.numbers = builder.numbers;
     }
