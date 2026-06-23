@@ -18,6 +18,7 @@ package io.bloviate.db;
 
 import io.bloviate.ext.PostgresSupport;
 import io.bloviate.gen.IntegerGenerator;
+import io.bloviate.gen.tpcc.TPCCConfiguration;
 import org.junit.jupiter.api.Test;
 
 import java.sql.ResultSet;
@@ -90,6 +91,39 @@ class PostgresFillerTest extends BasePostgresTest {
 
                 assertEquals(rows, actualRows, "row count should match the table configuration");
             }
+        });
+    }
+
+    @Test
+    void fillTPCCWithColumnConfigs() throws SQLException {
+
+        int w = 2;   // warehouses
+        int i = 10;  // items
+        int d = 2;   // districts per warehouse
+        int c = 3;   // customers (and orders) per district
+        int l = 2;   // lines per order
+
+        DatabaseConfiguration configuration = new DatabaseConfiguration(
+                128, 10, new PostgresSupport(), TPCCConfiguration.build(w, i, d, c, l));
+
+        fillDatabase("create_tpcc.postgres.sql", configuration, connection -> {
+            // cardinalities of the dense cartesian-product fill; if any composite key
+            // collided or any FK were invalid, the fill itself would have thrown
+            assertRowCount(connection, "warehouse", w);
+            assertRowCount(connection, "item", i);
+            assertRowCount(connection, "stock", (long) w * i);
+            assertRowCount(connection, "district", (long) w * d);
+            assertRowCount(connection, "customer", (long) w * d * c);
+            assertRowCount(connection, "history", (long) w * d * c);
+            assertRowCount(connection, "open_order", (long) w * d * c);
+            assertRowCount(connection, "new_order", (long) w * d * c);
+            assertRowCount(connection, "order_line", (long) w * d * c * l);
+
+            // realistic value generators were applied
+            assertCount(connection, "select count(*) from customer where c_credit not in ('GC','BC')", 0);
+            assertCount(connection, "select count(*) from customer where c_zip not like '____11111'", 0);
+            assertCount(connection, "select count(*) from customer where c_middle <> 'OE'", 0);
+            assertCount(connection, "select count(*) from open_order where o_ol_cnt <> " + l, 0);
         });
     }
 }
