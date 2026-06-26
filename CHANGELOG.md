@@ -1,3 +1,9 @@
+## [2.2.0](https://github.com/timveil/bloviate/compare/v2.1.0...v2.2.0) (2026-06-26)
+
+### ✨ Features
+
+* **tpcc:** variable order-line count per order (gap 2), as reusable generators ([8545148](https://github.com/timveil/bloviate/commit/85451484ed2ea3447f10a7c6d9d218aa16eea4c3))
+
 ## [2.1.0](https://github.com/timveil/bloviate/compare/v2.0.0...v2.1.0) (2026-06-26)
 
 ### ✨ Features
