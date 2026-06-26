@@ -1,3 +1,9 @@
+## [2.4.0](https://github.com/timveil/bloviate/compare/v2.3.0...v2.4.0) (2026-06-26)
+
+### ✨ Features
+
+* **tpcc:** model delivery state — o_carrier_id and ol_delivery_d NULL for undelivered orders ([e884998](https://github.com/timveil/bloviate/commit/e8849989d4f407c2249bdb2cb281798c846b8c33)), closes [#421](https://github.com/timveil/bloviate/issues/421)
+
 ## [2.3.0](https://github.com/timveil/bloviate/compare/v2.2.0...v2.3.0) (2026-06-26)
 
 ### ✨ Features
