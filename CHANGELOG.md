@@ -1,3 +1,9 @@
+## [2.1.0](https://github.com/timveil/bloviate/compare/v2.0.0...v2.1.0) (2026-06-26)
+
+### ✨ Features
+
+* **tpcc:** close data-generation fidelity gaps 1 and 3 vs the spec ([8ab35d2](https://github.com/timveil/bloviate/commit/8ab35d21106cb05f8b698b78e7aa944211d633a9))
+
 ## [2.0.0](https://github.com/timveil/bloviate/compare/v1.0.3...v2.0.0) (2026-06-26)
 
 ### ⚠ BREAKING CHANGES
