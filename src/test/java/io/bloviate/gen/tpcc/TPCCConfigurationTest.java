@@ -22,6 +22,7 @@ import io.bloviate.gen.DataGenerator;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
@@ -126,5 +127,25 @@ class TPCCConfigurationTest {
     void fixedLineCountGivesClosedFormOrderLineRowCount() {
         Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, 7, 7, NEW_ORDERS);
         assertEquals((long) W * D * C * 7, table(tables, "order_line").rowCount());
+    }
+
+    @Test
+    void orderCustomerIdIsAPerDistrictPermutation() {
+        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
+        DataGenerator<?> oCId = generator(table(tables, "open_order"), "o_c_id");
+
+        long districts = (long) W * D;
+        boolean sawShuffle = false;
+        for (long dist = 0; dist < districts; dist++) {
+            Set<Integer> seen = new HashSet<>();
+            for (int position = 0; position < C; position++) {
+                int value = (Integer) oCId.generate();
+                assertTrue(value >= 1 && value <= C, "o_c_id out of range: " + value);
+                assertTrue(seen.add(value), "duplicate o_c_id within a district: " + value);
+                sawShuffle |= (value != position + 1);
+            }
+            assertEquals(C, seen.size(), "o_c_id is not a full permutation of customers in a district");
+        }
+        assertTrue(sawShuffle, "expected o_c_id to be shuffled, not the identity");
     }
 }

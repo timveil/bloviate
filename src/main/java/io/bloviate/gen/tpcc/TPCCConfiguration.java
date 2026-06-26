@@ -23,6 +23,7 @@ import io.bloviate.gen.ChildCardinality;
 import io.bloviate.gen.ChildCountGenerator;
 import io.bloviate.gen.ChildKeyComponentGenerator;
 import io.bloviate.gen.CompositeKeyComponentGenerator;
+import io.bloviate.gen.GroupedPermutationGenerator;
 import io.bloviate.gen.IntegerGenerator;
 import io.bloviate.gen.ScaledBigDecimalGenerator;
 import io.bloviate.gen.StaticBigDecimalGenerator;
@@ -57,9 +58,10 @@ import java.util.Set;
  * <p>Two parts of the spec are still simplified relative to a strict benchmark
  * load:
  * <ul>
- *   <li>orders-per-district equals customers-per-district (one order per
- *       customer) and {@code o_c_id} is the identity rather than a per-district
- *       permutation of customer ids;</li>
+ *   <li>{@code o_c_id} is a per-district random permutation of customer ids (each
+ *       customer has exactly one order), but {@code c_last} uses {@code NURand} for
+ *       all rows rather than the spec's deterministic enumeration of the first 1000
+ *       names per district;</li>
  *   <li>delivery state is not modelled: {@code o_carrier_id} is always populated
  *       and {@code ol_delivery_d} is left to the default generator rather than
  *       being NULL for the most recent (undelivered) orders.</li>
@@ -76,6 +78,9 @@ public final class TPCCConfiguration {
 
     // salt for the deterministic per-order line-count hash; fixed so datasets are reproducible
     private static final long LINE_COUNT_SEED = 0x7C_3C_45_21_9ABCDEFL;
+
+    // salt for the per-district o_c_id permutation; fixed so datasets are reproducible
+    private static final long O_C_ID_PERMUTATION_SEED = 0x0C_1D_5EED_9ABCDEFL;
 
     private TPCCConfiguration() {
     }
@@ -205,7 +210,7 @@ public final class TPCCConfiguration {
                 key("o_w_id", 1, (long) d * o, w),
                 key("o_d_id", 1, o, d),
                 key("o_id", 1, 1, o),
-                key("o_c_id", 1, 1, c),
+                permutation("o_c_id", c, 1),
                 col("o_carrier_id", intRange(1, 10)),
                 childCount("o_ol_cnt", cardinality),
                 col("o_all_local", staticInt(1)))));
@@ -254,6 +259,15 @@ public final class TPCCConfiguration {
     private static ColumnConfiguration childSequence(String name, ChildCardinality cardinality) {
         return new ColumnConfiguration(name,
                 random -> new ChildKeyComponentGenerator.Builder(random).cardinality(cardinality).sequence().start(1).build());
+    }
+
+    /**
+     * A column that is a random permutation of {@code [start, start + groupSize)} within each
+     * consecutive run of {@code groupSize} rows (e.g. {@code o_c_id} per district).
+     */
+    private static ColumnConfiguration permutation(String name, int groupSize, int start) {
+        return new ColumnConfiguration(name,
+                random -> new GroupedPermutationGenerator.Builder(random).groupSize(groupSize).start(start).seed(O_C_ID_PERMUTATION_SEED).build());
     }
 
     /**

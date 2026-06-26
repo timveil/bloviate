@@ -89,6 +89,12 @@ public class BaseDatabaseTestCase {
         assertCount(connection, "select count(*) from order_line l join open_order o "
                 + "on l.ol_w_id = o.o_w_id and l.ol_d_id = o.o_d_id and l.ol_o_id = o.o_id where l.ol_number > o.o_ol_cnt", 0);
 
+        // gap 4: o_c_id is a per-district random permutation of customer ids (each customer
+        // has exactly one order) — within range and with no duplicate within a district
+        assertCount(connection, "select count(*) from open_order where o_c_id < 1 or o_c_id > " + customers, 0);
+        assertCount(connection, "select count(*) from "
+                + "(select o_w_id, o_d_id, o_c_id from open_order group by o_w_id, o_d_id, o_c_id having count(*) > 1) dup", 0);
+
         // gap 1: new_order holds only the most-recent orders per district (highest o_id values)
         assertCount(connection, "select count(*) from new_order where no_o_id < " + (customers - newOrders + 1), 0);
 
