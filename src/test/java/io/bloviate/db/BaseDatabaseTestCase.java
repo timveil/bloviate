@@ -18,6 +18,7 @@ package io.bloviate.db;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import io.bloviate.gen.tpcc.CustomerLastNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.JdbcDatabaseContainer;
@@ -89,11 +90,19 @@ public class BaseDatabaseTestCase {
         assertCount(connection, "select count(*) from order_line l join open_order o "
                 + "on l.ol_w_id = o.o_w_id and l.ol_d_id = o.o_d_id and l.ol_o_id = o.o_id where l.ol_number > o.o_ol_cnt", 0);
 
-        // gap 4: o_c_id is a per-district random permutation of customer ids (each customer
+        // gap 4 part A: o_c_id is a per-district random permutation of customer ids (each customer
         // has exactly one order) — within range and with no duplicate within a district
         assertCount(connection, "select count(*) from open_order where o_c_id < 1 or o_c_id > " + customers, 0);
         assertCount(connection, "select count(*) from "
                 + "(select o_w_id, o_d_id, o_c_id from open_order group by o_w_id, o_d_id, o_c_id having count(*) > 1) dup", 0);
+
+        // gap 4 part B: c_last enumerates the first names per district deterministically. These tests
+        // use fewer than 1000 customers, so every customer is enumerated: c_id = k+1 -> lastName(k).
+        int enumerated = Math.min(customers, CustomerLastNameGenerator.MAX_ENUMERATED);
+        for (int k = 0; k < enumerated; k++) {
+            assertCount(connection, "select count(*) from customer where c_id = " + (k + 1)
+                    + " and c_last <> '" + CustomerLastNameGenerator.lastName(k) + "'", 0);
+        }
 
         // gap 1: new_order holds only the most-recent orders per district (highest o_id values)
         assertCount(connection, "select count(*) from new_order where no_o_id < " + (customers - newOrders + 1), 0);

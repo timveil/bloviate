@@ -48,24 +48,20 @@ import java.util.Set;
  * configured with bounded generators matching the value ranges and seed values
  * from the TPC-C specification (clause 4.3.3.1).
  *
- * <p>In line with the spec, each order has a random {@code o_ol_cnt} number of
+ * <p>In line with the spec: each order has a random {@code o_ol_cnt} number of
  * order lines in {@code [minLinesPerOrder, maxLinesPerOrder]} (default
  * {@code [5, 15]}) and {@code order_line} holds exactly that many rows per order
- * (see {@link io.bloviate.gen.ChildCardinality}); and {@code new_order} holds only the most
- * recent {@code newOrdersPerDistrict} orders per district (the highest
- * {@code o_id}s) rather than mirroring every order.
+ * (see {@link io.bloviate.gen.ChildCardinality}); {@code new_order} holds only the
+ * most recent {@code newOrdersPerDistrict} orders per district (the highest
+ * {@code o_id}s) rather than mirroring every order; {@code o_c_id} is a per-district
+ * random permutation of customer ids (each customer has exactly one order); and
+ * {@code c_last} enumerates the first {@value #DEFAULT_ENUMERATED_LAST_NAMES} last
+ * names per district deterministically, using {@code NURand} only for the remainder.
  *
- * <p>Two parts of the spec are still simplified relative to a strict benchmark
- * load:
- * <ul>
- *   <li>{@code o_c_id} is a per-district random permutation of customer ids (each
- *       customer has exactly one order), but {@code c_last} uses {@code NURand} for
- *       all rows rather than the spec's deterministic enumeration of the first 1000
- *       names per district;</li>
- *   <li>delivery state is not modelled: {@code o_carrier_id} is always populated
- *       and {@code ol_delivery_d} is left to the default generator rather than
- *       being NULL for the most recent (undelivered) orders.</li>
- * </ul>
+ * <p>One part of the spec is still simplified relative to a strict benchmark load:
+ * delivery state is not modelled — {@code o_carrier_id} is always populated and
+ * {@code ol_delivery_d} is left to the default generator rather than being NULL for
+ * the most recent (undelivered) orders.
  */
 public final class TPCCConfiguration {
 
@@ -75,6 +71,7 @@ public final class TPCCConfiguration {
     public static final int DEFAULT_MIN_LINES_PER_ORDER = 5;
     public static final int DEFAULT_MAX_LINES_PER_ORDER = 15;
     public static final int DEFAULT_NEW_ORDERS_PER_DISTRICT = 900;
+    public static final int DEFAULT_ENUMERATED_LAST_NAMES = CustomerLastNameGenerator.MAX_ENUMERATED;
 
     // salt for the deterministic per-order line-count hash; fixed so datasets are reproducible
     private static final long LINE_COUNT_SEED = 0x7C_3C_45_21_9ABCDEFL;
@@ -185,7 +182,7 @@ public final class TPCCConfiguration {
                 key("c_d_id", 1, c, d),
                 key("c_id", 1, 1, c),
                 col("c_zip", zip()),
-                col("c_last", lastName()),
+                col("c_last", lastName(c)),
                 col("c_credit", credit()),
                 col("c_middle", staticString("OE")),
                 col("c_discount", scaledDecimal(0.0, 0.5, 4)),
@@ -290,8 +287,13 @@ public final class TPCCConfiguration {
         return random -> new DataColumnGenerator.Builder(random).build();
     }
 
-    private static ColumnGeneratorFactory lastName() {
-        return random -> new CustomerLastNameGenerator.Builder(random).build();
+    /**
+     * {@code c_last}: enumerates the first {@link #DEFAULT_ENUMERATED_LAST_NAMES} names per
+     * district deterministically (clause 4.3.3.1), using {@code NURand} for the remainder.
+     */
+    private static ColumnGeneratorFactory lastName(int customersPerDistrict) {
+        return random -> new CustomerLastNameGenerator.Builder(random)
+                .groupSize(customersPerDistrict).enumeratedCount(DEFAULT_ENUMERATED_LAST_NAMES).build();
     }
 
     private static ColumnGeneratorFactory credit() {
