@@ -35,7 +35,8 @@ class TPCCConfigurationTest {
     private static final int I = 50;
     private static final int D = 3;
     private static final int C = 10;
-    private static final int L = 5;
+    private static final int MIN_LINES = 5;
+    private static final int MAX_LINES = 15;
     private static final int NEW_ORDERS = 4;
 
     private static TableConfiguration table(Set<TableConfiguration> tables, String name) {
@@ -50,7 +51,7 @@ class TPCCConfigurationTest {
 
     @Test
     void newOrderIsASubsetOfOrders() {
-        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, L, NEW_ORDERS);
+        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
 
         long expectedOrders = (long) W * D * C;
         long expectedNewOrders = (long) W * D * NEW_ORDERS;
@@ -70,13 +71,13 @@ class TPCCConfigurationTest {
     @Test
     void newOrdersPerDistrictDefaultsToClampedSpecValue() {
         // small order count clamps the 900-default down to the available orders (full mirror)
-        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, L);
+        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES);
         assertEquals((long) W * D * C, table(tables, "new_order").rowCount());
     }
 
     @Test
     void taxRatesStayWithinSpecRange() {
-        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, L, NEW_ORDERS);
+        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
         DataGenerator<?> wTax = generator(table(tables, "warehouse"), "w_tax");
         BigDecimal max = new BigDecimal("0.2000");
         for (int i = 0; i < 1000; i++) {
@@ -88,7 +89,7 @@ class TPCCConfigurationTest {
 
     @Test
     void seedValuesMatchSpec() {
-        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, L, NEW_ORDERS);
+        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
         assertEquals(new BigDecimal("300000.00"), generator(table(tables, "warehouse"), "w_ytd").generate());
         assertEquals(new BigDecimal("30000.00"), generator(table(tables, "district"), "d_ytd").generate());
         assertEquals(new BigDecimal("50000.00"), generator(table(tables, "customer"), "c_credit_lim").generate());
@@ -96,5 +97,34 @@ class TPCCConfigurationTest {
         assertEquals(5, ((Integer) generator(table(tables, "order_line"), "ol_quantity").generate()).intValue());
         // d_next_o_id is orders-per-district + 1
         assertEquals(C + 1, ((Integer) generator(table(tables, "district"), "d_next_o_id").generate()).intValue());
+    }
+
+    @Test
+    void orderLineRowCountEqualsSumOfVariableLineCounts() {
+        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
+
+        long orders = (long) W * D * C;
+        DataGenerator<?> oOlCnt = generator(table(tables, "open_order"), "o_ol_cnt");
+
+        long sum = 0;
+        boolean sawVariation = false;
+        int first = (Integer) oOlCnt.generate();
+        sum += first;
+        for (long k = 1; k < orders; k++) {
+            int count = (Integer) oOlCnt.generate();
+            assertTrue(count >= MIN_LINES && count <= MAX_LINES, "o_ol_cnt out of range: " + count);
+            sawVariation |= (count != first);
+            sum += count;
+        }
+
+        assertTrue(sawVariation, "expected variable line counts across orders");
+        assertEquals(sum, table(tables, "order_line").rowCount(),
+                "order_line row count must equal the sum of o_ol_cnt across all orders");
+    }
+
+    @Test
+    void fixedLineCountGivesClosedFormOrderLineRowCount() {
+        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, 7, 7, NEW_ORDERS);
+        assertEquals((long) W * D * C * 7, table(tables, "order_line").rowCount());
     }
 }

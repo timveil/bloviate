@@ -57,11 +57,12 @@ class MySqlFillerTest extends BaseMySqlTest {
         int i = 10;
         int d = 2;
         int c = 3;
-        int l = 2;
+        int minLines = 5;
+        int maxLines = 15;
         int newOrders = 2;
 
         DatabaseConfiguration configuration = new DatabaseConfiguration(
-                128, 10, new MySQLSupport(), TPCCConfiguration.build(w, i, d, c, l, newOrders));
+                128, 10, new MySQLSupport(), TPCCConfiguration.build(w, i, d, c, minLines, maxLines, newOrders));
 
         fillDatabase("create_tpcc.mysql.sql", configuration, connection -> {
             assertRowCount(connection, "warehouse", w);
@@ -72,9 +73,9 @@ class MySqlFillerTest extends BaseMySqlTest {
             assertRowCount(connection, "history", (long) w * d * c);
             assertRowCount(connection, "open_order", (long) w * d * c);
             assertRowCount(connection, "new_order", (long) w * d * newOrders);
-            assertRowCount(connection, "order_line", (long) w * d * c * l);
+            // order_line row count is variable; asserted relationally in assertTpccColumnFidelity
 
-            assertTpccColumnFidelity(connection, c, l, newOrders);
+            assertTpccColumnFidelity(connection, c, minLines, maxLines, newOrders);
         });
     }
 }
