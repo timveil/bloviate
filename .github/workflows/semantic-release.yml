@@ -50,8 +50,12 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           server-id: github
-          server-username: timveil
-          server-password: GITHUB_TOKEN
+          # settings.xml references ${env.MAVEN_USERNAME}/${env.MAVEN_TOKEN}. Keep
+          # these distinct from GITHUB_TOKEN: the Run semantic-release step overrides
+          # GITHUB_TOKEN with RELEASE_PAT (Contents-only, no packages:write), so the
+          # Maven deploy must auth via the built-in token through MAVEN_TOKEN instead.
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_TOKEN
 
       - name: Cache Maven dependencies
         uses: actions/cache@v4
@@ -153,10 +157,10 @@ jobs:
           # PAT drives both the @semantic-release/git push to main and the
           # @semantic-release/github release API calls.
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
-          # Maven deploy to GitHub Packages still uses the built-in token (packages:write).
+          # Maven deploy to GitHub Packages uses the built-in token (packages:write).
+          # settings.xml reads these via ${env.MAVEN_USERNAME}/${env.MAVEN_TOKEN}.
           MAVEN_USERNAME: ${{ github.actor }}
-          MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-          timveil: ${{ github.actor }}
+          MAVEN_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: semantic-release
         
       - name: Log release info
