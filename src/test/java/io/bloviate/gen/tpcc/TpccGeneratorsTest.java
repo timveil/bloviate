@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TpccGeneratorsTest {
@@ -87,5 +88,31 @@ class TpccGeneratorsTest {
             assertTrue(value.length() >= 9 && value.length() <= 15, "unexpected length: " + value);
             assertTrue(value.chars().allMatch(Character::isUpperCase), "expected upper-case letters: " + value);
         }
+    }
+
+    @Test
+    void customerLastNameEnumeratesFirstNamesPerDistrictThenUsesNurand() {
+        int groupSize = 10;
+        int enumerated = 4;
+        CustomerLastNameGenerator generator = new CustomerLastNameGenerator.Builder(new Random(1))
+                .groupSize(groupSize).enumeratedCount(enumerated).build();
+
+        // walk two full districts; the enumeration must restart at each district boundary
+        for (int district = 0; district < 2; district++) {
+            for (int position = 0; position < enumerated; position++) {
+                assertEquals(CustomerLastNameGenerator.lastName(position), generator.generate(),
+                        "enumerated name mismatch at district " + district + " position " + position);
+            }
+            for (int position = enumerated; position < groupSize; position++) {
+                String value = generator.generate(); // NURand path -> still a valid three-syllable name
+                assertTrue(value.length() >= 9 && value.length() <= 15, "unexpected length: " + value);
+            }
+        }
+    }
+
+    @Test
+    void customerLastNameRejectsEnumeratedCountAboveSpecMaximum() {
+        assertThrows(IllegalArgumentException.class, () -> new CustomerLastNameGenerator.Builder(new Random(1))
+                .groupSize(2000).enumeratedCount(CustomerLastNameGenerator.MAX_ENUMERATED + 1).build());
     }
 }
