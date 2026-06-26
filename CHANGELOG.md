@@ -1,3 +1,10 @@
+## [2.3.0](https://github.com/timveil/bloviate/compare/v2.2.0...v2.3.0) (2026-06-26)
+
+### ✨ Features
+
+* **tpcc:** c_last load enumeration (gap 4, part B) — completes gap 4 ([e4460f0](https://github.com/timveil/bloviate/commit/e4460f04ed97603d51942080083e94f0b8eeca37))
+* **tpcc:** per-district o_c_id permutation via generic GroupedPermutationGenerator (gap 4, part A) ([db1f9a5](https://github.com/timveil/bloviate/commit/db1f9a5cc16e94ef413009151dd8518268b2805f))
+
 ## [2.2.0](https://github.com/timveil/bloviate/compare/v2.1.0...v2.2.0) (2026-06-26)
 
 ### ✨ Features
