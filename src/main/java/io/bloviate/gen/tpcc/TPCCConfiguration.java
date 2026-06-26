@@ -19,6 +19,9 @@ package io.bloviate.gen.tpcc;
 import io.bloviate.db.ColumnConfiguration;
 import io.bloviate.db.ColumnGeneratorFactory;
 import io.bloviate.db.TableConfiguration;
+import io.bloviate.gen.ChildCardinality;
+import io.bloviate.gen.ChildCountGenerator;
+import io.bloviate.gen.ChildKeyComponentGenerator;
 import io.bloviate.gen.CompositeKeyComponentGenerator;
 import io.bloviate.gen.IntegerGenerator;
 import io.bloviate.gen.ScaledBigDecimalGenerator;
@@ -44,27 +47,35 @@ import java.util.Set;
  * configured with bounded generators matching the value ranges and seed values
  * from the TPC-C specification (clause 4.3.3.1).
  *
+ * <p>In line with the spec, each order has a random {@code o_ol_cnt} number of
+ * order lines in {@code [minLinesPerOrder, maxLinesPerOrder]} (default
+ * {@code [5, 15]}) and {@code order_line} holds exactly that many rows per order
+ * (see {@link io.bloviate.gen.ChildCardinality}); and {@code new_order} holds only the most
+ * recent {@code newOrdersPerDistrict} orders per district (the highest
+ * {@code o_id}s) rather than mirroring every order.
+ *
  * <p>Two parts of the spec are still simplified relative to a strict benchmark
  * load:
  * <ul>
  *   <li>orders-per-district equals customers-per-district (one order per
  *       customer) and {@code o_c_id} is the identity rather than a per-district
  *       permutation of customer ids;</li>
- *   <li>each order has a fixed number of lines ({@code o_ol_cnt} is constant)
- *       rather than a random {@code [5, 15]}, and {@code o_carrier_id} is always
- *       populated rather than NULL for the most recent (undelivered) orders.</li>
+ *   <li>delivery state is not modelled: {@code o_carrier_id} is always populated
+ *       and {@code ol_delivery_d} is left to the default generator rather than
+ *       being NULL for the most recent (undelivered) orders.</li>
  * </ul>
- * In line with the spec, however, {@code new_order} holds only the most recent
- * {@code newOrdersPerDistrict} orders per district (the highest {@code o_id}s)
- * rather than mirroring every order.
  */
 public final class TPCCConfiguration {
 
     public static final int DEFAULT_ITEMS = 100_000;
     public static final int DEFAULT_DISTRICTS_PER_WAREHOUSE = 10;
     public static final int DEFAULT_CUSTOMERS_PER_DISTRICT = 3_000;
-    public static final int DEFAULT_LINES_PER_ORDER = 10;
+    public static final int DEFAULT_MIN_LINES_PER_ORDER = 5;
+    public static final int DEFAULT_MAX_LINES_PER_ORDER = 15;
     public static final int DEFAULT_NEW_ORDERS_PER_DISTRICT = 900;
+
+    // salt for the deterministic per-order line-count hash; fixed so datasets are reproducible
+    private static final long LINE_COUNT_SEED = 0x7C_3C_45_21_9ABCDEFL;
 
     private TPCCConfiguration() {
     }
@@ -76,7 +87,8 @@ public final class TPCCConfiguration {
      * @return the set of table configurations
      */
     public static Set<TableConfiguration> build(int warehouses) {
-        return build(warehouses, DEFAULT_ITEMS, DEFAULT_DISTRICTS_PER_WAREHOUSE, DEFAULT_CUSTOMERS_PER_DISTRICT, DEFAULT_LINES_PER_ORDER);
+        return build(warehouses, DEFAULT_ITEMS, DEFAULT_DISTRICTS_PER_WAREHOUSE, DEFAULT_CUSTOMERS_PER_DISTRICT,
+                DEFAULT_MIN_LINES_PER_ORDER, DEFAULT_MAX_LINES_PER_ORDER);
     }
 
     /**
@@ -88,11 +100,13 @@ public final class TPCCConfiguration {
      * @param items                number of items (I)
      * @param districtsPerWarehouse districts per warehouse (D)
      * @param customersPerDistrict  customers per district (C); also used as orders per district
-     * @param linesPerOrder         order lines per order (L)
+     * @param minLinesPerOrder      minimum order lines per order (inclusive)
+     * @param maxLinesPerOrder      maximum order lines per order (inclusive); pass the same value
+     *                              as {@code minLinesPerOrder} for a fixed line count
      * @return the set of table configurations
      */
-    public static Set<TableConfiguration> build(int warehouses, int items, int districtsPerWarehouse, int customersPerDistrict, int linesPerOrder) {
-        return build(warehouses, items, districtsPerWarehouse, customersPerDistrict, linesPerOrder,
+    public static Set<TableConfiguration> build(int warehouses, int items, int districtsPerWarehouse, int customersPerDistrict, int minLinesPerOrder, int maxLinesPerOrder) {
+        return build(warehouses, items, districtsPerWarehouse, customersPerDistrict, minLinesPerOrder, maxLinesPerOrder,
                 Math.min(customersPerDistrict, DEFAULT_NEW_ORDERS_PER_DISTRICT));
     }
 
@@ -104,26 +118,30 @@ public final class TPCCConfiguration {
      * @param items                  number of items (I)
      * @param districtsPerWarehouse  districts per warehouse (D)
      * @param customersPerDistrict   customers per district (C); also used as orders per district
-     * @param linesPerOrder          order lines per order (L)
+     * @param minLinesPerOrder       minimum order lines per order (inclusive)
+     * @param maxLinesPerOrder       maximum order lines per order (inclusive); pass the same value
+     *                               as {@code minLinesPerOrder} for a fixed line count
      * @param newOrdersPerDistrict   most-recent orders per district mirrored into {@code new_order};
      *                               clamped to {@code [0, customersPerDistrict]}
      * @return the set of table configurations
      */
-    public static Set<TableConfiguration> build(int warehouses, int items, int districtsPerWarehouse, int customersPerDistrict, int linesPerOrder, int newOrdersPerDistrict) {
+    public static Set<TableConfiguration> build(int warehouses, int items, int districtsPerWarehouse, int customersPerDistrict, int minLinesPerOrder, int maxLinesPerOrder, int newOrdersPerDistrict) {
 
         final int w = warehouses;
         final int i = items;
         final int d = districtsPerWarehouse;
         final int c = customersPerDistrict;
         final int o = customersPerDistrict; // one order per customer
-        final int l = linesPerOrder;
         final int no = Math.max(0, Math.min(newOrdersPerDistrict, o)); // new_order is a subset of orders
+
+        // shared, deterministic per-order line counts so open_order.o_ol_cnt and order_line agree
+        final ChildCardinality cardinality = new ChildCardinality(minLinesPerOrder, maxLinesPerOrder, LINE_COUNT_SEED);
 
         final long stockRows = (long) w * i;
         final long districtRows = (long) w * d;
         final long customerRows = (long) w * d * c;
         final long orderRows = (long) w * d * o;
-        final long orderLineRows = (long) w * d * o * l;
+        final long orderLineRows = cardinality.total(orderRows);
         final long newOrderRows = (long) w * d * no;
 
         Set<TableConfiguration> tables = new HashSet<>();
@@ -189,7 +207,7 @@ public final class TPCCConfiguration {
                 key("o_id", 1, 1, o),
                 key("o_c_id", 1, 1, c),
                 col("o_carrier_id", intRange(1, 10)),
-                col("o_ol_cnt", staticInt(l)),
+                childCount("o_ol_cnt", cardinality),
                 col("o_all_local", staticInt(1)))));
 
         tables.add(new TableConfiguration("new_order", newOrderRows, set(
@@ -197,17 +215,45 @@ public final class TPCCConfiguration {
                 key("no_d_id", 1, no, d),
                 key("no_o_id", o - no + 1, 1, no))));
 
+        // order_line has a variable number of rows per order; its parent-key components mirror
+        // the open_order key generators (same start/repeat/cycle, applied to the parent index),
+        // and ol_number is the 1-based line sequence within each order
         tables.add(new TableConfiguration("order_line", orderLineRows, set(
-                key("ol_w_id", 1, (long) d * o * l, w),
-                key("ol_d_id", 1, (long) o * l, d),
-                key("ol_o_id", 1, l, o),
-                key("ol_number", 1, 1, l),
-                key("ol_supply_w_id", 1, (long) d * o * l, w),
+                childKey("ol_w_id", cardinality, 1, (long) d * o, w),
+                childKey("ol_d_id", cardinality, 1, o, d),
+                childKey("ol_o_id", cardinality, 1, 1, o),
+                childSequence("ol_number", cardinality),
+                childKey("ol_supply_w_id", cardinality, 1, (long) d * o, w),
                 key("ol_i_id", 1, 1, i),
                 col("ol_quantity", staticInt(5)),
                 col("ol_amount", scaledDecimal(0.01, 9999.99, 2)))));
 
         return tables;
+    }
+
+    /**
+     * A parent table's "number of children" column, driven by the shared {@code cardinality}.
+     */
+    private static ColumnConfiguration childCount(String name, ChildCardinality cardinality) {
+        return new ColumnConfiguration(name,
+                random -> new ChildCountGenerator.Builder(random).cardinality(cardinality).build());
+    }
+
+    /**
+     * A child-key component that repeats a parent-key dimension, computed from the parent index
+     * with the same {@code start + ((parentIndex / repeat) % cycle)} formula as the parent's key.
+     */
+    private static ColumnConfiguration childKey(String name, ChildCardinality cardinality, int start, long repeat, int cycle) {
+        return new ColumnConfiguration(name,
+                random -> new ChildKeyComponentGenerator.Builder(random).cardinality(cardinality).start(start).repeat(repeat).cycle(cycle).build());
+    }
+
+    /**
+     * A child-key component emitting the 1-based sequence number of a child within its parent.
+     */
+    private static ColumnConfiguration childSequence(String name, ChildCardinality cardinality) {
+        return new ColumnConfiguration(name,
+                random -> new ChildKeyComponentGenerator.Builder(random).cardinality(cardinality).sequence().start(1).build());
     }
 
     /**

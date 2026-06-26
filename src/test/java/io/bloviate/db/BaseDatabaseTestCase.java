@@ -66,20 +66,28 @@ public class BaseDatabaseTestCase {
 
     /**
      * Asserts that a TPC-C dataset produced by {@code TPCCConfiguration} matches the spec's
-     * value ranges and seed values (issue #421, gaps 1 and 3). The SQL is portable across
+     * value ranges and seed values (issue #421, gaps 1, 2 and 3). The SQL is portable across
      * PostgreSQL, MySQL and CockroachDB.
      *
      * @param connection      an open connection to the filled database
      * @param customers       customers (and orders) per district
-     * @param linesPerOrder   order lines per order
+     * @param minLines        minimum order lines per order (inclusive)
+     * @param maxLines        maximum order lines per order (inclusive)
      * @param newOrders       most-recent orders per district mirrored into {@code new_order}
      */
-    protected static void assertTpccColumnFidelity(Connection connection, int customers, int linesPerOrder, int newOrders) throws SQLException {
+    protected static void assertTpccColumnFidelity(Connection connection, int customers, int minLines, int maxLines, int newOrders) throws SQLException {
         // realistic value generators were applied (unchanged from the original TPC-C support)
         assertCount(connection, "select count(*) from customer where c_credit not in ('GC','BC')", 0);
         assertCount(connection, "select count(*) from customer where c_zip not like '____11111'", 0);
         assertCount(connection, "select count(*) from customer where c_middle <> 'OE'", 0);
-        assertCount(connection, "select count(*) from open_order where o_ol_cnt <> " + linesPerOrder, 0);
+
+        // gap 2: each order has o_ol_cnt lines in [minLines, maxLines], and order_line holds
+        // exactly that many rows per order (o_ol_cnt agrees with the actual line count)
+        assertCount(connection, "select count(*) from open_order where o_ol_cnt < " + minLines + " or o_ol_cnt > " + maxLines, 0);
+        assertCount(connection, "select count(*) from open_order o where o.o_ol_cnt <> "
+                + "(select count(*) from order_line l where l.ol_w_id = o.o_w_id and l.ol_d_id = o.o_d_id and l.ol_o_id = o.o_id)", 0);
+        assertCount(connection, "select count(*) from order_line l join open_order o "
+                + "on l.ol_w_id = o.o_w_id and l.ol_d_id = o.o_d_id and l.ol_o_id = o.o_id where l.ol_number > o.o_ol_cnt", 0);
 
         // gap 1: new_order holds only the most-recent orders per district (highest o_id values)
         assertCount(connection, "select count(*) from new_order where no_o_id < " + (customers - newOrders + 1), 0);

@@ -101,11 +101,12 @@ class PostgresFillerTest extends BasePostgresTest {
         int i = 10;         // items
         int d = 2;          // districts per warehouse
         int c = 3;          // customers (and orders) per district
-        int l = 2;          // lines per order
+        int minLines = 5;   // minimum order lines per order
+        int maxLines = 15;  // maximum order lines per order
         int newOrders = 2;  // most-recent orders per district mirrored into new_order
 
         DatabaseConfiguration configuration = new DatabaseConfiguration(
-                128, 10, new PostgresSupport(), TPCCConfiguration.build(w, i, d, c, l, newOrders));
+                128, 10, new PostgresSupport(), TPCCConfiguration.build(w, i, d, c, minLines, maxLines, newOrders));
 
         fillDatabase("create_tpcc.postgres.sql", configuration, connection -> {
             // cardinalities of the dense cartesian-product fill; if any composite key
@@ -118,9 +119,10 @@ class PostgresFillerTest extends BasePostgresTest {
             assertRowCount(connection, "history", (long) w * d * c);
             assertRowCount(connection, "open_order", (long) w * d * c);
             assertRowCount(connection, "new_order", (long) w * d * newOrders);
-            assertRowCount(connection, "order_line", (long) w * d * c * l);
+            // order_line has a variable number of rows per order; its total is asserted
+            // relationally (== sum of o_ol_cnt) inside assertTpccColumnFidelity
 
-            assertTpccColumnFidelity(connection, c, l, newOrders);
+            assertTpccColumnFidelity(connection, c, minLines, maxLines, newOrders);
         });
     }
 }
