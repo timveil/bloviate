@@ -21,6 +21,20 @@ jobs:
       published: ${{ steps.semantic.outputs.new_release_published }}
       
     steps:
+      # Runs before checkout: actions/checkout fails with a cryptic
+      # "Input required and not supplied: token" if RELEASE_PAT is empty, so
+      # guard here to surface a clear, actionable error instead.
+      - name: Verify release token
+        env:
+          RELEASE_PAT: ${{ secrets.RELEASE_PAT }}
+        run: |
+          if [ -z "$RELEASE_PAT" ]; then
+            echo "::error::RELEASE_PAT secret is not set. semantic-release needs a PAT that is" \
+                 "allowed to push to the protected main branch (see the workflow comments)."
+            exit 1
+          fi
+          echo "RELEASE_PAT is configured."
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -46,15 +60,6 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-      
-      - name: Verify release token
-        run: |
-          if [ -z "${{ secrets.RELEASE_PAT }}" ]; then
-            echo "::error::RELEASE_PAT secret is not set. semantic-release needs a PAT that is" \
-                 "allowed to push to the protected main branch (see the workflow comments)."
-            exit 1
-          fi
-          echo "RELEASE_PAT is configured."
 
       - name: Verify Maven settings
         run: |
@@ -65,7 +70,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           
       - name: Install semantic-release
         run: |
