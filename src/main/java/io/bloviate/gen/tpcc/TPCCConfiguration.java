@@ -24,6 +24,7 @@ import io.bloviate.gen.ChildCountGenerator;
 import io.bloviate.gen.ChildKeyComponentGenerator;
 import io.bloviate.gen.CompositeKeyComponentGenerator;
 import io.bloviate.gen.GroupedPermutationGenerator;
+import io.bloviate.gen.GroupedPrefixGenerator;
 import io.bloviate.gen.IntegerGenerator;
 import io.bloviate.gen.ScaledBigDecimalGenerator;
 import io.bloviate.gen.StaticBigDecimalGenerator;
@@ -58,10 +59,11 @@ import java.util.Set;
  * {@code c_last} enumerates the first {@value #DEFAULT_ENUMERATED_LAST_NAMES} last
  * names per district deterministically, using {@code NURand} only for the remainder.
  *
- * <p>One part of the spec is still simplified relative to a strict benchmark load:
- * delivery state is not modelled — {@code o_carrier_id} is always populated and
- * {@code ol_delivery_d} is left to the default generator rather than being NULL for
- * the most recent (undelivered) orders.
+ * <p>Delivery state is modelled too: the most recent {@code newOrdersPerDistrict}
+ * orders per district are undelivered (the {@code new_order} subset), so their
+ * {@code o_carrier_id} and the {@code ol_delivery_d} of their order lines are NULL,
+ * while delivered orders carry a carrier id {@code [1, 10]} and a delivery timestamp.
+ * The result matches the TPC-C initial database population (clause 4.3.3.1).
  */
 public final class TPCCConfiguration {
 
@@ -208,7 +210,7 @@ public final class TPCCConfiguration {
                 key("o_d_id", 1, o, d),
                 key("o_id", 1, 1, o),
                 permutation("o_c_id", c, 1),
-                col("o_carrier_id", intRange(1, 10)),
+                deliveredCarrier("o_carrier_id", o, o - no),
                 childCount("o_ol_cnt", cardinality),
                 col("o_all_local", staticInt(1)))));
 
@@ -228,7 +230,8 @@ public final class TPCCConfiguration {
                 childKey("ol_supply_w_id", cardinality, 1, (long) d * o, w),
                 key("ol_i_id", 1, 1, i),
                 col("ol_quantity", staticInt(5)),
-                col("ol_amount", scaledDecimal(0.01, 9999.99, 2)))));
+                col("ol_amount", scaledDecimal(0.01, 9999.99, 2)),
+                deliveryDate("ol_delivery_d", cardinality, o, o - no))));
 
         return tables;
     }
@@ -256,6 +259,30 @@ public final class TPCCConfiguration {
     private static ColumnConfiguration childSequence(String name, ChildCardinality cardinality) {
         return new ColumnConfiguration(name,
                 random -> new ChildKeyComponentGenerator.Builder(random).cardinality(cardinality).sequence().start(1).build());
+    }
+
+    /**
+     * {@code o_carrier_id}: a random carrier {@code [1, 10]} for the first {@code deliveredOrders}
+     * orders of each district (the delivered ones), and NULL for the most recent (undelivered) orders.
+     */
+    private static ColumnConfiguration deliveredCarrier(String name, int ordersPerDistrict, int deliveredOrders) {
+        return new ColumnConfiguration(name, random -> new GroupedPrefixGenerator.Builder<Integer>(random)
+                .groupSize(ordersPerDistrict)
+                .prefixSize(deliveredOrders)
+                .delegate(new IntegerGenerator.Builder(random).start(1).end(11).build())
+                .build());
+    }
+
+    /**
+     * {@code ol_delivery_d}: a delivery timestamp for the lines of delivered orders
+     * ({@code o_id <= deliveredOrders}) and NULL for the lines of the undelivered orders.
+     */
+    private static ColumnConfiguration deliveryDate(String name, ChildCardinality cardinality, int ordersPerDistrict, int deliveredOrders) {
+        return new ColumnConfiguration(name, random -> new OrderLineDeliveryDateGenerator.Builder(random)
+                .cardinality(cardinality)
+                .ordersPerDistrict(ordersPerDistrict)
+                .deliveredThreshold(deliveredOrders)
+                .build());
     }
 
     /**

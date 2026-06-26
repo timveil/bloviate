@@ -113,8 +113,16 @@ public class BaseDatabaseTestCase {
         assertCount(connection, "select count(*) from customer where c_discount < 0 or c_discount > 0.5", 0);
         assertCount(connection, "select count(*) from item where i_price < 1 or i_price > 100", 0);
         assertCount(connection, "select count(*) from stock where s_quantity < 10 or s_quantity > 100", 0);
-        assertCount(connection, "select count(*) from open_order where o_carrier_id < 1 or o_carrier_id > 10", 0);
         assertCount(connection, "select count(*) from order_line where ol_amount < 0 or ol_amount > 9999.99", 0);
+
+        // delivery state: the most recent newOrders per district are undelivered (o_id > delivered),
+        // so their o_carrier_id and their order lines' ol_delivery_d are NULL; delivered orders carry both
+        int delivered = customers - newOrders;
+        assertCount(connection, "select count(*) from open_order where o_id <= " + delivered
+                + " and (o_carrier_id is null or o_carrier_id < 1 or o_carrier_id > 10)", 0);
+        assertCount(connection, "select count(*) from open_order where o_id > " + delivered + " and o_carrier_id is not null", 0);
+        assertCount(connection, "select count(*) from order_line where ol_o_id <= " + delivered + " and ol_delivery_d is null", 0);
+        assertCount(connection, "select count(*) from order_line where ol_o_id > " + delivered + " and ol_delivery_d is not null", 0);
 
         // gap 3: spec seed values
         assertCount(connection, "select count(*) from warehouse where w_ytd <> 300000.00", 0);

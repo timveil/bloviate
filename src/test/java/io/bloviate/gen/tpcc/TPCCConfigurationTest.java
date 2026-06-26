@@ -28,6 +28,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TPCCConfigurationTest {
@@ -147,5 +148,40 @@ class TPCCConfigurationTest {
             assertEquals(C, seen.size(), "o_c_id is not a full permutation of customers in a district");
         }
         assertTrue(sawShuffle, "expected o_c_id to be shuffled, not the identity");
+    }
+
+    @Test
+    void deliveryStateLeavesTheMostRecentOrdersUndelivered() {
+        Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
+        int delivered = C - NEW_ORDERS; // orders with o_id <= delivered are delivered
+
+        // o_carrier_id: delivered orders carry [1,10]; the rest (undelivered) are NULL
+        DataGenerator<?> carrier = generator(table(tables, "open_order"), "o_carrier_id");
+        for (long n = 0; n < (long) W * D * C; n++) {
+            int oId = 1 + (int) (n % C);
+            Object value = carrier.generate();
+            if (oId <= delivered) {
+                assertNotNull(value, "delivered order missing carrier");
+                int carrierId = (Integer) value;
+                assertTrue(carrierId >= 1 && carrierId <= 10, "carrier out of range: " + carrierId);
+            } else {
+                assertNull(value, "undelivered order should have a null carrier");
+            }
+        }
+
+        // ol_delivery_d: lines of delivered orders have a timestamp; lines of undelivered orders are NULL.
+        // ol_o_id and ol_delivery_d are independent lockstep walkers, so they agree row-for-row.
+        DataGenerator<?> olOId = generator(table(tables, "order_line"), "ol_o_id");
+        DataGenerator<?> deliveryDate = generator(table(tables, "order_line"), "ol_delivery_d");
+        long lines = table(tables, "order_line").rowCount();
+        for (long n = 0; n < lines; n++) {
+            int oId = (Integer) olOId.generate();
+            Object value = deliveryDate.generate();
+            if (oId <= delivered) {
+                assertNotNull(value, "delivered order line missing delivery date");
+            } else {
+                assertNull(value, "undelivered order line should have a null delivery date");
+            }
+        }
     }
 }
