@@ -18,6 +18,7 @@ package io.bloviate.gen;
 
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,5 +51,20 @@ class StaticGeneratorsTest {
         StaticStringGenerator generator = new StaticStringGenerator.Builder(new Random()).value("CONSTANT").build();
         assertEquals("CONSTANT", generator.generate());
         assertEquals("CONSTANT", generator.generate());
+    }
+
+    @Test
+    void staticBigDecimalAlwaysReturnsConfiguredValue() {
+        StaticBigDecimalGenerator generator = new StaticBigDecimalGenerator.Builder(new Random()).value(new BigDecimal("300000.00")).build();
+        assertEquals(new BigDecimal("300000.00"), generator.generate());
+        assertEquals(new BigDecimal("300000.00"), generator.generate());
+    }
+
+    @Test
+    void staticBigDecimalAcceptsStringValueAndPreservesScale() {
+        StaticBigDecimalGenerator generator = new StaticBigDecimalGenerator.Builder(new Random()).value("-10.00").build();
+        BigDecimal value = generator.generate();
+        assertEquals(new BigDecimal("-10.00"), value);
+        assertEquals(2, value.scale());
     }
 }

@@ -59,9 +59,10 @@ class CockroachDBFillerTest extends BaseCockroachTest {
         int d = 2;
         int c = 3;
         int l = 2;
+        int newOrders = 2;
 
         DatabaseConfiguration configuration = new DatabaseConfiguration(
-                128, 10, new CockroachDBSupport(), TPCCConfiguration.build(w, i, d, c, l));
+                128, 10, new CockroachDBSupport(), TPCCConfiguration.build(w, i, d, c, l, newOrders));
 
         fillDatabase("create_tpcc.cockroachdb.sql", configuration, connection -> {
             assertRowCount(connection, "warehouse", w);
@@ -71,11 +72,10 @@ class CockroachDBFillerTest extends BaseCockroachTest {
             assertRowCount(connection, "customer", (long) w * d * c);
             assertRowCount(connection, "history", (long) w * d * c);
             assertRowCount(connection, "open_order", (long) w * d * c);
-            assertRowCount(connection, "new_order", (long) w * d * c);
+            assertRowCount(connection, "new_order", (long) w * d * newOrders);
             assertRowCount(connection, "order_line", (long) w * d * c * l);
 
-            assertCount(connection, "select count(*) from customer where c_credit not in ('GC','BC')", 0);
-            assertCount(connection, "select count(*) from customer where c_zip not like '____11111'", 0);
+            assertTpccColumnFidelity(connection, c, l, newOrders);
         });
     }
 

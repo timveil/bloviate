@@ -97,14 +97,15 @@ class PostgresFillerTest extends BasePostgresTest {
     @Test
     void fillTPCCWithColumnConfigs() throws SQLException {
 
-        int w = 2;   // warehouses
-        int i = 10;  // items
-        int d = 2;   // districts per warehouse
-        int c = 3;   // customers (and orders) per district
-        int l = 2;   // lines per order
+        int w = 2;          // warehouses
+        int i = 10;         // items
+        int d = 2;          // districts per warehouse
+        int c = 3;          // customers (and orders) per district
+        int l = 2;          // lines per order
+        int newOrders = 2;  // most-recent orders per district mirrored into new_order
 
         DatabaseConfiguration configuration = new DatabaseConfiguration(
-                128, 10, new PostgresSupport(), TPCCConfiguration.build(w, i, d, c, l));
+                128, 10, new PostgresSupport(), TPCCConfiguration.build(w, i, d, c, l, newOrders));
 
         fillDatabase("create_tpcc.postgres.sql", configuration, connection -> {
             // cardinalities of the dense cartesian-product fill; if any composite key
@@ -116,14 +117,10 @@ class PostgresFillerTest extends BasePostgresTest {
             assertRowCount(connection, "customer", (long) w * d * c);
             assertRowCount(connection, "history", (long) w * d * c);
             assertRowCount(connection, "open_order", (long) w * d * c);
-            assertRowCount(connection, "new_order", (long) w * d * c);
+            assertRowCount(connection, "new_order", (long) w * d * newOrders);
             assertRowCount(connection, "order_line", (long) w * d * c * l);
 
-            // realistic value generators were applied
-            assertCount(connection, "select count(*) from customer where c_credit not in ('GC','BC')", 0);
-            assertCount(connection, "select count(*) from customer where c_zip not like '____11111'", 0);
-            assertCount(connection, "select count(*) from customer where c_middle <> 'OE'", 0);
-            assertCount(connection, "select count(*) from open_order where o_ol_cnt <> " + l, 0);
+            assertTpccColumnFidelity(connection, c, l, newOrders);
         });
     }
 }

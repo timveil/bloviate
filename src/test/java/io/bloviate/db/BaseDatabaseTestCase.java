@@ -63,4 +63,45 @@ public class BaseDatabaseTestCase {
             assertEquals(expected, resultSet.getLong(1), query);
         }
     }
+
+    /**
+     * Asserts that a TPC-C dataset produced by {@code TPCCConfiguration} matches the spec's
+     * value ranges and seed values (issue #421, gaps 1 and 3). The SQL is portable across
+     * PostgreSQL, MySQL and CockroachDB.
+     *
+     * @param connection      an open connection to the filled database
+     * @param customers       customers (and orders) per district
+     * @param linesPerOrder   order lines per order
+     * @param newOrders       most-recent orders per district mirrored into {@code new_order}
+     */
+    protected static void assertTpccColumnFidelity(Connection connection, int customers, int linesPerOrder, int newOrders) throws SQLException {
+        // realistic value generators were applied (unchanged from the original TPC-C support)
+        assertCount(connection, "select count(*) from customer where c_credit not in ('GC','BC')", 0);
+        assertCount(connection, "select count(*) from customer where c_zip not like '____11111'", 0);
+        assertCount(connection, "select count(*) from customer where c_middle <> 'OE'", 0);
+        assertCount(connection, "select count(*) from open_order where o_ol_cnt <> " + linesPerOrder, 0);
+
+        // gap 1: new_order holds only the most-recent orders per district (highest o_id values)
+        assertCount(connection, "select count(*) from new_order where no_o_id < " + (customers - newOrders + 1), 0);
+
+        // gap 3: spec value ranges for non-key columns
+        assertCount(connection, "select count(*) from warehouse where w_tax < 0 or w_tax > 0.2", 0);
+        assertCount(connection, "select count(*) from district where d_tax < 0 or d_tax > 0.2", 0);
+        assertCount(connection, "select count(*) from customer where c_discount < 0 or c_discount > 0.5", 0);
+        assertCount(connection, "select count(*) from item where i_price < 1 or i_price > 100", 0);
+        assertCount(connection, "select count(*) from stock where s_quantity < 10 or s_quantity > 100", 0);
+        assertCount(connection, "select count(*) from open_order where o_carrier_id < 1 or o_carrier_id > 10", 0);
+        assertCount(connection, "select count(*) from order_line where ol_amount < 0 or ol_amount > 9999.99", 0);
+
+        // gap 3: spec seed values
+        assertCount(connection, "select count(*) from warehouse where w_ytd <> 300000.00", 0);
+        assertCount(connection, "select count(*) from district where d_ytd <> 30000.00", 0);
+        assertCount(connection, "select count(*) from district where d_next_o_id <> " + (customers + 1), 0);
+        assertCount(connection, "select count(*) from stock where s_ytd <> 0 or s_order_cnt <> 0 or s_remote_cnt <> 0", 0);
+        assertCount(connection, "select count(*) from customer where c_credit_lim <> 50000.00", 0);
+        assertCount(connection, "select count(*) from customer where c_balance <> -10.00", 0);
+        assertCount(connection, "select count(*) from customer where c_payment_cnt <> 1 or c_delivery_cnt <> 0", 0);
+        assertCount(connection, "select count(*) from history where h_amount <> 10.00", 0);
+        assertCount(connection, "select count(*) from order_line where ol_quantity <> 5", 0);
+    }
 }
