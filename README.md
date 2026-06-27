@@ -69,6 +69,7 @@ See **[POSITIONING.md](POSITIONING.md)** for the full competitive landscape, wit
 - [Usage Examples](#-usage-examples)
   - [Per-Table Row Counts](#per-table-row-counts)
   - [Per-Column Generation Overrides](#per-column-generation-overrides)
+  - [Value Distributions](#value-distributions)
   - [Custom Generator Registry](#custom-generator-registry)
   - [Composite Keys & Foreign Key Fidelity](#composite-keys--foreign-key-fidelity)
   - [Variable Parent/Child Cardinality](#variable-parentchild-cardinality)
@@ -306,6 +307,41 @@ new DatabaseFiller.Builder(connection, config)
 
 Column names are matched **case-insensitively**. Any column without an override keeps
 its default, type-based generator.
+
+### Value Distributions
+
+Real columns are rarely uniform — a `status` is mostly `ACTIVE`, a `rating` clusters around its
+mean, a referenced `product_id` follows a popularity curve, and a `created_at` bunches toward the
+present. The `Distributions` helper returns ready-made `ColumnGeneratorFactory` values so a column can
+opt into a **non-uniform distribution** without writing a factory:
+
+```java
+import io.bloviate.db.*;
+import io.bloviate.ext.PostgresSupport;
+import java.util.Map;
+import java.util.Set;
+
+Set<ColumnConfiguration> columnConfigs = Set.of(
+    // 70% NEW, 25% SHIPPED, 5% CANCELLED (weights need not sum to 1)
+    new ColumnConfiguration("status",     Distributions.weighted(Map.of("NEW", 0.7, "SHIPPED", 0.25, "CANCELLED", 0.05))),
+    // normal(mean=4, sd=1) rounded and clamped to [1, 5]
+    new ColumnConfiguration("rating",     Distributions.normalInt(4, 1, 1, 5)),
+    // Zipfian (power-law) over [1, 10000] — a few hot ids, a long thin tail
+    new ColumnConfiguration("product_id", Distributions.zipfian(10_000)),
+    // timestamps skewed toward the recent end of the window
+    new ColumnConfiguration("created_at", Distributions.recentTimestamps())
+);
+
+DatabaseConfiguration config = new DatabaseConfiguration(
+    128, 100, new PostgresSupport(),
+    Set.of(new TableConfiguration("orders", 100_000, columnConfigs)));
+```
+
+Available shapes: `weighted(...)` (categorical), `normal(...)` / `normalInt(...)` (bounded Gaussian),
+`zipfian(...)` (power-law), and `recentTimestamps(...)` (recency-skewed). Each is built from the
+engine's column seed, so output stays **reproducible** and composes with foreign-key reseeding and
+parallel fills like any other generator. These are *specified* distributions, not distributions
+learned from real data.
 
 ### Custom Generator Registry
 
