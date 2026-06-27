@@ -1,3 +1,5 @@
+## [2.6.0](https://github.com/timveil/bloviate/compare/v2.5.0...v2.6.0) (2026-06-27)
+
 ## [2.5.0](https://github.com/timveil/bloviate/compare/v2.4.0...v2.5.0) (2026-06-27)
 
 ## [2.4.0](https://github.com/timveil/bloviate/compare/v2.3.0...v2.4.0) (2026-06-26)
