@@ -22,7 +22,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generates a {@link BigDecimal} drawn uniformly from the half-open range
@@ -59,7 +59,7 @@ public class ScaledBigDecimalGenerator extends AbstractDataGenerator<BigDecimal>
         private double endExclusive = 1;
         private int scale = 2;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

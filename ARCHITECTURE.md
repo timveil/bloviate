@@ -180,6 +180,13 @@ Two important properties fall out of this design:
 Every generator — built-in, registry-supplied, or per-column override — is constructed with this
 engine-managed seed, so reproducibility holds no matter how a column's generator was chosen.
 
+The per-column seed feeds a [`java.util.random.RandomGenerator`](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/random/package-summary.html)
+created by [`RandomGenerators.create(seed)`](bloviate-core/src/main/java/io/bloviate/util/RandomGenerators.java),
+which uses the JDK general-purpose default algorithm **`L64X128MixRandom`** rather than the legacy
+`java.util.Random` (a 48-bit LCG with a documented statistical defect and `synchronized` methods).
+The seeding architecture is unchanged — one isolated, deterministically-seeded generator per column —
+so output stays reproducible and order-independent; only the algorithm and statistical quality improve.
+
 ## 5. Database support — the Strategy pattern
 
 Different databases expose different types. [`DatabaseSupport`](bloviate-core/src/main/java/io/bloviate/ext/DatabaseSupport.java)
@@ -191,7 +198,7 @@ hook that subclasses override to add or replace entries for vendor-specific type
 classDiagram
     class DatabaseSupport {
         <<interface>>
-        +getDataGenerator(Column, Random) DataGenerator
+        +getDataGenerator(Column, RandomGenerator) DataGenerator
         +forConnection(Connection)$ DatabaseSupport
         +forProduct(String)$ DatabaseSupport
     }
@@ -256,14 +263,14 @@ GeneratorRegistry registry = new GeneratorRegistry.Builder()
 ```
 
 Crucially, registry- and plugin-supplied generators are still constructed with the engine's seeded
-`Random`, so they remain just as reproducible as the built-ins.
+`RandomGenerator`, so they remain just as reproducible as the built-ins.
 
 ## 7. The generator library — Builder pattern
 
 Every generator implements [`DataGenerator<T>`](bloviate-core/src/main/java/io/bloviate/gen/DataGenerator.java),
 which can `generate()` a typed value, `generateAsString()` for flat files, bind itself to a
 `PreparedStatement` (`generateAndSet`), and read a value back from a `ResultSet` (`get`). Each is
-constructed through a static inner `Builder` seeded with a `Random`:
+constructed through a static inner `Builder` seeded with a `RandomGenerator`:
 
 ```java
 new SimpleStringGenerator.Builder(random).size(100).build();
@@ -340,7 +347,7 @@ pattern lives and what it's doing for us.
 | **Builder** | Nearly everything: [`DatabaseFiller.Builder`](bloviate-core/src/main/java/io/bloviate/db/DatabaseFiller.java), [`TableFiller.Builder`](bloviate-core/src/main/java/io/bloviate/db/TableFiller.java), every `*Generator.Builder`, [`GeneratorRegistry.Builder`](bloviate-core/src/main/java/io/bloviate/ext/GeneratorRegistry.java), [`FlatFileGenerator.Builder`](bloviate-core/src/main/java/io/bloviate/file/FlatFileGenerator.java), [`BloviateContainers.Builder`](bloviate-testcontainers/src/main/java/io/bloviate/testcontainers/BloviateContainers.java) | Readable construction of objects with many optional, defaulted parameters; immutable results with no telescoping constructors |
 | **Strategy** | [`DatabaseSupport`](bloviate-core/src/main/java/io/bloviate/ext/DatabaseSupport.java) + per-database implementations | Database-specific behavior is swappable at runtime; adding a database means adding a class, not editing the engine |
 | **Template Method** | [`AbstractDatabaseSupport`](bloviate-core/src/main/java/io/bloviate/ext/AbstractDatabaseSupport.java) seeds defaults, then calls the `configure()` hook | Subclasses customize *only* the vendor-specific slice; the invariant default registry is defined once |
-| **Factory** (functional) | [`GeneratorFactory`](bloviate-core/src/main/java/io/bloviate/ext/GeneratorFactory.java), [`ColumnGeneratorFactory`](bloviate-core/src/main/java/io/bloviate/db/ColumnGeneratorFactory.java) | Defers generator creation until the engine can supply a column-seeded `Random`, preserving reproducibility |
+| **Factory** (functional) | [`GeneratorFactory`](bloviate-core/src/main/java/io/bloviate/ext/GeneratorFactory.java), [`ColumnGeneratorFactory`](bloviate-core/src/main/java/io/bloviate/db/ColumnGeneratorFactory.java) | Defers generator creation until the engine can supply a column-seeded `RandomGenerator`, preserving reproducibility |
 | **Registry** | [`GeneratorRegistry`](bloviate-core/src/main/java/io/bloviate/ext/GeneratorRegistry.java) with documented precedence | Override generation by name/type without subclassing; rules resolved in a fixed, predictable order |
 | **Service Provider (SPI)** | [`GeneratorPlugin`](bloviate-core/src/main/java/io/bloviate/ext/GeneratorPlugin.java) via `ServiceLoader` | Third-party jars contribute generators by dropping a file on the classpath — zero engine coupling |
 | **Strategy / polymorphism** | The [`DataGenerator<T>`](bloviate-core/src/main/java/io/bloviate/gen/DataGenerator.java) hierarchy | One uniform interface (`generate` / bind / read-back) over ~50 type-specific implementations |

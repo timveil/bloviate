@@ -20,7 +20,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -75,7 +75,7 @@ public class CompositeKeyComponentGenerator extends AbstractDataGenerator<Intege
         private long repeat = 1;
         private int cycle = 1;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

@@ -21,7 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Always generates the same configured {@link BigDecimal} value. The random source is ignored.
@@ -49,7 +49,7 @@ public class StaticBigDecimalGenerator extends AbstractDataGenerator<BigDecimal>
 
         private BigDecimal value = BigDecimal.ZERO;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

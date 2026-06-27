@@ -19,7 +19,7 @@ package io.bloviate.gen;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Struct;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generator for SQL {@code STRUCT} (structured / user-defined type) columns.
@@ -61,7 +61,7 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
 
     public static class Builder extends AbstractBuilder<Struct> {
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

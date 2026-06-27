@@ -20,7 +20,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Always generates the same configured integer value. The random source is ignored.
@@ -49,7 +49,7 @@ public class StaticIntegerGenerator extends AbstractDataGenerator<Integer> {
 
         private Integer value = 0;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

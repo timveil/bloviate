@@ -27,7 +27,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generates {@code ol_delivery_d} for the {@code order_line} table under variable order-line
@@ -71,7 +71,7 @@ public class OrderLineDeliveryDateGenerator extends AbstractDataGenerator<Timest
         private int ordersPerDistrict = 1;
         private int deliveredThreshold = 0;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 
@@ -100,7 +100,7 @@ public class OrderLineDeliveryDateGenerator extends AbstractDataGenerator<Timest
         }
     }
 
-    private OrderLineDeliveryDateGenerator(Random random, Builder builder) {
+    private OrderLineDeliveryDateGenerator(RandomGenerator random, Builder builder) {
         super(random);
         if (builder.cardinality == null) {
             throw new IllegalStateException("cardinality is required");

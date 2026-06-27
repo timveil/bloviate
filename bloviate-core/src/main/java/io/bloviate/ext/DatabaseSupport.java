@@ -22,7 +22,7 @@ import io.bloviate.gen.DataGenerator;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Locale;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Database-specific support interface for data generation and SQL handling.
@@ -53,7 +53,7 @@ public interface DatabaseSupport {
      * @return a data generator appropriate for the column type
      * @throws UnsupportedOperationException if the column type is not supported
      */
-    DataGenerator<?> getDataGenerator(Column column, Random random);
+    DataGenerator<?> getDataGenerator(Column column, RandomGenerator random);
 
     /**
      * Selects a {@link DatabaseSupport} for the given JDBC product name (as reported by

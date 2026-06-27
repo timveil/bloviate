@@ -20,7 +20,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class ShortGenerator extends AbstractDataGenerator<Short> {
 
@@ -47,7 +47,7 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
         private int startInclusive = 0;
         private int endExclusive = Short.MAX_VALUE;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

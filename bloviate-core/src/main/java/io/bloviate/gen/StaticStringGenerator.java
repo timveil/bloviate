@@ -18,7 +18,7 @@ package io.bloviate.gen;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Always generates the same configured string value. The random source is ignored.
@@ -41,7 +41,7 @@ public class StaticStringGenerator extends AbstractDataGenerator<String> {
 
         private String value = "";
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

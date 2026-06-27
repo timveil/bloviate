@@ -20,7 +20,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Always generates the same configured float value. The random source is ignored.
@@ -49,7 +49,7 @@ public class StaticFloatGenerator extends AbstractDataGenerator<Float> {
 
         private Float value = 0f;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

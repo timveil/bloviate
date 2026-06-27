@@ -183,3 +183,56 @@ date/time/timestamp columns. `PostgresParallelFillTest` asserts a parallel fill 
 sequential fill byte-for-byte across a TPC-C schema, comparing every column except the few that use
 wall-clock time *by design* (e.g. the order-line delivery date), which are intentionally
 non-deterministic.
+
+## Recorded results — issue #471 (RNG migration)
+
+[Issue #471](https://github.com/timveil/bloviate/issues/471) replaced the legacy `java.util.Random`
+(a 48-bit LCG with a documented statistical defect and `synchronized` methods) with a
+`java.util.random.RandomGenerator` using the JDK general-purpose default **`L64X128MixRandom`**
+(`RandomGenerators.create(seed)`). The per-column seeding architecture is unchanged, so output stays
+reproducible; only the algorithm changes. These numbers compare the two RNGs on the identical
+benchmark harness — old jar built from `HEAD`, new jar from the migration branch.
+
+**Environment**
+
+- Machine / CPU: Apple M5 (Mac17,3), 10 cores
+- JDK: Temurin 25.0.3+9 LTS
+- Harness: `GeneratorBenchmark` / `RowDispatchBenchmark`, JMH `-f 1 -wi 3 -w 1 -i 5 -r 1` (quick settings; error bars on the clean `generate()` rows are <1%). Higher is better.
+
+### CPU (JMH, ops/us — higher is better)
+
+Raw value generation, old vs new RNG:
+
+| `generate()` | `java.util.Random` | `L64X128MixRandom` | Δ |
+|--------------|------------------:|-------------------:|---:|
+| INTEGER | 180.8 | 318.7 | **+76%** |
+| BIGINT | 91.4 | 320.5 | **+3.5×** |
+| DOUBLE | 91.6 | 344.9 | **+3.8×** |
+| VARCHAR_SHORT (16) | 9.5 | 17.2 | **+80%** |
+| VARCHAR_LONG (256) | 0.59 | 1.32 | **+2.2×** |
+| UUID | 9.4 | 9.8 | +4% |
+
+Integer/long/double draws benefit most — no lock and a better algorithm. UUID is dominated by the
+16-byte `nextBytes` copy, so it barely moves. Strings improved too: `SeededRandomUtils` no longer
+delegates to commons-lang3 `RandomStringUtils` (which only accepts a `java.util.Random`); the
+alphabetic/numeric paths now draw directly from a fixed character pool, which removes the
+draw-and-reject loop entirely.
+
+End-to-end per-row dispatch — `RowDispatchBenchmark` over a 16-column row, the real inner loop of
+`TableFiller.fill()`:
+
+| Benchmark | `java.util.Random` | `L64X128MixRandom` | Δ |
+|-----------|------------------:|-------------------:|---:|
+| `dispatchRow` (HashMap) | 0.313 | 0.607 | **+94%** |
+| `dispatchRowIndexed` (array) | 0.327 | 0.661 | **+102%** |
+
+```mermaid
+xychart-beta
+    title "Per-row generate() dispatch — 16-column row (ops/us, higher is better)"
+    x-axis ["Random (HashMap)", "L64X128 (HashMap)", "Random (array)", "L64X128 (array)"]
+    y-axis "ops / us" 0 --> 0.7
+    bar [0.313, 0.607, 0.327, 0.661]
+```
+
+**Bottom line:** ~2× faster per-row generation with better statistical quality, no new dependency,
+and unchanged reproducibility.

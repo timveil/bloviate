@@ -18,7 +18,7 @@ package io.bloviate.gen;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 import java.util.UUID;
 
 /**
@@ -58,7 +58,7 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
          *
          * @param random the random number generator to use
          */
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

@@ -19,6 +19,7 @@ package io.bloviate.bench;
 import io.bloviate.db.Column;
 import io.bloviate.ext.PostgresSupport;
 import io.bloviate.gen.DataGenerator;
+import io.bloviate.util.RandomGenerators;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -34,7 +35,6 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -70,7 +70,7 @@ public class RowDispatchBenchmark {
         long seed = 1L;
         for (int i = 0; i < filteredColumns.size(); i++) {
             Column column = filteredColumns.get(i);
-            DataGenerator<?> generator = support.getDataGenerator(column, new Random(seed++));
+            DataGenerator<?> generator = support.getDataGenerator(column, RandomGenerators.create(seed++));
             generatorMap.put(column, generator);
             generators[i] = generator;
         }

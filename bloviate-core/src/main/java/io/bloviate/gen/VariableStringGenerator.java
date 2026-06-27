@@ -18,7 +18,7 @@ package io.bloviate.gen;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generates strings whose length varies randomly within an inclusive
@@ -50,7 +50,7 @@ public class VariableStringGenerator extends AbstractDataGenerator<String> {
         private boolean letters = true;
         private boolean numbers = false;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

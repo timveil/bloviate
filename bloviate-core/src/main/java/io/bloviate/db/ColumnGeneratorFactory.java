@@ -18,12 +18,12 @@ package io.bloviate.db;
 
 import io.bloviate.gen.DataGenerator;
 
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Builds the {@link DataGenerator} used to override generation for a single column.
  *
- * <p>The fill engine supplies a {@link Random} that is already seeded for the
+ * <p>The fill engine supplies a {@link RandomGenerator} that is already seeded for the
  * target column, so generators created here participate in the same
  * reproducible, per-column seeding (and foreign-key reseeding) as
  * auto-detected generators. Implementations should build their generator from
@@ -41,5 +41,5 @@ public interface ColumnGeneratorFactory {
      * @param random the column-seeded random source provided by the fill engine
      * @return the generator to use for the column
      */
-    DataGenerator<?> create(Random random);
+    DataGenerator<?> create(RandomGenerator random);
 }

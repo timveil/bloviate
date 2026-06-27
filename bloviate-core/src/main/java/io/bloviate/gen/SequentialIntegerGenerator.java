@@ -20,7 +20,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -59,7 +59,7 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
         private int startInclusive = 1;
         private int endInclusive = Integer.MAX_VALUE;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

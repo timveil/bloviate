@@ -17,7 +17,7 @@
 package io.bloviate.gen;
 
 import java.sql.*;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
 
@@ -62,7 +62,7 @@ public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
 
         private int length = 3;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

@@ -16,6 +16,7 @@
 
 package io.bloviate.gen;
 
+import io.bloviate.util.RandomGenerators;
 import io.bloviate.util.SeededRandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Abstract base class providing common functionality for data generators.
@@ -51,24 +52,34 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected final Random random;
+    protected RandomGenerator random;
 
     /**
      * A reusable {@link SeededRandomUtils} view over {@link #random}, created once per
      * generator so subclasses don't allocate a fresh wrapper on every {@code generate()}
-     * call. Because it holds the same {@code random} reference, it observes any
-     * {@link #setSeed(long)} reseeding.
+     * call. It is rebuilt by {@link #reseed(long)} so it always wraps the current
+     * {@link #random}.
      */
-    protected final SeededRandomUtils randomUtils;
+    protected SeededRandomUtils randomUtils;
 
-    public AbstractDataGenerator(Random random) {
+    public AbstractDataGenerator(RandomGenerator random) {
         this.random = random;
         this.randomUtils = new SeededRandomUtils(random);
     }
 
+    /**
+     * Resets only the random source, replacing {@link #random} (and its {@link #randomUtils}
+     * view) with a freshly seeded {@link RandomGenerator}. Any counter or sequence state held by
+     * a subclass is intentionally left untouched, mirroring the legacy {@code Random.setSeed}
+     * behavior the engine relied on for foreign-key wraparound &mdash; only the random draws
+     * replay, not the generator's own progression.
+     *
+     * @param seed the seed for the replacement generator
+     */
     @Override
-    public void setSeed(long seed) {
-        random.setSeed(seed);
+    public void reseed(long seed) {
+        this.random = RandomGenerators.create(seed);
+        this.randomUtils = new SeededRandomUtils(random);
     }
 
     @Override

@@ -22,7 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generates the current timestamp at the moment of generation. The random
@@ -47,7 +47,7 @@ public class CurrentSqlTimestampGenerator extends AbstractDataGenerator<Timestam
 
     public static class Builder extends AbstractBuilder<Timestamp> {
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

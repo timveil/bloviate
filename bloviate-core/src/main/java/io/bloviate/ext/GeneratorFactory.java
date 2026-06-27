@@ -19,7 +19,7 @@ package io.bloviate.ext;
 import io.bloviate.db.Column;
 import io.bloviate.gen.DataGenerator;
 
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Builds the {@link DataGenerator} used for a column of a particular JDBC type.
@@ -42,5 +42,5 @@ public interface GeneratorFactory {
      * @param random the seeded random source supplied by the fill engine
      * @return the generator to use for the column
      */
-    DataGenerator<?> create(Column column, Random random);
+    DataGenerator<?> create(Column column, RandomGenerator random);
 }

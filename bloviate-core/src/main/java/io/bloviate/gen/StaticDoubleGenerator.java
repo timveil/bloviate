@@ -20,7 +20,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Always generates the same configured double value. The random source is ignored.
@@ -49,7 +49,7 @@ public class StaticDoubleGenerator extends AbstractDataGenerator<Double> {
 
         private Double value = 0d;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

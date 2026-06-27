@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generator for JSON / JSONB columns. Produces a JSON object literal (as a {@link String}) with a
@@ -71,7 +71,7 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
 
         private int fields = 3;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

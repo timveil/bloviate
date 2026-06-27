@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 import java.util.ServiceLoader;
 import java.util.regex.Pattern;
 
@@ -60,9 +60,9 @@ import java.util.regex.Pattern;
  *     &gt; built-in DatabaseSupport default
  * </pre>
  *
- * <p>If no rule matches, {@link #resolve(Column, Random)} returns {@code null} and the engine falls
+ * <p>If no rule matches, {@link #resolve(Column, RandomGenerator)} returns {@code null} and the engine falls
  * back to the {@link DatabaseSupport} default. Matched generators are constructed with the
- * engine-supplied, seeded {@link Random}, so they remain reproducible like every built-in generator.
+ * engine-supplied, seeded {@link RandomGenerator}, so they remain reproducible like every built-in generator.
  *
  * <p>Instances are immutable and built through the {@link Builder}. External jars can contribute
  * rules automatically by providing a {@link GeneratorPlugin} discovered via
@@ -98,7 +98,7 @@ public final class GeneratorRegistry {
      * @return the matching generator, or {@code null} if no rule applies (caller should fall back to
      * the {@link DatabaseSupport} default)
      */
-    public DataGenerator<?> resolve(Column column, Random random) {
+    public DataGenerator<?> resolve(Column column, RandomGenerator random) {
         String name = column.name();
         if (name != null) {
             for (NameRule rule : nameRules) {

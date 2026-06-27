@@ -23,7 +23,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
 
@@ -89,7 +89,7 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
         private Integer maxPrecision;
         private Integer maxDigits;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 
