@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Java](https://img.shields.io/badge/Java-25+-orange.svg)](https://openjdk.java.net/)
 
-A powerful Java library for generating realistic test data for JDBC-compatible relational databases and flat files. Bloviate automatically analyzes your database schema and generates appropriate data while respecting foreign key relationships and constraints.
+Hands-free test data generator for JDBC databases — Bloviate auto-discovers your schema, respects foreign keys, and fills tables (or CSV/TSV files) with realistic, reproducible data.
 
 ## 🚀 Features
 
