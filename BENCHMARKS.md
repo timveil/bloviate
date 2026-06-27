@@ -178,8 +178,8 @@ xychart-beta
   run-to-run variance — its baseline third iteration was an outlier). The optimization is still worth
   keeping: it is free and removes allocation/lookup from the hottest loop.
 
-**Note on reproducibility:** the default date/time/timestamp generators anchor their range to
-`Instant.now()`, so temporal columns carry wall-clock jitter and are *not* reproducible across runs
-regardless of parallelism. Every other column is purely seed-derived; `PostgresParallelFillTest`
-asserts the parallel fill reproduces the sequential fill byte-for-byte across all non-temporal
-columns of a TPC-C schema.
+**Note on reproducibility:** the same config and seed produce identical data on every run, including
+date/time/timestamp columns. `PostgresParallelFillTest` asserts a parallel fill reproduces the
+sequential fill byte-for-byte across a TPC-C schema, comparing every column except the few that use
+wall-clock time *by design* (e.g. the order-line delivery date), which are intentionally
+non-deterministic.

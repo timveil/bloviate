@@ -46,7 +46,7 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
     public static class Builder extends AbstractBuilder<Time> {
 
         private Time startInclusive = new Time(Instant.EPOCH.toEpochMilli());
-        private Time endExclusive = new Time(Instant.now().plus(100, ChronoUnit.HOURS).toEpochMilli());
+        private Time endExclusive = new Time(DEFAULT_REFERENCE.plus(100, ChronoUnit.HOURS).toEpochMilli());
 
         public Builder(Random random) {
             super(random);

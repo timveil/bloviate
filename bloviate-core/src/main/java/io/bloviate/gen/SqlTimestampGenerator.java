@@ -45,8 +45,8 @@ public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
 
     public static class Builder extends AbstractBuilder<Timestamp> {
 
-        private Timestamp startInclusive = Timestamp.from(Instant.now().minus(100, ChronoUnit.DAYS));
-        private Timestamp endExclusive = Timestamp.from(Instant.now().plus(100, ChronoUnit.DAYS));
+        private Timestamp startInclusive = Timestamp.from(DEFAULT_REFERENCE.minus(100, ChronoUnit.DAYS));
+        private Timestamp endExclusive = Timestamp.from(DEFAULT_REFERENCE.plus(100, ChronoUnit.DAYS));
 
         public Builder(Random random) {
             super(random);
