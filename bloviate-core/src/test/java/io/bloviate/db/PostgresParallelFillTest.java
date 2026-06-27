@@ -103,11 +103,12 @@ class PostgresParallelFillTest extends BaseDatabaseTestCase {
      * Dumps each table ordered by every column, so the comparison is a canonical row multiset that
      * is independent of physical insert order (which a parallel fill may legitimately change).
      *
-     * <p>Temporal columns are deliberately excluded: the default date/time/timestamp generators
-     * anchor their range to {@code Instant.now()} at construction, so their values carry wall-clock
-     * jitter and differ between <em>any</em> two fills run at different moments — sequential or
-     * parallel alike. Every other column is purely seed-derived, so comparing them is the real test
-     * that parallelism does not change the generated data.
+     * <p>Temporal columns are deliberately excluded: a few TPC-C columns (e.g. the order-line
+     * delivery date) intentionally use wall-clock time, so they differ between <em>any</em> two
+     * fills run at different moments — sequential or parallel alike. (The default date/time/timestamp
+     * generators are seed-derived and reproducible; only these by-design "now" columns are not.)
+     * Every other column is purely seed-derived, so comparing them is the real test that parallelism
+     * does not change the generated data.
      */
     private static Map<String, List<String>> dump(Connection connection, List<String> tables) throws SQLException {
         Map<String, List<String>> dump = new LinkedHashMap<>();
@@ -142,7 +143,7 @@ class PostgresParallelFillTest extends BaseDatabaseTestCase {
         return dump;
     }
 
-    /** The 1-based indexes of a table's columns, excluding the wall-clock-dependent temporal types. */
+    /** The 1-based indexes of a table's columns, excluding temporal types (see {@link #dump}). */
     private static List<Integer> deterministicColumns(Statement statement, String table) throws SQLException {
         List<Integer> columns = new ArrayList<>();
         try (ResultSet resultSet = statement.executeQuery("select * from " + table + " where false")) {

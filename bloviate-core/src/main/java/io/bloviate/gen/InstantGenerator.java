@@ -44,7 +44,7 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
     public static class Builder extends AbstractBuilder<Instant> {
 
         private Instant startInclusive = Instant.EPOCH;
-        private Instant endExclusive = Instant.now().plus(100, ChronoUnit.DAYS);
+        private Instant endExclusive = DEFAULT_REFERENCE.plus(100, ChronoUnit.DAYS);
 
         public Builder(Random random) {
             super(random);

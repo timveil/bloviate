@@ -46,7 +46,7 @@ public class DateGenerator extends AbstractDataGenerator<Date> {
     public static class Builder extends AbstractBuilder<Date> {
 
         private Date startInclusive = Date.from(Instant.EPOCH);
-        private Date endExclusive = Date.from(Instant.now().plus(100, ChronoUnit.DAYS));
+        private Date endExclusive = Date.from(DEFAULT_REFERENCE.plus(100, ChronoUnit.DAYS));
 
         public Builder(Random random) {
             super(random);

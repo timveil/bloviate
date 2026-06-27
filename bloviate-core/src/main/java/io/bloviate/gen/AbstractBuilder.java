@@ -16,6 +16,7 @@
 
 package io.bloviate.gen;
 
+import java.time.Instant;
 import java.util.Random;
 
 /**
@@ -27,6 +28,16 @@ import java.util.Random;
  * @since 1.0.0
  */
 public abstract class AbstractBuilder<T> implements Builder<T> {
+
+    /**
+     * Fixed reference instant used as the deterministic stand-in for "now" when a temporal
+     * generator's bounds are left at their defaults. Anchoring the default range to a constant
+     * rather than {@link Instant#now()} keeps generated date/time/timestamp data
+     * <strong>reproducible</strong>: the same schema filled with the same seed yields identical
+     * temporal values on every run. Callers that need a different window still set explicit bounds.
+     */
+    protected static final Instant DEFAULT_REFERENCE = Instant.parse("2020-01-01T00:00:00Z");
+
     /**
      * The random number generator used for creating data.
      */
