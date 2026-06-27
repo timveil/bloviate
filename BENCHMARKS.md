@@ -96,6 +96,8 @@ Output lines look like:
 | `bench.batch` | 1000 | JDBC batch size (`DatabaseConfiguration.batchSize`) |
 | `bench.threads` | 1 | worker threads; `1` = sequential baseline, `>1` = parallel `DataSource` path |
 | `bench.partitions` | `max(2, threads)` | intra-table partitions for the **single** schema (#466) |
+| `bench.rewriteBatched` | `true` | Postgres driver batch rewrite (#468); set `false` for the naive baseline |
+| `bench.commit` | `none` | commit strategy for **single** (#467): `none`, `perTable`, or `everyN:K` |
 | `bench.rows` | 50000 | default row count for the **wide**/**single** schema (per table) |
 | `bench.warehouses` | 1 | TPC-C scale factor (W) |
 | `bench.items` | 10000 | TPC-C items (I) |
@@ -112,18 +114,24 @@ Run on a quiet machine and record the environment alongside the numbers — JMH 
 throughput are only comparable within the same hardware/JDK/DB image. Capture the machine/CPU, the
 JDK, and the Docker/DB image next to the figures, exactly as the recorded results below do.
 
-## Recorded results — issue #447 optimizations
+## Recorded results — fill throughput (issues #447 + #466/#467/#468)
 
-Measured before/after the first round of [issue #447](https://github.com/timveil/bloviate/issues/447)
-optimizations: the **hot-loop micro-opt** (positional generator dispatch in `TableFiller`) and the
-**parallel table fill** (`DataSource` + `threads`, one connection per worker, commit per table).
+Two views of the same optimization campaign: a **cumulative progression** that stacks the strategies
+on one large table to a final speedup, and a **cross-schema** comparison of parallel table fill. The
+levers measured:
+
+- **driver batch rewrite** (#468) — `reWriteBatchedInserts` collapses each JDBC batch into one multi-row `INSERT`.
+- **commit strategy** (#467) — disable autocommit and commit once per table (or every N batches).
+- **intra-table partitioning** (#466) — split one large table's rows across workers; the only lever for a single dominant table (one table, one topological level), which parallel table fill cannot help.
+- **parallel table fill** (#447) — `DataSource` + `threads`, one connection per worker; the lever for schemas with many *independent* tables.
+- **hot-loop micro-opt** (#447) — positional generator dispatch in `TableFiller` (within end-to-end noise; see CPU table).
 
 **Environment**
 
 - Machine / CPU: Apple M5 (Mac17,3), 10 cores
 - JDK: Temurin 25.0.3+9 LTS
 - Docker / DB image: OrbStack (Docker 29.4.0); `postgres:18-alpine`, `mysql:9` (Testcontainers default), `cockroachdb`
-- Harness: `bench.rows=100000` (wide), `bench.warmup=1`, `bench.iterations=3`, `bench.batch=1000`; TPC-C at default cardinalities (~62k rows). Reported figure is **best of 3**.
+- Harness: `bench.batch=1000`; `bench.rows=1000000` for `wide`/`single`, TPC-C at default cardinalities (~62k rows). Cross-schema figures are **best of 3** (`bench.warmup=1`, `bench.iterations=3`); the single-table progression is **best of 5** (`bench.warmup=2`, `bench.iterations=5`).
 
 ### CPU (JMH, ops/us — higher is better)
 
@@ -140,32 +148,58 @@ same 16-column row, so the delta isolates the lookup removed (the rest is the un
 (`GeneratorBenchmark` measures raw per-type generation and is unaffected by the dispatch change;
 slowest types in the baseline run: `VARCHAR_LONG` 0.59, `JSONB` 2.2, `UUID` 8.7, `NUMERIC` 8.0 ops/us.)
 
-### End-to-end (rows/sec, best of 3 — higher is better)
+### End-to-end — stacking the strategies on one large table
 
-| Scenario | Rows | Baseline | Sequential (after) | Parallel (8 threads) | Parallel speedup |
-|----------|-----:|---------:|-------------------:|---------------------:|-----------------:|
-| `postgres/wide` | 1,000,000 | 126,984 | 122,923 | **414,126** | **3.26×** |
-| `postgres/tpcc` | 61,983 | 75,520 | 77,535 | 83,694 | 1.11× |
-| `mysql/tpcc` | 61,983 | 40,043 | 54,879 | 57,973 | 1.45× |
-| `cockroach/tpcc` | 61,983 | 12,403 | 12,516 | 13,304 | 1.07× |
+A single 1,000,000-row table (`postgres/single`) is the clearest place to watch the optimizations
+**compound**: it sits alone in its topological level, so parallel *table* fill can't touch it, but it
+benefits from each follow-up in turn. Starting from a naive fill (sequential, autocommit, no driver
+batch rewrite) and adding one strategy at a time — **best of 5**:
 
-The headline `wide` case (1M rows across ten independent tables) at ~3× throughput — the FK-free
-schema the parallel fill targets:
+| Step | Added | rows/sec | Cumulative |
+|------|-------|---------:|-----------:|
+| Naive | sequential, autocommit, no batch rewrite | 125,228 | 1.00× |
+| + driver batch rewrite ([#468](https://github.com/timveil/bloviate/issues/468)) | `reWriteBatchedInserts` collapses each batch into one multi-row `INSERT` | 151,641 | 1.21× |
+| + per-table commit ([#467](https://github.com/timveil/bloviate/issues/467)) | one commit instead of one per batch | 160,867 | 1.28× |
+| + intra-table partitioning ×8 ([#466](https://github.com/timveil/bloviate/issues/466)) | the one table's rows split across 8 workers | **760,959** | **6.08×** |
 
 ```mermaid
 xychart-beta
-    title "postgres/wide throughput — 1,000,000 rows (higher is better)"
-    x-axis ["Baseline", "Sequential (micro-opt)", "Parallel (8 workers)"]
-    y-axis "rows / sec" 0 --> 450000
-    bar [126984, 122923, 414126]
+    title "postgres/single — cumulative fill throughput, 1M rows (rows/sec, higher is better)"
+    x-axis ["naive", "+batch rewrite", "+per-table commit", "+partitions x8"]
+    y-axis "rows / sec" 0 --> 800000
+    bar [125228, 151641, 160867, 760959]
 ```
 
-Speedup of the 8-worker parallel fill over the single-connection baseline, per scenario. `wide`
-parallelizes fully; TPC-C's deep, narrow foreign-key graph leaves little to run concurrently:
+End to end, the three follow-ups take a single large table from **125k to 761k rows/sec — a 6.08×
+speedup**. Driver batch rewrite (#468) and intra-table partitioning (#466) do the heavy lifting;
+per-table commit (#467) is a small bump *here* — with batch rewrite on, a single table already commits
+cheaply — but it matters more on the many-table schemas below. Each step is reproducible from the
+harness knobs:
+
+```bash
+BASE="./mvnw -pl bloviate-benchmarks -am -Pbench test -Dtest='PostgresFillBenchmark#singleTable' -Dbench.rows=1000000"
+$BASE -Dbench.rewriteBatched=false -Dbench.commit=none     -Dbench.threads=1                          # naive
+$BASE -Dbench.rewriteBatched=true  -Dbench.commit=none     -Dbench.threads=1                          # + #468
+$BASE -Dbench.rewriteBatched=true  -Dbench.commit=perTable -Dbench.threads=1                          # + #467
+$BASE -Dbench.rewriteBatched=true  -Dbench.commit=perTable -Dbench.threads=8 -Dbench.partitions=8     # + #466
+```
+
+### End-to-end — parallel table fill across schemas (best of 3)
+
+Where a schema has many *independent* tables, parallel table fill is the lever instead of intra-table
+partitioning. Baseline is the sequential single-`Connection` fill; "parallel" is eight workers, one
+connection each:
+
+| Scenario | Rows | Baseline | Parallel (8) | Speedup |
+|----------|-----:|---------:|-------------:|--------:|
+| `postgres/wide` | 1,000,000 | 126,984 | **414,126** | **3.26×** |
+| `postgres/tpcc` | 61,983 | 75,520 | 83,694 | 1.11× |
+| `mysql/tpcc` | 61,983 | 40,043 | 57,973 | 1.45× |
+| `cockroach/tpcc` | 61,983 | 12,403 | 13,304 | 1.07× |
 
 ```mermaid
 xychart-beta
-    title "Parallel fill speedup vs baseline (x, higher is better)"
+    title "Parallel table fill speedup vs baseline (x, higher is better)"
     x-axis ["postgres/wide", "mysql/tpcc", "postgres/tpcc", "cockroach/tpcc"]
     y-axis "speedup (x)" 0 --> 3.5
     bar [3.26, 1.45, 1.11, 1.07]
@@ -173,9 +207,9 @@ xychart-beta
 
 **Reading the numbers**
 
-- **`wide` is the headline.** Ten independent, FK-free tables sit in a single topological level, so
-  eight workers fill them concurrently: **3.26×** over the single-connection baseline. This is the
-  case the parallel optimization targets.
+- **`wide` is the headline for parallel table fill.** Ten independent, FK-free tables sit in a single
+  topological level, so eight workers fill them concurrently: **3.26×** over the single-connection
+  baseline. This is the case the parallel optimization targets.
 - **TPC-C gains are modest by design.** Its foreign keys form a deep, narrow dependency graph — most
   levels hold only one or two independent tables — so there is little to parallelize within a level;
   the barrier between levels caps the win. The improvement that remains comes mostly from committing
@@ -183,9 +217,8 @@ xychart-beta
 - **CockroachDB is bound by Raft/commit latency**, not client CPU, so neither change moves it much.
 - **The sequential micro-opt is within end-to-end noise.** A real fill is dominated by value
   generation and JDBC round-trips, not the per-cell lookup, so the `dispatchRowIndexed` win shows up
-  clearly in JMH but not in `wide`'s sequential column (the `mysql/tpcc` sequential jump is mostly
-  run-to-run variance — its baseline third iteration was an outlier). The optimization is still worth
-  keeping: it is free and removes allocation/lookup from the hottest loop.
+  clearly in JMH but not end-to-end. The optimization is still worth keeping: it is free and removes
+  allocation/lookup from the hottest loop.
 
 **Note on reproducibility:** the same config and seed produce identical data on every run, including
 date/time/timestamp columns. `PostgresParallelFillTest` asserts a parallel fill reproduces the
@@ -245,36 +278,3 @@ xychart-beta
 
 **Bottom line:** ~2× faster per-row generation with better statistical quality, no new dependency,
 and unchanged reproducibility.
-
-## Recorded results — issue #466 (intra-table partitioning)
-
-Measured for the [issue #466](https://github.com/timveil/bloviate/issues/466) intra-table
-partitioning follow-up: a **single dominant table** (`create_single.postgres.sql`,
-`PostgresFillBenchmark#singleTable`), which between-table parallelism cannot speed up because it sits
-alone in its topological level. The baseline is the sequential single-`Connection` fill (`partitions`
-ignored); "partitioned" splits the one table into eight contiguous row ranges filled concurrently.
-
-**Environment**
-
-- Machine / CPU: Apple M5 (Mac17,3), 10 cores
-- JDK: Temurin 25.0.3+9 LTS
-- Docker / DB image: OrbStack (Docker 29.4.0); `postgres:18-alpine`
-- Harness: `bench.rows=1000000`, `bench.warmup=1`, `bench.iterations=3`, `bench.batch=1000`. Reported figure is **best of 3**.
-
-### End-to-end (rows/sec, best of 3 — higher is better)
-
-| Scenario | Rows | Baseline (1 thread) | Partitioned (8 threads / 8 partitions) | Speedup |
-|----------|-----:|--------------------:|---------------------------------------:|--------:|
-| `postgres/single` | 1,000,000 | 154,211 | **489,870** | **3.18×** |
-
-```mermaid
-xychart-beta
-    title "postgres/single throughput — 1,000,000 rows (higher is better)"
-    x-axis ["baseline (1 thread)", "partitioned (8 threads)"]
-    y-axis "rows / sec" 0 --> 520000
-    bar [154211, 489870]
-```
-
-**Bottom line:** a single large table — which the v2.9.0 between-table parallel fill leaves at
-sequential speed — fills **~3.2× faster** at 8 partitions, with foreign-key validity preserved and
-the data reproducible for the chosen partition count. The default (unpartitioned) path is unchanged.
