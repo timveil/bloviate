@@ -245,3 +245,36 @@ xychart-beta
 
 **Bottom line:** ~2× faster per-row generation with better statistical quality, no new dependency,
 and unchanged reproducibility.
+
+## Recorded results — issue #466 (intra-table partitioning)
+
+Measured for the [issue #466](https://github.com/timveil/bloviate/issues/466) intra-table
+partitioning follow-up: a **single dominant table** (`create_single.postgres.sql`,
+`PostgresFillBenchmark#singleTable`), which between-table parallelism cannot speed up because it sits
+alone in its topological level. The baseline is the sequential single-`Connection` fill (`partitions`
+ignored); "partitioned" splits the one table into eight contiguous row ranges filled concurrently.
+
+**Environment**
+
+- Machine / CPU: Apple M5 (Mac17,3), 10 cores
+- JDK: Temurin 25.0.3+9 LTS
+- Docker / DB image: OrbStack (Docker 29.4.0); `postgres:18-alpine`
+- Harness: `bench.rows=1000000`, `bench.warmup=1`, `bench.iterations=3`, `bench.batch=1000`. Reported figure is **best of 3**.
+
+### End-to-end (rows/sec, best of 3 — higher is better)
+
+| Scenario | Rows | Baseline (1 thread) | Partitioned (8 threads / 8 partitions) | Speedup |
+|----------|-----:|--------------------:|---------------------------------------:|--------:|
+| `postgres/single` | 1,000,000 | 154,211 | **489,870** | **3.18×** |
+
+```mermaid
+xychart-beta
+    title "postgres/single throughput — 1,000,000 rows (higher is better)"
+    x-axis ["baseline (1 thread)", "partitioned (8 threads)"]
+    y-axis "rows / sec" 0 --> 520000
+    bar [154211, 489870]
+```
+
+**Bottom line:** a single large table — which the v2.9.0 between-table parallel fill leaves at
+sequential speed — fills **~3.2× faster** at 8 partitions, with foreign-key validity preserved and
+the data reproducible for the chosen partition count. The default (unpartitioned) path is unchanged.

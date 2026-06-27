@@ -12,7 +12,10 @@ right place.
 - [The big picture](#the-big-picture)
 - [1. Schema introspection — reading the database](#1-schema-introspection--reading-the-database)
 - [2. The dependency DAG — fill order via topological sort](#2-the-dependency-dag--fill-order-via-topological-sort)
+  - [Parallel fill — topological levels](#parallel-fill--topological-levels)
 - [3. Filling a table — generators, batching, and FK fidelity](#3-filling-a-table--generators-batching-and-fk-fidelity)
+  - [Commit strategy](#commit-strategy)
+  - [Intra-table partitioning — seeking to a row range](#intra-table-partitioning--seeking-to-a-row-range)
 - [4. Reproducibility — deterministic seeds from schema identity](#4-reproducibility--deterministic-seeds-from-schema-identity)
 - [5. Database support — the Strategy pattern](#5-database-support--the-strategy-pattern)
 - [6. Pluggable generators — Registry + ServiceLoader](#6-pluggable-generators--registry--serviceloader)
@@ -119,6 +122,40 @@ link so you can *see* your schema's dependency graph rendered in the browser —
 ordered cleanly, so they're detected and logged with a warning rather than silently producing broken
 data.
 
+### Parallel fill — topological levels
+
+The loop above is sequential and runs on a single `Connection` — the default, and the only option
+when you hand `DatabaseFiller` a `Connection`. Construct it from a pooled `DataSource` instead and
+call `threads(n)`, and the fill runs **in parallel**.
+
+The key insight: tables in the *same* topological "level" have no foreign key between them, so they
+can fill concurrently. [`DatabaseFiller.fillLevels`](bloviate-core/src/main/java/io/bloviate/db/DatabaseFiller.java)
+groups the graph into levels with Kahn's algorithm — level 0 is every table that references nothing,
+level 1 the tables whose parents are all in level 0, and so on:
+
+```mermaid
+flowchart TD
+    subgraph L0["level 0 — fill concurrently"]
+        warehouse & item
+    end
+    subgraph L1["level 1 — fill concurrently"]
+        district & stock
+    end
+    subgraph L2["level 2"]
+        customer
+    end
+    L0 -->|barrier| L1
+    L1 -->|barrier| L2
+```
+
+Each table is filled by a worker that borrows its own `Connection` from the pool (JDBC connections
+are not thread-safe) inside its own transaction, and a **barrier** between levels guarantees a child
+table never starts before its parents are committed. The fill stays **fully reproducible**: a table's
+data depends only on its own per-column seeds and row order, never on which tables fill alongside it,
+so a parallel fill is byte-for-byte identical to a sequential one
+([§4](#4-reproducibility--deterministic-seeds-from-schema-identity)). The win is largest for wide
+schemas of independent tables and small for deep, narrow FK chains (little fans out within a level).
+
 ## 3. Filling a table — generators, batching, and FK fidelity
 
 [`TableFiller`](bloviate-core/src/main/java/io/bloviate/db/TableFiller.java) handles one table. For
@@ -149,6 +186,51 @@ flowchart TD
     G -->|yes| H[executeBatch]
     G -->|no| A
 ```
+
+The inner loop is the hot path (it runs `rowCount × columnCount` times), so `TableFiller` resolves
+every column's generator, seed, and FK reseed-threshold *once* into positional arrays indexed by
+column ordinal — the loop then does array reads instead of hashing the `Column` on every cell.
+
+### Commit strategy
+
+By default the engine leaves the connection's autocommit state untouched — an autocommit connection
+commits per `executeBatch()`. A [`CommitStrategy`](bloviate-core/src/main/java/io/bloviate/db/CommitStrategy.java)
+on `DatabaseConfiguration` lets you cut that overhead: `perTable()` disables autocommit and commits
+once when the table is filled, and `everyNBatches(n)` commits every *n* batches to bound the open
+transaction. When a strategy is set, `TableFiller` owns the transaction (autocommit off, commit at the
+configured cadence, rollback on error, prior autocommit restored afterward); the default
+`connectionDefault()` preserves the original behavior. The parallel path's per-table commit is the
+same mechanism — its workers run with an effective `perTable()` strategy.
+
+### Intra-table partitioning — seeking to a row range
+
+Parallel fill ([§2](#parallel-fill--topological-levels)) parallelizes *across* tables, which doesn't
+help when a single huge table dominates — it fills alone in its level. Set `partitions` on that
+table's `TableConfiguration` and, on the parallel path, `DatabaseFiller` splits its `[0, rowCount)`
+rows into that many contiguous ranges filled concurrently, one `Connection` per range.
+
+The challenge is reproducibility: a worker starting at absolute row *N* must produce the value the
+sequential fill produces at row *N*, without replaying rows `0..N`. Counter/cursor generators solve
+this with [`IndexedDataGenerator`](bloviate-core/src/main/java/io/bloviate/gen/IndexedDataGenerator.java),
+whose `seek(rowIndex)` positions the generator directly (the composite/sequence/permutation generators
+are closed-form O(1); the variable-cardinality child-key generator locates the owning parent via the
+`ChildCardinality` cumulative). `TableFiller` seeks each column at the partition's first row with a
+three-way policy:
+
+| Column kind | Seek behavior | Result vs. sequential |
+| --- | --- | --- |
+| Positional (`IndexedDataGenerator` — keys, sequences, permutations, prefixes) | `seek(start)` | **byte-identical** |
+| Foreign-key random-replay (`maxInvocation > 0`) | reseed, then advance `start % maxInvocation` draws into the parent cycle | **byte-identical** (FK-valid) |
+| Plain non-key random | reseed from a partition-derived seed | deterministic per partition count |
+
+Because every column that participates in a cross-row or cross-table contract (keys and foreign keys)
+stays byte-identical, **foreign-key validity always holds** and the fill is reproducible *for a given
+configuration, including the partition count*. Only plain non-key random columns — which carry no such
+contract — take different values when you change the partition count. The default (unpartitioned) path
+never seeks and is byte-for-byte unchanged, so there is no per-cell cost for the common case. One edge
+is unsupported: partitioning a *parent* whose primary key is a plain random generator referenced by a
+foreign key (partition the child instead, or use the positional key generators). A custom generator
+with internal positional state must implement `IndexedDataGenerator` to stay aligned under partitioning.
 
 ## 4. Reproducibility — deterministic seeds from schema identity
 
@@ -186,6 +268,13 @@ which uses the JDK general-purpose default algorithm **`L64X128MixRandom`** rath
 `java.util.Random` (a 48-bit LCG with a documented statistical defect and `synchronized` methods).
 The seeding architecture is unchanged — one isolated, deterministically-seeded generator per column —
 so output stays reproducible and order-independent; only the algorithm and statistical quality improve.
+
+Because a value depends only on its column's seed and row index — never on timing or which tables fill
+alongside it — reproducibility survives concurrency. A **parallel table fill**
+([§2](#parallel-fill--topological-levels)) is byte-for-byte identical to a sequential one. An
+**intra-table partitioned fill** ([§3](#intra-table-partitioning--seeking-to-a-row-range)) is
+reproducible for a given configuration *including the partition count*: keys and foreign keys are
+byte-identical regardless of partitioning, and only plain non-key random columns vary with it.
 
 ## 5. Database support — the Strategy pattern
 
@@ -350,7 +439,8 @@ pattern lives and what it's doing for us.
 | **Factory** (functional) | [`GeneratorFactory`](bloviate-core/src/main/java/io/bloviate/ext/GeneratorFactory.java), [`ColumnGeneratorFactory`](bloviate-core/src/main/java/io/bloviate/db/ColumnGeneratorFactory.java) | Defers generator creation until the engine can supply a column-seeded `RandomGenerator`, preserving reproducibility |
 | **Registry** | [`GeneratorRegistry`](bloviate-core/src/main/java/io/bloviate/ext/GeneratorRegistry.java) with documented precedence | Override generation by name/type without subclassing; rules resolved in a fixed, predictable order |
 | **Service Provider (SPI)** | [`GeneratorPlugin`](bloviate-core/src/main/java/io/bloviate/ext/GeneratorPlugin.java) via `ServiceLoader` | Third-party jars contribute generators by dropping a file on the classpath — zero engine coupling |
-| **Strategy / polymorphism** | The [`DataGenerator<T>`](bloviate-core/src/main/java/io/bloviate/gen/DataGenerator.java) hierarchy | One uniform interface (`generate` / bind / read-back) over ~50 type-specific implementations |
+| **Strategy / polymorphism** | The [`DataGenerator<T>`](bloviate-core/src/main/java/io/bloviate/gen/DataGenerator.java) hierarchy; [`CommitStrategy`](bloviate-core/src/main/java/io/bloviate/db/CommitStrategy.java) for transaction cadence | One uniform interface (`generate` / bind / read-back) over ~50 type-specific implementations; swappable commit behavior |
+| **Seekable cursor** | [`IndexedDataGenerator.seek(long)`](bloviate-core/src/main/java/io/bloviate/gen/IndexedDataGenerator.java) on the positional generators | Position a generator at an absolute row index without replaying — the basis for intra-table partitioning |
 | **Iterator** | JGraphT's `TopologicalOrderIterator` in [`DatabaseFiller`](bloviate-core/src/main/java/io/bloviate/db/DatabaseFiller.java) | Fill order is expressed as a traversal, decoupled from graph construction |
 | **Adapter** | [`bloviate-junit`](bloviate-junit/) and [`bloviate-testcontainers`](bloviate-testcontainers/) | Wrap the same core engine behind framework-native front-ends (`@FillDatabase`, `BloviateContainers`) |
 

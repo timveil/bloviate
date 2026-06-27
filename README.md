@@ -14,10 +14,11 @@ Hands-free test data generator for JDBC databases — Bloviate auto-discovers yo
 - **Foreign Key Support**: Handles complex table dependencies using topological sorting
 - **Per-Column Control**: Override generation for individual columns with custom, reproducible generators
 - **Composite Keys & Referential Fidelity**: Generate collision-free composite keys and variable parent/child cardinalities that keep foreign keys consistent
+- **Parallel & Partitioned Fills**: Fill independent tables concurrently, and split a single dominant table's rows across workers — reproducibly, with foreign-key validity preserved
 - **Benchmark-Ready**: Built-in TPC-C dataset configuration, with reusable building blocks for other benchmark schemas
 - **Multiple Database Support**: PostgreSQL, MySQL, CockroachDB with extensible architecture
 - **Flat File Generation**: Export data to CSV, TSV, and pipe-delimited formats
-- **Configurable Output**: Control batch sizes, record counts, and custom data generation rules
+- **Configurable Output**: Control batch sizes, record counts, commit cadence, and custom data generation rules
 - **Graph Visualization**: Generate DOT notation graphs of table relationships
 
 ## 📋 Table of Contents
@@ -33,6 +34,8 @@ Hands-free test data generator for JDBC databases — Bloviate auto-discovers yo
   - [Variable Parent/Child Cardinality](#variable-parentchild-cardinality)
   - [TPC-C Benchmark Data](#tpc-c-benchmark-data)
   - [Reproducible Data with Seeds](#reproducible-data-with-seeds)
+  - [Parallel Table Fill](#parallel-table-fill)
+  - [Commit Strategy](#commit-strategy)
   - [Testing Framework Integration](#testing-framework-integration)
   - [Flat File Formats](#flat-file-formats)
   - [Data Generator Types](#data-generator-types)
@@ -693,10 +696,16 @@ intervals). See the `io.bloviate.gen` package for the full set.
 - **Batch Size**: Number of records inserted in each batch operation
 - **Record Count**: Default number of records to generate per table
 - **Database Support**: Database-specific implementation for optimal compatibility
-- **Table Configurations**: Override the row count for specific tables
+- **Table Configurations**: Override the row count for specific tables, and the intra-table
+  `partitions` count for splitting a large table across workers on the parallel path
 - **Column Configurations**: Override the generator for specific columns (case-insensitive, reproducible)
 - **Seed**: Base seed for reproducible generation; the same schema and seed always produce the
   same data (defaults to `0`)
+- **Commit Strategy**: How the engine commits — leave autocommit alone (default), commit once per
+  table, or commit every N batches (see [Commit Strategy](#commit-strategy))
+
+Parallelism (worker threads for concurrent table fill) is configured on the `DatabaseFiller.Builder`
+via `threads(n)` with the `DataSource` constructor — see [Parallel Table Fill](#parallel-table-fill).
 
 ### File Generation Options
 
@@ -736,10 +745,10 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ## 📈 Roadmap
 
 - [ ] [Additional database support (Oracle, SQL Server)](https://github.com/timveil/bloviate/issues/445)
-- [ ] [Custom data generation plugins](https://github.com/timveil/bloviate/issues/446)
-- [ ] [Performance optimizations for large datasets](https://github.com/timveil/bloviate/issues/447) — _in progress: parallel table fill, per-table commit, and hot-loop dispatch landed ([benchmarks](BENCHMARKS.md))_
+- [x] [Custom data generation plugins](https://github.com/timveil/bloviate/issues/446)
+- [x] [Performance optimizations for large datasets](https://github.com/timveil/bloviate/issues/447) — _parallel table fill, intra-table partitioning, configurable commit strategy, batch-rewrite surfacing, and hot-loop dispatch ([benchmarks](BENCHMARKS.md))_
 - [ ] GUI for configuration management
-- [ ] [Integration with popular testing frameworks](https://github.com/timveil/bloviate/issues/448)
+- [x] [Integration with popular testing frameworks](https://github.com/timveil/bloviate/issues/448) — _JUnit 5 (`bloviate-junit`) and Testcontainers (`bloviate-testcontainers`)_
 
 ---
 
