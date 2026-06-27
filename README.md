@@ -780,7 +780,6 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 - **Issues**: [GitHub Issues](https://github.com/timveil/bloviate/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/timveil/bloviate/discussions)
-- **Email**: tjveil@gmail.com
 
 ## 📈 Roadmap
 
