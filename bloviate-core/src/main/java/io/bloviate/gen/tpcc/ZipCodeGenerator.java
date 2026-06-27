@@ -22,7 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generates TPC-C zip codes (clause 4.3.2.7): four random digits followed by the
@@ -44,7 +44,7 @@ public class ZipCodeGenerator extends AbstractDataGenerator<String> {
 
     public static class Builder extends AbstractBuilder<String> {
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 
@@ -54,7 +54,7 @@ public class ZipCodeGenerator extends AbstractDataGenerator<String> {
         }
     }
 
-    private ZipCodeGenerator(Random random) {
+    private ZipCodeGenerator(RandomGenerator random) {
         super(random);
     }
 }

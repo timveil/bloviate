@@ -21,7 +21,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class InstantGenerator extends AbstractDataGenerator<Instant> {
 
@@ -46,7 +46,7 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
         private Instant startInclusive = Instant.EPOCH;
         private Instant endExclusive = DEFAULT_REFERENCE.plus(100, ChronoUnit.DAYS);
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

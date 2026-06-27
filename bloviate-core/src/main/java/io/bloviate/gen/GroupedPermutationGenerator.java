@@ -20,7 +20,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -101,7 +101,7 @@ public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> 
         private int start = 0;
         private long seed = 0;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

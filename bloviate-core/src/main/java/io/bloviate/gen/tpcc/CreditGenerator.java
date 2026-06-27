@@ -21,7 +21,7 @@ import io.bloviate.gen.AbstractDataGenerator;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generates the TPC-C customer credit rating (clause 4.3.2.7): "GC" (good credit)
@@ -44,7 +44,7 @@ public class CreditGenerator extends AbstractDataGenerator<String> {
 
     public static class Builder extends AbstractBuilder<String> {
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 
@@ -54,7 +54,7 @@ public class CreditGenerator extends AbstractDataGenerator<String> {
         }
     }
 
-    private CreditGenerator(Random random) {
+    private CreditGenerator(RandomGenerator random) {
         super(random);
     }
 }

@@ -19,7 +19,7 @@ package io.bloviate.gen;
 import java.sql.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
 
@@ -48,7 +48,7 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
         private Time startInclusive = new Time(Instant.EPOCH.toEpochMilli());
         private Time endExclusive = new Time(DEFAULT_REFERENCE.plus(100, ChronoUnit.HOURS).toEpochMilli());
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

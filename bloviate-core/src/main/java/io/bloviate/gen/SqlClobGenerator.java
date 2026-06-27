@@ -17,7 +17,7 @@
 package io.bloviate.gen;
 
 import java.sql.*;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class SqlClobGenerator extends AbstractDataGenerator<Clob> {
     //todo
@@ -44,7 +44,7 @@ public class SqlClobGenerator extends AbstractDataGenerator<Clob> {
 
     public static class Builder extends AbstractBuilder<Clob> {
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

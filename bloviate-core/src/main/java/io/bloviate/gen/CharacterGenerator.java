@@ -18,7 +18,7 @@ package io.bloviate.gen;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class CharacterGenerator extends AbstractDataGenerator<Character> {
 
@@ -47,7 +47,7 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
     }
 
     public static class Builder extends AbstractBuilder<Character> {
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

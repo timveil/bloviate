@@ -18,7 +18,7 @@ package io.bloviate.gen;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generates small well-formed XML documents, e.g. {@code <bloviate>a1b2c3d4</bloviate>}.
@@ -47,7 +47,7 @@ public class XmlGenerator extends AbstractDataGenerator<String> {
 
     public static class Builder extends AbstractBuilder<String> {
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

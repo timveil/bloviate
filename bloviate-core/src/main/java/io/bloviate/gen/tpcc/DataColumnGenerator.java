@@ -21,7 +21,7 @@ import io.bloviate.gen.AbstractDataGenerator;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generates the TPC-C i_data / s_data values (clause 4.3.3.1): a random
@@ -53,7 +53,7 @@ public class DataColumnGenerator extends AbstractDataGenerator<String> {
 
     public static class Builder extends AbstractBuilder<String> {
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 
@@ -63,7 +63,7 @@ public class DataColumnGenerator extends AbstractDataGenerator<String> {
         }
     }
 
-    private DataColumnGenerator(Random random) {
+    private DataColumnGenerator(RandomGenerator random) {
         super(random);
     }
 }

@@ -22,7 +22,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class DateGenerator extends AbstractDataGenerator<Date> {
 
@@ -48,7 +48,7 @@ public class DateGenerator extends AbstractDataGenerator<Date> {
         private Date startInclusive = Date.from(Instant.EPOCH);
         private Date endExclusive = Date.from(DEFAULT_REFERENCE.plus(100, ChronoUnit.DAYS));
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

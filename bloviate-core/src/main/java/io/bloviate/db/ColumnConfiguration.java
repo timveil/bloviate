@@ -21,8 +21,8 @@ package io.bloviate.db;
  * generator that would otherwise be auto-detected from the column's JDBC type.
  *
  * <p>The column name is matched case-insensitively. The generator is built lazily
- * by the fill engine via {@link ColumnGeneratorFactory#create(java.util.Random)},
- * using a column-seeded {@link java.util.Random} so overridden columns remain
+ * by the fill engine via {@link ColumnGeneratorFactory#create(java.util.random.RandomGenerator)},
+ * using a column-seeded {@link java.util.random.RandomGenerator} so overridden columns remain
  * reproducible.
  *
  * @param columnName the name of the column to override (matched case-insensitively)

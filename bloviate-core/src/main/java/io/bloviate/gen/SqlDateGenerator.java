@@ -19,7 +19,7 @@ package io.bloviate.gen;
 
 import java.sql.*;
 import java.time.temporal.ChronoUnit;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
@@ -48,7 +48,7 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
         private Date startInclusive = new Date(DEFAULT_REFERENCE.minus(100, ChronoUnit.DAYS).toEpochMilli());
         private Date endExclusive = new Date(DEFAULT_REFERENCE.plus(100, ChronoUnit.DAYS).toEpochMilli());
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

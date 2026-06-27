@@ -23,7 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
 
@@ -59,7 +59,7 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
 
         private int size = 25;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

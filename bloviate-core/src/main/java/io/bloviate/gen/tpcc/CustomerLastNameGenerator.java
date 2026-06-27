@@ -21,7 +21,7 @@ import io.bloviate.gen.AbstractDataGenerator;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -87,7 +87,7 @@ public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
         private int groupSize = 0;
         private int enumeratedCount = 0;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 
@@ -116,7 +116,7 @@ public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
         }
     }
 
-    private CustomerLastNameGenerator(Random random, int groupSize, int enumeratedCount) {
+    private CustomerLastNameGenerator(RandomGenerator random, int groupSize, int enumeratedCount) {
         super(random);
         if (enumeratedCount < 0 || enumeratedCount > MAX_ENUMERATED) {
             throw new IllegalArgumentException("enumeratedCount must be in [0, " + MAX_ENUMERATED + "]: " + enumeratedCount);

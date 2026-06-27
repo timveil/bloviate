@@ -18,7 +18,7 @@ package io.bloviate.gen;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generates MAC addresses as colon-separated hex octets, e.g. {@code 08:00:2b:01:02:03}.
@@ -57,7 +57,7 @@ public class MacAddressGenerator extends AbstractDataGenerator<String> {
 
         private int octets = 6;
 
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

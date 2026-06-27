@@ -19,6 +19,7 @@ package io.bloviate.bench;
 import io.bloviate.db.Column;
 import io.bloviate.ext.PostgresSupport;
 import io.bloviate.gen.DataGenerator;
+import io.bloviate.util.RandomGenerators;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -83,7 +84,7 @@ public class GeneratorBenchmark {
 
     @Setup
     public void setup() {
-        generator = new PostgresSupport().getDataGenerator(genCase.column, new java.util.Random(SEED));
+        generator = new PostgresSupport().getDataGenerator(genCase.column, RandomGenerators.create(SEED));
     }
 
     @Benchmark

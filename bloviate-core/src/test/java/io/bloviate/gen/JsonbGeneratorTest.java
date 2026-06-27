@@ -18,6 +18,7 @@ package io.bloviate.gen;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.bloviate.util.RandomGenerators;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
@@ -54,10 +55,8 @@ class JsonbGeneratorTest {
 
     @Test
     void isDeterministicForAGivenSeed() {
-        JsonbGenerator a = new JsonbGenerator.Builder(new Random()).fields(4).build();
-        JsonbGenerator b = new JsonbGenerator.Builder(new Random()).fields(4).build();
-        a.setSeed(42L);
-        b.setSeed(42L);
+        JsonbGenerator a = new JsonbGenerator.Builder(RandomGenerators.create(42L)).fields(4).build();
+        JsonbGenerator b = new JsonbGenerator.Builder(RandomGenerators.create(42L)).fields(4).build();
 
         assertEquals(a.generate(), b.generate());
     }

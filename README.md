@@ -130,8 +130,10 @@ Generate CSV files with custom column definitions:
 import io.bloviate.file.FlatFileGenerator;
 import io.bloviate.file.ColumnDefinition;
 import io.bloviate.gen.*;
+import io.bloviate.util.RandomGenerators;
+import java.util.random.RandomGenerator;
 
-Random random = new Random();
+RandomGenerator random = RandomGenerators.create(42L);
 List<ColumnDefinition> columns = Arrays.asList(
     new ColumnDefinition("id", new IntegerGenerator.Builder(random).build()),
     new ColumnDefinition("name", new SimpleStringGenerator.Builder(random).build()),
@@ -239,8 +241,8 @@ import io.bloviate.ext.PostgresSupport;
 import io.bloviate.gen.IntegerGenerator;
 import java.util.Set;
 
-// ColumnGeneratorFactory is a `Random -> DataGenerator<?>` lambda.
-// The engine supplies a column-seeded Random for reproducible output.
+// ColumnGeneratorFactory is a `RandomGenerator -> DataGenerator<?>` lambda.
+// The engine supplies a column-seeded RandomGenerator for reproducible output.
 Set<ColumnConfiguration> columnConfigs = Set.of(
     new ColumnConfiguration("status_code",
         random -> new IntegerGenerator.Builder(random).start(1).end(10).build())

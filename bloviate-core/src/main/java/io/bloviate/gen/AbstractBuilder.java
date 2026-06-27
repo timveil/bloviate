@@ -17,7 +17,7 @@
 package io.bloviate.gen;
 
 import java.time.Instant;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Abstract base class for data generator builders.
@@ -41,14 +41,14 @@ public abstract class AbstractBuilder<T> implements Builder<T> {
     /**
      * The random number generator used for creating data.
      */
-    protected final Random random;
+    protected final RandomGenerator random;
 
     /**
      * Constructs a new AbstractBuilder with the specified random number generator.
      *
      * @param random the random number generator to use for data generation
      */
-    public AbstractBuilder(Random random) {
+    public AbstractBuilder(RandomGenerator random) {
         this.random = random;
     }
 }

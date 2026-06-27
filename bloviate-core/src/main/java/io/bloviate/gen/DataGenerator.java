@@ -61,11 +61,15 @@ public interface DataGenerator<T> {
     String generateAsString();
 
     /**
-     * Sets the random seed for reproducible data generation.
-     * 
+     * Resets this generator's random source to the given seed for reproducible foreign-key
+     * wraparound. Implementations must replace the underlying {@link java.util.random.RandomGenerator}
+     * with a freshly seeded one (there is no in-place {@code setSeed} on
+     * {@link java.util.random.RandomGenerator}) while preserving any counter or sequence state the
+     * generator maintains, so that only random draws replay.
+     *
      * @param seed the random seed value
      */
-    void setSeed(long seed);
+    void reseed(long seed);
 
     /**
      * Generates a value and sets it on a PreparedStatement parameter.

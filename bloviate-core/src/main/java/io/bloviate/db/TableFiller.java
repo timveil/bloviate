@@ -20,6 +20,7 @@ import io.bloviate.ext.DatabaseSupport;
 import io.bloviate.ext.GeneratorRegistry;
 import io.bloviate.gen.DataGenerator;
 import io.bloviate.util.DatabaseUtils;
+import io.bloviate.util.RandomGenerators;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Fills a database table with generated data.
@@ -83,6 +84,7 @@ public class TableFiller implements Fillable {
         long[] maxInvocations = new long[columnCount];
 
         DatabaseSupport databaseSupport = databaseConfiguration.databaseSupport();
+        GeneratorRegistry registry = databaseConfiguration.generatorRegistry();
 
         TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
 
@@ -116,7 +118,7 @@ public class TableFiller implements Fillable {
             // resolve the generator by precedence; the generator is always seeded by the engine
             // so it stays reproducible regardless of which path provides it:
             //   per-column config > custom registry (name > typeName > JDBCType) > support default
-            Random random = new Random(seed);
+            RandomGenerator random = RandomGenerators.create(seed);
 
             ColumnConfiguration columnConfiguration = tableConfiguration != null
                     ? tableConfiguration.columnConfiguration(column.name())
@@ -126,7 +128,6 @@ public class TableFiller implements Fillable {
             if (columnConfiguration != null) {
                 dataGenerator = columnConfiguration.generatorFactory().create(random);
             } else {
-                GeneratorRegistry registry = databaseConfiguration.generatorRegistry();
                 DataGenerator<?> custom = registry != null ? registry.resolve(column, random) : null;
                 dataGenerator = custom != null ? custom : databaseSupport.getDataGenerator(column, random);
             }
@@ -158,9 +159,10 @@ public class TableFiller implements Fillable {
 
                     long maxInvocation = maxInvocations[col];
                     if (maxInvocation > 0 && rowCounter != 0 && rowCounter % maxInvocation == 0) {
-                        // foreign-key generator has exhausted the parent key space; reseed so it
-                        // replays the same parent keys and never references a non-existent parent
-                        dataGenerator.setSeed(reseedSeeds[col]);
+                        // foreign-key generator has exhausted the parent key space; reseed its random
+                        // source so it replays the same parent keys and never references a non-existent
+                        // parent (generator counter/sequence state is preserved)
+                        dataGenerator.reseed(reseedSeeds[col]);
                     }
 
                     dataGenerator.generateAndSet(connection, ps, col + 1);

@@ -20,7 +20,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Generator for Boolean values.
@@ -56,7 +56,7 @@ public class BooleanGenerator extends AbstractDataGenerator<Boolean> {
          *
          * @param random the random number generator to use
          */
-        public Builder(Random random) {
+        public Builder(RandomGenerator random) {
             super(random);
         }
 

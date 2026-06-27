@@ -22,7 +22,7 @@ import io.bloviate.gen.*;
 import java.sql.JDBCType;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Base {@link DatabaseSupport} that maps columns to generators through a
@@ -31,7 +31,7 @@ import java.util.Random;
  * <p>The constructor seeds the registry with cross-database defaults and then invokes
  * {@link #configure(Map)}, which database-specific subclasses override to add or replace
  * entries (for example, to handle driver-specific type names). Types absent from the
- * registry are unsupported and cause {@link #getDataGenerator(Column, Random)} to throw.
+ * registry are unsupported and cause {@link #getDataGenerator(Column, RandomGenerator)} to throw.
  *
  * @see GeneratorFactory
  */
@@ -47,7 +47,7 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
     }
 
     @Override
-    public final DataGenerator<?> getDataGenerator(Column column, Random random) {
+    public final DataGenerator<?> getDataGenerator(Column column, RandomGenerator random) {
         GeneratorFactory factory = registry.get(column.jdbcType());
         if (factory == null) {
             throw new UnsupportedOperationException("JDBCType [" + column.jdbcType() + "] not supported");
