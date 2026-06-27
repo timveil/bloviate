@@ -378,6 +378,12 @@ intervals, arrays, and XML. A few are worth calling out:
   permutation in O(1) memory without materializing or shuffling an array.
 - **TPC-C generators** — [`io.bloviate.gen.tpcc`](bloviate-core/src/main/java/io/bloviate/gen/tpcc/)
   provides benchmark-faithful fields (customer last names, zip codes, credit, delivery dates).
+- **Distribution generators** — `WeightedCategoricalGenerator`, `NormalDoubleGenerator`/`NormalIntegerGenerator`,
+  `ZipfianIntegerGenerator`, and `SkewedTimestampGenerator` emit non-uniform values (categorical,
+  bounded-Gaussian, power-law, recency-skewed). A column opts in through the
+  [`Distributions`](bloviate-core/src/main/java/io/bloviate/db/Distributions.java) convenience without
+  writing a factory. These are *specified* distributions, not learned from data — so they stay
+  deterministic by seed and compose with FK reseeding and parallel fills like any other generator.
 
 ## 8. Flat-file generation
 
