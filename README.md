@@ -38,11 +38,11 @@ which learn from real data and are non-deterministic, and from the **masking/sub
 recipe-authored, no schema introspection), synth (dormant since 2022), and DBeaver Mock Data (paid,
 GUI-bound) — Bloviate is the maintained, deterministic, auto-FK option.
 
-**Honest limitations.** Bloviate is *not* a statistical/ML synthesizer (no learned distributions or
-correlations), *not* a masking/subsetting tool for existing data, JVM-only, and has no GUI. It is also
-type-driven rather than semantically aware today — an `email VARCHAR` gets random text, not a plausible
-email (tracked in [#472](https://github.com/timveil/bloviate/issues/472) and
-[#473](https://github.com/timveil/bloviate/issues/473)).
+**Honest limitations.** Bloviate is *not* a statistical/ML synthesizer (it generates *specified*
+distributions, not ones learned from real data), *not* a masking/subsetting tool for existing data,
+JVM-only, and has no GUI. Its core is type-driven by default — an `email VARCHAR` gets random text —
+though the optional [`bloviate-datafaker`](#semantic--realistic-data-bloviate-datafaker) module adds
+realistic, name-correlated values when you want them.
 
 See **[POSITIONING.md](POSITIONING.md)** for the full competitive landscape, with sources.
 
@@ -72,6 +72,7 @@ See **[POSITIONING.md](POSITIONING.md)** for the full competitive landscape, wit
   - [Value Distributions](#value-distributions)
   - [Custom Generator Registry](#custom-generator-registry)
   - [Semantic / Realistic Data (`bloviate-datafaker`)](#semantic--realistic-data-bloviate-datafaker)
+  - [Correlated Columns (referential realism)](#correlated-columns-referential-realism)
   - [Composite Keys & Foreign Key Fidelity](#composite-keys--foreign-key-fidelity)
   - [Variable Parent/Child Cardinality](#variable-parentchild-cardinality)
   - [TPC-C Benchmark Data](#tpc-c-benchmark-data)
@@ -441,8 +442,37 @@ So an `email` column now yields `jane.doe@example.com`, `first_name` a real firs
   normal type-based generator. Don't route `UNIQUE`/primary-key columns through it — realistic
   dictionaries repeat at scale, so keep Bloviate's sequence/seeded generators for keys.
 
-> Cross-column *consistency* (a `city`/`state`/`zip` that agree, an `email` derived from the row's name)
-> is a separate, in-progress feature — see [#473](https://github.com/timveil/bloviate/issues/473).
+### Correlated Columns (referential realism)
+
+The plugin above makes each column realistic *independently* — so a row's `email` won't match its
+`first_name`/`last_name`. For columns that should agree, share one **`RowContext`** and register each as
+a **projection** of the same per-row entity. `People.context(...)` provides a coherent person whose
+`email`, `username`, and `full_name` are derived from the row's name:
+
+```java
+import io.bloviate.datafaker.People;
+import io.bloviate.datafaker.Person;
+import io.bloviate.datafaker.RowContext;
+
+RowContext<Person> person = People.context(42L, java.util.Locale.ENGLISH);
+
+Set<ColumnConfiguration> columns = Set.of(
+    new ColumnConfiguration("first_name", person.project(Person::firstName)),
+    new ColumnConfiguration("last_name",  person.project(Person::lastName)),
+    new ColumnConfiguration("full_name",  person.project(Person::fullName)),
+    new ColumnConfiguration("email",      person.project(Person::email)),     // jane.doe7@example.com
+    new ColumnConfiguration("username",   person.project(Person::username))   // jane.doe7
+);
+```
+
+Now `full_name` matches `first_name`/`last_name`, and `email`/`username` are derived from them. The
+entity is a pure function of `(seed, rowIndex)`, so the data is **reproducible and order-independent**
+— sequential and parallel/partitioned fills produce identical values. Email and username carry a
+row-index suffix so they stay unique at scale.
+
+> The first release covers the **person** entity. Consistent geo tuples (a `city`/`state`/`zip` that
+> agree) need a bundled reference dataset and are tracked as the next step on
+> [#473](https://github.com/timveil/bloviate/issues/473).
 
 ### Composite Keys & Foreign Key Fidelity
 
