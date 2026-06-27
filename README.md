@@ -470,9 +470,26 @@ entity is a pure function of `(seed, rowIndex)`, so the data is **reproducible a
 — sequential and parallel/partitioned fills produce identical values. Email and username carry a
 row-index suffix so they stay unique at scale.
 
-> The first release covers the **person** entity. Consistent geo tuples (a `city`/`state`/`zip` that
-> agree) need a bundled reference dataset and are tracked as the next step on
-> [#473](https://github.com/timveil/bloviate/issues/473).
+The same mechanism gives **consistent geo tuples**: `Places.unitedStates(...)` draws one real place
+per row from a bundled reference dataset, so a row's `city`, `state`, `zip`, and `area_code` agree (a
+real city in its real state with a valid local ZIP — not "Springfield, WY 90210"):
+
+```java
+import io.bloviate.datafaker.Geo;
+import io.bloviate.datafaker.Places;
+
+RowContext<Geo> place = Places.unitedStates(42L);
+
+Set<ColumnConfiguration> columns = Set.of(
+    new ColumnConfiguration("city",      place.project(Geo::city)),
+    new ColumnConfiguration("state",     place.project(Geo::stateAbbreviation)),
+    new ColumnConfiguration("zip",       place.project(Geo::zip)),
+    new ColumnConfiguration("area_code", place.project(Geo::areaCode))
+);
+```
+
+> The bundled geo dataset is a representative sample of US places, not exhaustive, and tuples repeat
+> across rows — keep `UNIQUE` columns on Bloviate's sequence/seeded generators.
 
 ### Composite Keys & Foreign Key Fidelity
 
