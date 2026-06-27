@@ -451,11 +451,11 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 📈 Roadmap
 
-- [ ] Additional database support (Oracle, SQL Server)
-- [ ] Custom data generation plugins
-- [ ] Performance optimizations for large datasets
+- [ ] [Additional database support (Oracle, SQL Server)](https://github.com/timveil/bloviate/issues/445)
+- [ ] [Custom data generation plugins](https://github.com/timveil/bloviate/issues/446)
+- [ ] [Performance optimizations for large datasets](https://github.com/timveil/bloviate/issues/447)
 - [ ] GUI for configuration management
-- [ ] Integration with popular testing frameworks
+- [ ] [Integration with popular testing frameworks](https://github.com/timveil/bloviate/issues/448)
 
 ---
 
