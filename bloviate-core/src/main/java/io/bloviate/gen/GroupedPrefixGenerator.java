@@ -16,6 +16,8 @@
 
 package io.bloviate.gen;
 
+import io.bloviate.util.Mixers;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -39,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @param <T> the Java type produced by the wrapped generator
  */
-public class GroupedPrefixGenerator<T> extends AbstractDataGenerator<T> {
+public class GroupedPrefixGenerator<T> extends AbstractDataGenerator<T> implements IndexedDataGenerator {
 
     private final int groupSize;
     private final int prefixSize;
@@ -50,6 +52,31 @@ public class GroupedPrefixGenerator<T> extends AbstractDataGenerator<T> {
     public T generate() {
         int position = (int) (counter.getAndIncrement() % groupSize);
         return position < prefixSize ? delegate.generate() : null;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Setting the counter to {@code rowIndex} restores the null/non-null pattern exactly (it is a
+     * pure function of the absolute position). The wrapped delegate is consulted only on prefix rows,
+     * so it is advanced to the matching delegate-call index: a positional delegate is itself
+     * {@link #seek(long) sought} (byte-identical), while a plain random delegate is reseeded
+     * deterministically for the partition (its non-key values may differ from a sequential fill).
+     */
+    @Override
+    public void seek(long rowIndex) {
+        if (rowIndex < 0) {
+            throw new IllegalArgumentException("rowIndex must be non-negative: " + rowIndex);
+        }
+        counter.set(rowIndex);
+        // number of delegate.generate() calls made for rows [0, rowIndex): prefixSize per full group
+        // plus the prefix rows of the partial group
+        long delegateIndex = (rowIndex / groupSize) * prefixSize + Math.min(rowIndex % groupSize, prefixSize);
+        if (delegate instanceof IndexedDataGenerator indexedDelegate) {
+            indexedDelegate.seek(delegateIndex);
+        } else {
+            delegate.reseed(Mixers.splitmix64(delegateIndex));
+        }
     }
 
     @Override

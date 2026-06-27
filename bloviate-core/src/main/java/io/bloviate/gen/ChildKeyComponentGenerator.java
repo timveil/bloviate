@@ -50,7 +50,7 @@ import java.util.random.RandomGenerator;
  *
  * <p>The produced values do not depend on the random source.
  */
-public class ChildKeyComponentGenerator extends AbstractDataGenerator<Integer> {
+public class ChildKeyComponentGenerator extends AbstractDataGenerator<Integer> implements IndexedDataGenerator {
 
     private final ChildCardinality cardinality;
     private final boolean sequence;
@@ -80,6 +80,48 @@ public class ChildKeyComponentGenerator extends AbstractDataGenerator<Integer> {
             return start + currentPosition;
         }
         return start + (int) ((parentIndex / repeat) % cycle);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Positions the cursor on the parent that owns the {@code rowIndex}-th child and the offset
+     * within it, so the next {@link #generate()} returns exactly what a sequential walk would. When
+     * the cardinality is fixed this is O(1); otherwise it is a single O(parentCount) scan that
+     * accumulates child counts (done once per partition, then generation walks sequentially).
+     */
+    @Override
+    public synchronized void seek(long rowIndex) {
+        if (rowIndex < 0) {
+            throw new IllegalArgumentException("rowIndex must be non-negative: " + rowIndex);
+        }
+
+        long owningParent;
+        long positionInParent;
+
+        if (cardinality.minChildren() == cardinality.maxChildren() && cardinality.minChildren() > 0) {
+            // fixed cardinality: closed form
+            int childrenPerParent = cardinality.minChildren();
+            owningParent = rowIndex / childrenPerParent;
+            positionInParent = rowIndex % childrenPerParent;
+        } else {
+            // variable cardinality: walk parents (skipping empty ones) until the target child is owned
+            long cumulative = 0;
+            owningParent = 0;
+            while (true) {
+                int childCount = cardinality.count(owningParent);
+                if (cumulative + childCount > rowIndex) {
+                    positionInParent = rowIndex - cumulative;
+                    break;
+                }
+                cumulative += childCount;
+                owningParent++;
+            }
+        }
+
+        this.parentIndex = owningParent;
+        this.position = (int) positionInParent;
+        this.childrenRemaining = cardinality.count(owningParent) - (int) positionInParent;
     }
 
     @Override

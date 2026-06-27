@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * source; the counter state is held by the generator instance and advances on
  * every call to {@link #generate()}.
  */
-public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
+public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> implements IndexedDataGenerator {
 
     private final int startInclusive;
     private final int endInclusive;
@@ -41,6 +41,21 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> {
     @Override
     public Integer generate() {
         return counter.getAndUpdate(current -> current >= endInclusive ? startInclusive : current + 1);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The value at call index {@code n} is {@code start + (n % range)} where
+     * {@code range = end - start + 1}, so seeking is O(1).
+     */
+    @Override
+    public void seek(long rowIndex) {
+        if (rowIndex < 0) {
+            throw new IllegalArgumentException("rowIndex must be non-negative: " + rowIndex);
+        }
+        long range = (long) endInclusive - startInclusive + 1;
+        counter.set((int) (startInclusive + rowIndex % range));
     }
 
     @Override

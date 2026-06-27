@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * <p>Supports group sizes up to {@code 2^30}.
  */
-public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> {
+public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> implements IndexedDataGenerator {
 
     private static final int ROUNDS = 4;
 
@@ -60,6 +60,21 @@ public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> 
         int position = (int) (n % groupSize);
         long key = mix(seed + group);
         return start + permute(position, key);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The value is a pure function of the row index (the permutation is keyed by
+     * {@code rowIndex / groupSize} and applied to {@code rowIndex % groupSize}), so seeking is O(1):
+     * the counter is set to {@code rowIndex}.
+     */
+    @Override
+    public void seek(long rowIndex) {
+        if (rowIndex < 0) {
+            throw new IllegalArgumentException("rowIndex must be non-negative: " + rowIndex);
+        }
+        counter.set(rowIndex);
     }
 
     // cycle-walking: a Feistel permutation on [0, 2^(2*halfBits)) restricted to [0, groupSize)

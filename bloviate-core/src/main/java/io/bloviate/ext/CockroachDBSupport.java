@@ -31,4 +31,16 @@ package io.bloviate.ext;
  */
 public class CockroachDBSupport extends PostgresSupport {
 
+    /**
+     * CockroachDB ignores the PostgreSQL driver's {@code reWriteBatchedInserts} parameter, so
+     * there is nothing to recommend; overrides {@link PostgresSupport#batchRewriteUrlParameter()}
+     * back to {@code null}.
+     *
+     * @return {@code null}
+     * @since 2.10.0
+     */
+    @Override
+    public String batchRewriteUrlParameter() {
+        return null;
+    }
 }

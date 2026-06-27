@@ -56,6 +56,27 @@ public interface DatabaseSupport {
     DataGenerator<?> getDataGenerator(Column column, RandomGenerator random);
 
     /**
+     * Returns the JDBC-URL parameter name that enables this driver's <em>batch rewrite</em>
+     * optimization &mdash; collapsing a JDBC batch into a single multi-row {@code INSERT} &mdash;
+     * or {@code null} if the database has no such parameter.
+     *
+     * <p>Bloviate fills through a {@link Connection}/{@link javax.sql.DataSource} it does not own,
+     * so it cannot add this parameter to the URL after the fact. Instead, the fill engine reads it
+     * to warn when the parameter is absent (it is often the single biggest fill speedup), and
+     * {@link io.bloviate.util.JdbcUrls} uses it to help callers build a correctly-parameterized URL.
+     *
+     * <p>Known values: PostgreSQL {@code reWriteBatchedInserts}, MySQL
+     * {@code rewriteBatchedStatements}. CockroachDB ignores batch rewrite, so it returns
+     * {@code null}; the generic {@link DefaultSupport} also returns {@code null}.
+     *
+     * @return the batch-rewrite URL parameter name, or {@code null} if not applicable
+     * @since 2.10.0
+     */
+    default String batchRewriteUrlParameter() {
+        return null;
+    }
+
+    /**
      * Selects a {@link DatabaseSupport} for the given JDBC product name (as reported by
      * {@link java.sql.DatabaseMetaData#getDatabaseProductName()}), so callers don't have
      * to hardcode a specific implementation.

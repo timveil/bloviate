@@ -42,6 +42,11 @@ import java.util.Map;
 public class MySQLSupport extends AbstractDatabaseSupport {
 
     @Override
+    public String batchRewriteUrlParameter() {
+        return "rewriteBatchedStatements";
+    }
+
+    @Override
     protected void configure(Map<JDBCType, GeneratorFactory> registry) {
 
         // MySQL JSON columns report as LONGVARCHAR with type name "JSON". Generate valid JSON

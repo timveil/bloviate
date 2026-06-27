@@ -59,8 +59,9 @@ Each measured iteration truncates the schema, times a full `DatabaseFiller.fill(
 fetch included), and prints `rows/sec`. A fixed seed makes every iteration generate identical
 data, so timings are comparable across runs and across optimization branches.
 
-- `PostgresFillBenchmark` — TPC-C schema **and** a deliberately wide, FK-free schema
-  (`create_wide.postgres.sql`); the wide one is the parallel-table-fill target.
+- `PostgresFillBenchmark` — TPC-C schema, a deliberately wide FK-free schema
+  (`create_wide.postgres.sql`, the between-table parallel-fill target), **and** a single dominant
+  table (`create_single.postgres.sql`, the intra-table partitioning target for issue #466).
 - `MySqlFillBenchmark`, `CockroachFillBenchmark` — TPC-C schema.
 
 ```bash
@@ -70,6 +71,12 @@ data, so timings are comparable across runs and across optimization branches.
 # just Postgres, just the wide schema, larger dataset
 ./mvnw -pl bloviate-benchmarks -am -Pbench test \
     -Dtest='PostgresFillBenchmark#wide' -Dbench.rows=500000
+
+# intra-table partitioning (#466): one big table, sequential baseline vs 8-way partitioned
+./mvnw -pl bloviate-benchmarks -am -Pbench test \
+    -Dtest='PostgresFillBenchmark#singleTable' -Dbench.rows=2000000 -Dbench.threads=1
+./mvnw -pl bloviate-benchmarks -am -Pbench test \
+    -Dtest='PostgresFillBenchmark#singleTable' -Dbench.rows=2000000 -Dbench.threads=8
 ```
 
 Output lines look like:
@@ -87,7 +94,9 @@ Output lines look like:
 | `bench.warmup` | 1 | untimed warmup fills (JIT / pool / cache priming) |
 | `bench.iterations` | 3 | timed fills; best and mean are reported |
 | `bench.batch` | 1000 | JDBC batch size (`DatabaseConfiguration.batchSize`) |
-| `bench.rows` | 50000 | default row count for the **wide** schema (per table) |
+| `bench.threads` | 1 | worker threads; `1` = sequential baseline, `>1` = parallel `DataSource` path |
+| `bench.partitions` | `max(2, threads)` | intra-table partitions for the **single** schema (#466) |
+| `bench.rows` | 50000 | default row count for the **wide**/**single** schema (per table) |
 | `bench.warehouses` | 1 | TPC-C scale factor (W) |
 | `bench.items` | 10000 | TPC-C items (I) |
 | `bench.districts` | 10 | TPC-C districts per warehouse (D) |

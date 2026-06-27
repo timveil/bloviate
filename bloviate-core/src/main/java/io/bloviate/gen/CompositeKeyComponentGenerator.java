@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>The produced values do not depend on the random source; counter state is
  * held by the generator instance and advances on every {@link #generate()}.
  */
-public class CompositeKeyComponentGenerator extends AbstractDataGenerator<Integer> {
+public class CompositeKeyComponentGenerator extends AbstractDataGenerator<Integer> implements IndexedDataGenerator {
 
     private final int start;
     private final long repeat;
@@ -56,6 +56,20 @@ public class CompositeKeyComponentGenerator extends AbstractDataGenerator<Intege
     public Integer generate() {
         long n = counter.getAndIncrement();
         return start + (int) ((n / repeat) % cycle);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The value is a closed form of the row index ({@code start + ((rowIndex / repeat) % cycle)}),
+     * so seeking is O(1): the counter is simply set to {@code rowIndex}.
+     */
+    @Override
+    public void seek(long rowIndex) {
+        if (rowIndex < 0) {
+            throw new IllegalArgumentException("rowIndex must be non-negative: " + rowIndex);
+        }
+        counter.set(rowIndex);
     }
 
     @Override
