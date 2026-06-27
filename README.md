@@ -7,6 +7,45 @@
 
 Hands-free test data generator for JDBC databases — Bloviate auto-discovers your schema, respects foreign keys, and fills tables (or CSV/TSV files) with realistic, reproducible data.
 
+## 🎯 Why Bloviate?
+
+> **Bloviate never touches production data, is deterministic by seed, and runs inside your JUnit/Testcontainers pipeline.**
+
+It generates *from your schema*, not from a copy of production — so the privacy story is simple and
+the data is reproducible by construction. Five structural strengths:
+
+1. **Zero-config foreign-key correctness.** It auto-introspects `DatabaseMetaData`, builds the FK
+   dependency graph, and topologically orders the fill — parents before children, no configuration.
+   Rivals make you hand-author relationships (Benerator `<reference>` selectors, Snowfakery YAML
+   recipes) or require parent rows to already exist (DBeaver).
+2. **Privacy-safe by construction.** Generated purely from schema and type — production data is never
+   read — so the GDPR/CCPA exposure surface is structurally minimal. No masking or
+   differential-privacy machinery to configure or trust.
+3. **Deterministic reproducibility as a contract.** The same seed and schema produce byte-identical
+   data on every run, including under parallel and partitioned fills. Most ML synthesizers can't offer
+   that.
+4. **CI-native, dependency-free core.** No cloud account, no Python/GPU runtime, no per-row/per-GB
+   pricing — just a library on your classpath, with first-class JUnit 5
+   (`@FillDatabase`/`@FillSource`) and Testcontainers integrations.
+5. **Maintained and multi-DB.** PostgreSQL, MySQL, and CockroachDB, actively released — while several
+   peers are dormant (synth) or feature-frozen (Benerator CE).
+
+**Where it fits.** Bloviate is an open-source, JDBC-native *filler* — it manufactures relational data
+from a schema. That's a different job from the **ML/privacy synthesizers** (SDV, Gretel, MOSTLY AI),
+which learn from real data and are non-deterministic, and from the **masking/subsetting** tools
+(Tonic, Delphix, Jailer), which operate on existing production data. Among its actual peers — Benerator
+(JVM, but FK is manually declared and the community edition is frozen), Snowfakery (Python,
+recipe-authored, no schema introspection), synth (dormant since 2022), and DBeaver Mock Data (paid,
+GUI-bound) — Bloviate is the maintained, deterministic, auto-FK option.
+
+**Honest limitations.** Bloviate is *not* a statistical/ML synthesizer (no learned distributions or
+correlations), *not* a masking/subsetting tool for existing data, JVM-only, and has no GUI. It is also
+type-driven rather than semantically aware today — an `email VARCHAR` gets random text, not a plausible
+email (tracked in [#472](https://github.com/timveil/bloviate/issues/472) and
+[#473](https://github.com/timveil/bloviate/issues/473)).
+
+See **[POSITIONING.md](POSITIONING.md)** for the full competitive landscape, with sources.
+
 ## 🚀 Features
 
 - **Automatic Schema Discovery**: Connects to existing databases and analyzes table structure, relationships, and constraints
@@ -23,6 +62,7 @@ Hands-free test data generator for JDBC databases — Bloviate auto-discovers yo
 
 ## 📋 Table of Contents
 
+- [Why Bloviate?](#-why-bloviate)
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
 - [Database Support](#-database-support)
