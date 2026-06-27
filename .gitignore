@@ -7,3 +7,6 @@ target/
 *.iml
 *.csv
 .env
+
+# maven-shade-plugin output
+dependency-reduced-pom.xml
