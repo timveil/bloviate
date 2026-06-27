@@ -51,6 +51,17 @@ class MySqlFillerTest extends BaseMySqlTest {
     }
 
     @Test
+    void fillTestTables() throws SQLException {
+        // exercises the MySQL JSON type (which a plain string generator would fail to
+        // satisfy) alongside the standard types; the fill throws on any invalid value
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, 5, new MySQLSupport(), new HashSet<>());
+        fillDatabase("create_tables.mysql.sql", configuration, connection -> {
+            assertRowCount(connection, "json_doc", 5);
+            assertRowCount(connection, "standard_table", 5);
+        });
+    }
+
+    @Test
     void fillTPCCWithColumnConfigs() throws SQLException {
 
         int w = 2;

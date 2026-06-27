@@ -66,38 +66,76 @@ class DatabaseSupportTest {
     }
 
     @Test
-    void postgresAndMySqlBehaveLikeDefault() {
-        assertInstanceOf(IntegerGenerator.class, generatorFor(new PostgresSupport(), JDBCType.INTEGER, 10, "int4"));
-        assertInstanceOf(IntegerGenerator.class, generatorFor(new MySQLSupport(), JDBCType.INTEGER, 10, "int4"));
+    void postgresStillMapsStandardTypes() {
+        DatabaseSupport support = new PostgresSupport();
+
+        assertInstanceOf(IntegerGenerator.class, generatorFor(support, JDBCType.INTEGER, 10, "int4"));
+        assertInstanceOf(SimpleStringGenerator.class, generatorFor(support, JDBCType.VARCHAR, 32, "varchar"));
+        // PostgreSQL reports boolean as JDBCType.BIT with type name "bool"
+        assertInstanceOf(BooleanGenerator.class, generatorFor(support, JDBCType.BIT, 1, "bool"));
     }
 
     @Test
-    void cockroachOverridesBitToBitString() {
-        DatabaseSupport support = new CockroachDBSupport();
+    void postgresDispatchesBitVarbitAndArraysAndXml() {
+        DatabaseSupport support = new PostgresSupport();
 
-        // CRDB treats BIT(1) as a bit string, unlike the default which would use BitGenerator
         assertInstanceOf(BitStringGenerator.class, generatorFor(support, JDBCType.BIT, 1, "bit"));
+        assertInstanceOf(BitStringGenerator.class, generatorFor(support, JDBCType.OTHER, 3, "varbit"));
+        assertInstanceOf(StringArrayGenerator.class, generatorFor(support, JDBCType.ARRAY, null, "_text"));
+        assertInstanceOf(IntegerArrayGenerator.class, generatorFor(support, JDBCType.ARRAY, null, "_int8"));
+        assertInstanceOf(IntegerArrayGenerator.class, generatorFor(support, JDBCType.ARRAY, null, "_int4"));
+        assertInstanceOf(XmlGenerator.class, generatorFor(support, JDBCType.SQLXML, null, "xml"));
     }
 
     @Test
-    void cockroachDispatchesArrayAndOtherByTypeName() {
+    void postgresDispatchesOtherByTypeName() {
+        DatabaseSupport support = new PostgresSupport();
+
+        assertInstanceOf(UUIDGenerator.class, generatorFor(support, JDBCType.OTHER, null, "uuid"));
+        assertInstanceOf(JsonbGenerator.class, generatorFor(support, JDBCType.OTHER, null, "json"));
+        assertInstanceOf(JsonbGenerator.class, generatorFor(support, JDBCType.OTHER, null, "jsonb"));
+        assertInstanceOf(InetGenerator.class, generatorFor(support, JDBCType.OTHER, null, "inet"));
+        assertInstanceOf(CidrGenerator.class, generatorFor(support, JDBCType.OTHER, null, "cidr"));
+        assertInstanceOf(MacAddressGenerator.class, generatorFor(support, JDBCType.OTHER, null, "macaddr"));
+        assertInstanceOf(MacAddressGenerator.class, generatorFor(support, JDBCType.OTHER, null, "macaddr8"));
+        assertInstanceOf(IntervalGenerator.class, generatorFor(support, JDBCType.OTHER, null, "interval"));
+    }
+
+    @Test
+    void postgresRejectsUnknownOtherAndArrayTypeNames() {
+        DatabaseSupport support = new PostgresSupport();
+
+        assertThrows(UnsupportedOperationException.class,
+                () -> generatorFor(support, JDBCType.OTHER, null, "geometry"));
+        assertThrows(UnsupportedOperationException.class,
+                () -> generatorFor(support, JDBCType.ARRAY, null, "_point"));
+    }
+
+    @Test
+    void cockroachInheritsPostgresTypeHandling() {
         DatabaseSupport support = new CockroachDBSupport();
 
+        // CockroachDBSupport extends PostgresSupport, so it resolves the same generators
+        assertInstanceOf(BitStringGenerator.class, generatorFor(support, JDBCType.BIT, 1, "bit"));
         assertInstanceOf(StringArrayGenerator.class, generatorFor(support, JDBCType.ARRAY, null, "_text"));
         assertInstanceOf(IntegerArrayGenerator.class, generatorFor(support, JDBCType.ARRAY, null, "_int8"));
         assertInstanceOf(UUIDGenerator.class, generatorFor(support, JDBCType.OTHER, null, "uuid"));
         assertInstanceOf(InetGenerator.class, generatorFor(support, JDBCType.OTHER, null, "inet"));
         assertInstanceOf(JsonbGenerator.class, generatorFor(support, JDBCType.OTHER, null, "jsonb"));
+        assertInstanceOf(IntegerGenerator.class, generatorFor(support, JDBCType.INTEGER, 10, "int4"));
+        assertThrows(UnsupportedOperationException.class,
+                () -> generatorFor(support, JDBCType.OTHER, null, "geometry"));
     }
 
     @Test
-    void cockroachStillProvidesDefaultsAndRejectsUnknownTypeNames() {
-        DatabaseSupport support = new CockroachDBSupport();
+    void mySqlMapsJsonButLeavesTextAsString() {
+        DatabaseSupport support = new MySQLSupport();
 
-        // inherited default still works
-        assertInstanceOf(IntegerGenerator.class, generatorFor(support, JDBCType.INTEGER, 10, "int4"));
-        // unknown ARRAY/OTHER type names are rejected
-        assertThrows(UnsupportedOperationException.class,
-                () -> generatorFor(support, JDBCType.OTHER, null, "geometry"));
+        // JSON reports as LONGVARCHAR with type name "JSON"
+        assertInstanceOf(JsonbGenerator.class, generatorFor(support, JDBCType.LONGVARCHAR, 1073741823, "JSON"));
+        // ordinary text on the same JDBC type stays a string
+        assertInstanceOf(SimpleStringGenerator.class, generatorFor(support, JDBCType.LONGVARCHAR, 65535, "TEXT"));
+        // standard types still behave like the default
+        assertInstanceOf(IntegerGenerator.class, generatorFor(support, JDBCType.INTEGER, 10, "INT"));
     }
 }

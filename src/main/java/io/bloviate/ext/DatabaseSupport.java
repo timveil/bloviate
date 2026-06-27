@@ -65,12 +65,12 @@ public interface DatabaseSupport {
      * {@link MySQLSupport}, and {@code "postgres"} to {@link PostgresSupport}. Anything
      * else (including {@code null}) falls back to {@link DefaultSupport}.
      *
-     * <p><strong>CockroachDB caveat:</strong> CockroachDB is typically reached through the
-     * PostgreSQL JDBC driver, which reports its product name as {@code "PostgreSQL"}. Such
-     * connections therefore resolve to {@link PostgresSupport}, not
-     * {@link CockroachDBSupport}. To use the CockroachDB-specific generators (jsonb, inet,
-     * arrays, bit strings, ...), pass {@code new CockroachDBSupport()} explicitly rather
-     * than relying on auto-selection.
+     * <p><strong>CockroachDB note:</strong> CockroachDB is typically reached through the
+     * PostgreSQL JDBC driver, which reports its product name as {@code "PostgreSQL"}, so such
+     * connections resolve to {@link PostgresSupport}. Because {@link CockroachDBSupport}
+     * extends {@link PostgresSupport} and adds no extra behavior, this resolves the same
+     * type handling (uuid, jsonb, inet, intervals, arrays, bit strings, ...); passing
+     * {@code new CockroachDBSupport()} explicitly is equivalent.
      *
      * @param productName the database product name, may be null
      * @return the matching support, or {@link DefaultSupport} if none matches

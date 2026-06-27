@@ -16,11 +16,24 @@
 
 package io.bloviate.ext;
 
+import io.bloviate.gen.JsonbGenerator;
+import io.bloviate.gen.SimpleStringGenerator;
+
+import java.sql.JDBCType;
+import java.util.Map;
+
 /**
- * MySQL-specific implementation of database support.
- * Provides MySQL-specific data generation and type mapping logic.
- * This class inherits default behavior from AbstractDatabaseSupport
- * and can be extended to handle MySQL-specific data types and constraints.
+ * MySQL-specific {@link DatabaseSupport}.
+ *
+ * <p>MySQL's JDBC driver maps most types onto standard JDBC types that the cross-database
+ * defaults already handle. The notable exception is {@code JSON}, which the driver reports
+ * as {@link JDBCType#LONGVARCHAR} (type name {@code JSON}); a random string would fail the
+ * server's JSON validation, so this support routes {@code JSON} columns to a JSON generator
+ * while leaving ordinary text columns on the default string generator.
+ *
+ * <p>Some MySQL types remain unsupported because they need value-aware or binary generation
+ * that standard JDBC metadata doesn't expose: {@code ENUM}/{@code SET} (must match the
+ * declared member list), {@code GEOMETRY} (well-known binary), and {@code YEAR}.
  *
  * @since 1.0.0
  * @see AbstractDatabaseSupport
@@ -28,5 +41,18 @@ package io.bloviate.ext;
  */
 public class MySQLSupport extends AbstractDatabaseSupport {
 
+    @Override
+    protected void configure(Map<JDBCType, GeneratorFactory> registry) {
 
+        // MySQL JSON columns report as LONGVARCHAR with type name "JSON". Generate valid JSON
+        // for those; everything else on this JDBC type stays an ordinary string.
+        registry.put(JDBCType.LONGVARCHAR, (column, random) -> {
+            if ("json".equalsIgnoreCase(column.typeName())) {
+                return new JsonbGenerator.Builder(random).build();
+            }
+            Integer maxSize = column.maxSize();
+            int size = (maxSize == null || maxSize <= 0) ? 2000 : maxSize;
+            return new SimpleStringGenerator.Builder(random).size(size).build();
+        });
+    }
 }
