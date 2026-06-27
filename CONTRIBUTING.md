@@ -138,4 +138,3 @@ git commit -m "docs: update installation instructions"
 
 - **Issues**: [GitHub Issues](https://github.com/timveil/bloviate/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/timveil/bloviate/discussions)
-- **Email**: tjveil@gmail.com
