@@ -55,6 +55,37 @@ public class DatabaseUtils {
     private static final Logger logger = LoggerFactory.getLogger(DatabaseUtils.class);
 
     /**
+     * Computes a stable, reproducible generation seed for a column.
+     *
+     * <p>The seed combines a caller-supplied base seed (from
+     * {@link io.bloviate.db.DatabaseConfiguration#seed()}) with a deterministic hash of the
+     * column's identity. The identity intentionally uses the {@link JDBCType} <em>name</em>
+     * rather than the enum constant: {@code Enum.hashCode()} is identity-based and therefore
+     * varies between JVM runs, which would make generated data non-reproducible. Every component
+     * used here ({@link String}, {@link Integer}, and the type name) has a hash that is stable
+     * across runs, so the same schema and base seed always yield the same data.
+     *
+     * <p>Because this is a pure function of the column, a foreign-key column seeded from its
+     * associated primary-key column resolves to the same seed the primary key itself uses,
+     * preserving referential fidelity.
+     *
+     * @param column   the column to derive a seed for
+     * @param baseSeed the configured base seed; vary it to produce a different but still
+     *                 reproducible dataset
+     * @return the seed to construct the column's generator with
+     */
+    public static long columnSeed(Column column, long baseSeed) {
+        int identity = Objects.hash(
+                column.name(),
+                column.tableName(),
+                column.schema(),
+                column.catalog(),
+                column.jdbcType() == null ? null : column.jdbcType().getName(),
+                column.ordinalPosition());
+        return baseSeed * 1_000_003L + identity;
+    }
+
+    /**
      * Extracts complete database metadata from a DataSource.
      * 
      * @param dataSource the data source to analyze

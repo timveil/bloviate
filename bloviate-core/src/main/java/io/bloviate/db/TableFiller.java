@@ -81,6 +81,8 @@ public class TableFiller implements Fillable {
 
         TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
 
+        long baseSeed = databaseConfiguration.seed();
+
         for (Column column : filteredColumns) {
 
             long seed;
@@ -97,9 +99,11 @@ public class TableFiller implements Fillable {
                     maxInvocationMap.put(column, primaryTableConfiguration.rowCount());
                 }
 
-                seed = associatedPrimaryKeyColumn.hashCode();
+                // seed the foreign key from its associated primary key so the two line up;
+                // columnSeed is a pure function of the column, so both resolve to the same seed
+                seed = DatabaseUtils.columnSeed(associatedPrimaryKeyColumn, baseSeed);
             } else {
-                seed = column.hashCode();
+                seed = DatabaseUtils.columnSeed(column, baseSeed);
             }
 
             // resolve the generator by precedence; the generator is always seeded by the engine

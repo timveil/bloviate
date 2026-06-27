@@ -135,14 +135,14 @@ jobs:
               [
                 "@semantic-release/exec",
                 {
-                  "prepareCmd": "mvn versions:set -DnewVersion=${nextRelease.version} -DgenerateBackupPoms=false",
+                  "prepareCmd": "mvn versions:set -DnewVersion=${nextRelease.version} -DgenerateBackupPoms=false -DprocessAllModules=true",
                   "publishCmd": "mvn clean deploy -DskipTests=true"
                 }
               ],
               [
                 "@semantic-release/git",
                 {
-                  "assets": ["pom.xml", "CHANGELOG.md"],
+                  "assets": ["pom.xml", "**/pom.xml", "CHANGELOG.md"],
                   "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
                 }
               ],
