@@ -99,25 +99,87 @@ scale them up for a real large-dataset measurement.
 
 ## Recording a baseline
 
-Run on a quiet machine and record the environment alongside the numbers — JMH scores and
-fill throughput are only comparable within the same hardware/JDK/DB image.
+Run on a quiet machine and record the environment alongside the numbers — JMH scores and fill
+throughput are only comparable within the same hardware/JDK/DB image. Capture the machine/CPU, the
+JDK, and the Docker/DB image next to the figures, exactly as the recorded results below do.
 
-- Machine / CPU:
-- JDK:
-- Docker / DB image:
+## Recorded results — issue #447 optimizations
+
+Measured before/after the first round of [issue #447](https://github.com/timveil/bloviate/issues/447)
+optimizations: the **hot-loop micro-opt** (positional generator dispatch in `TableFiller`) and the
+**parallel table fill** (`DataSource` + `threads`, one connection per worker, commit per table).
+
+**Environment**
+
+- Machine / CPU: Apple M5 (Mac17,3), 10 cores
+- JDK: Temurin 25.0.3+9 LTS
+- Docker / DB image: OrbStack (Docker 29.4.0); `postgres:18-alpine`, `mysql:9` (Testcontainers default), `cockroachdb`
+- Harness: `bench.rows=100000` (wide), `bench.warmup=1`, `bench.iterations=3`, `bench.batch=1000`; TPC-C at default cardinalities (~62k rows). Reported figure is **best of 3**.
 
 ### CPU (JMH, ops/us — higher is better)
 
+The micro-opt replaces the per-cell `HashMap.get(column)` (hashing the value-based `Column` record)
+with a positional array read. `dispatchRowIndexed` is the optimized variant of `dispatchRow` over the
+same 16-column row, so the delta isolates the lookup removed (the rest is the unavoidable
+`generate()` work, which dominates a row containing a 256-char varchar and a jsonb payload).
+
 | Benchmark | Score | Notes |
 |-----------|------:|-------|
-| `RowDispatchBenchmark.dispatchRow` | | 16-column row |
-| `GeneratorBenchmark.generate` (per `genCase`) | | |
+| `RowDispatchBenchmark.dispatchRow` (HashMap) | 0.281 | 16-column row, per-cell map lookup |
+| `RowDispatchBenchmark.dispatchRowIndexed` (array) | **0.328** | same row, positional dispatch — **+16.7%** |
 
-### End-to-end (rows/sec — higher is better)
+(`GeneratorBenchmark` measures raw per-type generation and is unaffected by the dispatch change;
+slowest types in the baseline run: `VARCHAR_LONG` 0.59, `JSONB` 2.2, `UUID` 8.7, `NUMERIC` 8.0 ops/us.)
 
-| Scenario | Rows | rows/sec (best) | Notes |
-|----------|-----:|----------------:|-------|
-| `postgres/tpcc` | | | |
-| `postgres/wide` | | | |
-| `mysql/tpcc` | | | |
-| `cockroach/tpcc` | | | |
+### End-to-end (rows/sec, best of 3 — higher is better)
+
+| Scenario | Rows | Baseline | Sequential (after) | Parallel (8 threads) | Parallel speedup |
+|----------|-----:|---------:|-------------------:|---------------------:|-----------------:|
+| `postgres/wide` | 1,000,000 | 126,984 | 122,923 | **414,126** | **3.26×** |
+| `postgres/tpcc` | 61,983 | 75,520 | 77,535 | 83,694 | 1.11× |
+| `mysql/tpcc` | 61,983 | 40,043 | 54,879 | 57,973 | 1.45× |
+| `cockroach/tpcc` | 61,983 | 12,403 | 12,516 | 13,304 | 1.07× |
+
+The headline `wide` case (1M rows across ten independent tables) at ~3× throughput — the FK-free
+schema the parallel fill targets:
+
+```mermaid
+xychart-beta
+    title "postgres/wide throughput — 1,000,000 rows (higher is better)"
+    x-axis ["Baseline", "Sequential (micro-opt)", "Parallel (8 workers)"]
+    y-axis "rows / sec" 0 --> 450000
+    bar [126984, 122923, 414126]
+```
+
+Speedup of the 8-worker parallel fill over the single-connection baseline, per scenario. `wide`
+parallelizes fully; TPC-C's deep, narrow foreign-key graph leaves little to run concurrently:
+
+```mermaid
+xychart-beta
+    title "Parallel fill speedup vs baseline (x, higher is better)"
+    x-axis ["postgres/wide", "mysql/tpcc", "postgres/tpcc", "cockroach/tpcc"]
+    y-axis "speedup (x)" 0 --> 3.5
+    bar [3.26, 1.45, 1.11, 1.07]
+```
+
+**Reading the numbers**
+
+- **`wide` is the headline.** Ten independent, FK-free tables sit in a single topological level, so
+  eight workers fill them concurrently: **3.26×** over the single-connection baseline. This is the
+  case the parallel optimization targets.
+- **TPC-C gains are modest by design.** Its foreign keys form a deep, narrow dependency graph — most
+  levels hold only one or two independent tables — so there is little to parallelize within a level;
+  the barrier between levels caps the win. The improvement that remains comes mostly from committing
+  once per table instead of per batch.
+- **CockroachDB is bound by Raft/commit latency**, not client CPU, so neither change moves it much.
+- **The sequential micro-opt is within end-to-end noise.** A real fill is dominated by value
+  generation and JDBC round-trips, not the per-cell lookup, so the `dispatchRowIndexed` win shows up
+  clearly in JMH but not in `wide`'s sequential column (the `mysql/tpcc` sequential jump is mostly
+  run-to-run variance — its baseline third iteration was an outlier). The optimization is still worth
+  keeping: it is free and removes allocation/lookup from the hottest loop.
+
+**Note on reproducibility:** the default date/time/timestamp generators anchor their range to
+`Instant.now()`, so temporal columns carry wall-clock jitter and are *not* reproducible across runs
+regardless of parallelism. Every other column is purely seed-derived; `PostgresParallelFillTest`
+asserts the parallel fill reproduces the sequential fill byte-for-byte across all non-temporal
+columns of a TPC-C schema.

@@ -469,6 +469,46 @@ new DatabaseFiller.Builder(connection, config).build().fill();
 The seed defaults to `0` when you use the four-argument constructor, so existing code keeps a
 single, stable dataset without changes.
 
+### Parallel Table Fill
+
+For large, wide schemas the fill can run **in parallel**. Construct the filler from a pooled
+`DataSource` instead of a single `Connection` and ask for more than one worker thread:
+
+```java
+import io.bloviate.db.*;
+import io.bloviate.ext.PostgresSupport;
+import javax.sql.DataSource;
+
+DataSource dataSource = /* a pooled DataSource, e.g. HikariCP */;
+
+DatabaseConfiguration config = new DatabaseConfiguration(
+    1000, 100_000, new PostgresSupport(), null, 42L);
+
+new DatabaseFiller.Builder(dataSource, config)
+    .threads(8)   // fill independent tables concurrently
+    .build()
+    .fill();
+```
+
+Bloviate groups tables into topological levels by their foreign keys and fills the independent
+tables within each level concurrently, **one connection per worker**, barriering between levels so a
+child table is never filled before its parent. Each worker fills its table in a single transaction
+(commit once per table). The fill stays **fully reproducible**: a table's data depends only on its
+own seed and row order, never on which tables fill alongside it, so the same config and seed produce
+byte-for-byte the same data as a sequential fill.
+
+How much this helps depends on the schema. A wide schema of independent tables sees a large speedup
+(~3× with 8 workers on a 10-table, 1M-row fixture); a deep, narrow foreign-key chain (each table
+depending on the previous) has little to parallelize. See [BENCHMARKS.md](BENCHMARKS.md) for numbers.
+
+The single-`Connection` constructor is unchanged and remains the default sequential path — `threads`
+only applies to the `DataSource` form.
+
+> **Tip — driver batch rewrite.** Bloviate inserts in JDBC batches, but most drivers only collapse a
+> batch into a single multi-row `INSERT` when you opt in via the JDBC URL: PostgreSQL
+> `reWriteBatchedInserts=true`, MySQL `rewriteBatchedStatements=true`. Enabling it is often the
+> single biggest fill speedup, sequential or parallel.
+
 ### Testing Framework Integration
 
 #### JUnit 5 (`bloviate-junit`)
@@ -638,7 +678,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 - [ ] [Additional database support (Oracle, SQL Server)](https://github.com/timveil/bloviate/issues/445)
 - [ ] [Custom data generation plugins](https://github.com/timveil/bloviate/issues/446)
-- [ ] [Performance optimizations for large datasets](https://github.com/timveil/bloviate/issues/447)
+- [ ] [Performance optimizations for large datasets](https://github.com/timveil/bloviate/issues/447) — _in progress: parallel table fill, per-table commit, and hot-loop dispatch landed ([benchmarks](BENCHMARKS.md))_
 - [ ] GUI for configuration management
 - [ ] [Integration with popular testing frameworks](https://github.com/timveil/bloviate/issues/448)
 

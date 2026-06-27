@@ -29,6 +29,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URLEncoder;
@@ -36,9 +37,15 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Main entry point for filling database tables with generated data.
@@ -73,8 +80,16 @@ public class DatabaseFiller implements Fillable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    /** A caller-managed connection for the sequential path; null when filling from a {@link DataSource}. */
     private final Connection connection;
+
+    /** A pooled data source for the parallel / self-managed path; null when a {@link Connection} was supplied. */
+    private final DataSource dataSource;
+
     private final DatabaseConfiguration configuration;
+
+    /** Worker threads for parallel table fill; {@code 1} (the default) keeps the fill sequential. */
+    private final int threads;
 
     /**
      * Fills all tables in the database with generated data.
@@ -97,7 +112,10 @@ public class DatabaseFiller implements Fillable {
 
         StopWatch metadataWatch = new StopWatch("fetched database metadata in");
         metadataWatch.start();
-        Database database = DatabaseUtils.getMetadata(connection);
+        // a Connection was supplied for the sequential path; otherwise borrow one from the pool
+        Database database = connection != null
+                ? DatabaseUtils.getMetadata(connection)
+                : DatabaseUtils.getMetadata(dataSource);
         metadataWatch.stop();
 
         logger.info(metadataWatch.toString());
@@ -109,18 +127,184 @@ public class DatabaseFiller implements Fillable {
 
         visualizeGraph(reversedGraph, database.catalog());
 
-        TopologicalOrderIterator<Table, DefaultEdge> iterator = new TopologicalOrderIterator<>(reversedGraph);
-
-        while (iterator.hasNext()) {
-            new TableFiller.Builder(connection, database, configuration)
-                    .table(iterator.next())
-                    .build().fill();
+        if (connection != null) {
+            // back-compat path: fill sequentially on the caller's single connection (unchanged)
+            fillSequential(connection, database, reversedGraph);
+        } else if (threads > 1) {
+            // parallel path: fill independent tables within each topological level concurrently
+            fillParallel(database, reversedGraph);
+        } else {
+            // DataSource supplied but no parallelism requested: borrow one connection, fill in order
+            try (Connection conn = dataSource.getConnection()) {
+                fillSequential(conn, database, reversedGraph);
+            }
         }
 
         databaseWatch.stop();
 
         logger.info(databaseWatch.toString());
 
+    }
+
+    /**
+     * Fills every table on a single connection in dependency order — the original, default
+     * behavior. Parent (referenced) tables are filled before the tables that depend on them.
+     *
+     * @param conn         the connection to fill on
+     * @param database     the database metadata
+     * @param reversedGraph the reversed dependency graph (parents before children)
+     * @throws SQLException if any table fill fails
+     */
+    private void fillSequential(Connection conn, Database database, Graph<Table, DefaultEdge> reversedGraph) throws SQLException {
+        TopologicalOrderIterator<Table, DefaultEdge> iterator = new TopologicalOrderIterator<>(reversedGraph);
+        while (iterator.hasNext()) {
+            new TableFiller.Builder(conn, database, configuration)
+                    .table(iterator.next())
+                    .build().fill();
+        }
+    }
+
+    /**
+     * Fills tables concurrently, one topological level at a time. All tables within a level are
+     * independent (none references another in the same level), so they can fill in parallel; the
+     * walk barriers between levels so a child table is never filled before its parent is committed.
+     *
+     * <p>Each worker borrows its own {@link Connection} from the {@link DataSource}, fills a single
+     * table inside an explicit transaction (autocommit off, one commit per table), and returns the
+     * connection to the pool. JDBC connections are not thread-safe, so they are never shared.
+     *
+     * <p>Reproducibility is preserved: a table's generated data depends only on its own per-column
+     * seeds and its own sequential row counter, never on the order in which tables are filled, so a
+     * parallel fill yields byte-for-byte the same data as the sequential fill for the same seed.
+     *
+     * @param database     the database metadata
+     * @param reversedGraph the reversed dependency graph (parents before children)
+     * @throws SQLException if any table fill fails or the run is interrupted
+     */
+    private void fillParallel(Database database, Graph<Table, DefaultEdge> reversedGraph) throws SQLException {
+        List<List<Table>> levels = fillLevels(reversedGraph);
+
+        // never spin up more workers than the widest level can use
+        int widest = levels.stream().mapToInt(List::size).max().orElse(1);
+        int poolSize = Math.max(1, Math.min(threads, widest));
+
+        logger.info("filling {} tables across {} topological level(s) with {} worker thread(s)",
+                reversedGraph.vertexSet().size(), levels.size(), poolSize);
+
+        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
+        try {
+            for (List<Table> level : levels) {
+                List<Callable<Void>> tasks = new ArrayList<>(level.size());
+                for (Table table : level) {
+                    tasks.add(() -> {
+                        fillTableInOwnTransaction(database, table);
+                        return null;
+                    });
+                }
+
+                // barrier: every table in this level must finish before the next level may start
+                for (Future<Void> future : executor.invokeAll(tasks)) {
+                    awaitFuture(future);
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SQLException("parallel table fill was interrupted", e);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    /** Unwraps a worker future, re-throwing the underlying {@link SQLException} or runtime failure. */
+    private void awaitFuture(Future<Void> future) throws SQLException {
+        try {
+            future.get();
+        } catch (ExecutionException e) {
+            switch (e.getCause()) {
+                case SQLException sqlException -> throw sqlException;
+                case RuntimeException runtimeException -> throw runtimeException;
+                case null, default -> throw new SQLException("parallel table fill failed", e.getCause());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SQLException("parallel table fill was interrupted", e);
+        }
+    }
+
+    /**
+     * Fills one table on its own pooled connection inside a single transaction: autocommit is
+     * disabled and the work is committed once when the table is complete (rolled back on failure).
+     * Committing once per table — rather than once per JDBC batch — also cuts commit overhead.
+     */
+    private void fillTableInOwnTransaction(Database database, Table table) throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                new TableFiller.Builder(conn, database, configuration)
+                        .table(table)
+                        .build().fill();
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
+        }
+    }
+
+    /**
+     * Partitions the dependency graph into topological levels via Kahn's algorithm: level 0 holds
+     * every table that references nothing, level 1 the tables whose parents are all in level 0, and
+     * so on. Tables in the same level are mutually independent and therefore safe to fill in
+     * parallel. Iteration order of the graph's vertex set is preserved, so levels are deterministic.
+     *
+     * <p>If the graph contains a cycle (e.g. mutually referencing tables), the tables in the cycle
+     * never reach in-degree zero and are omitted from the levels — matching the sequential
+     * {@link TopologicalOrderIterator}, which likewise cannot order a cycle.
+     *
+     * @param graph the reversed dependency graph (an edge points from a parent to a child)
+     * @return the tables grouped into dependency-respecting levels, parents before children
+     */
+    List<List<Table>> fillLevels(Graph<Table, DefaultEdge> graph) {
+        Map<Table, Integer> inDegree = new HashMap<>();
+        for (Table table : graph.vertexSet()) {
+            inDegree.put(table, graph.inDegreeOf(table));
+        }
+
+        List<Table> current = new ArrayList<>();
+        for (Table table : graph.vertexSet()) {
+            if (inDegree.get(table) == 0) {
+                current.add(table);
+            }
+        }
+
+        List<List<Table>> levels = new ArrayList<>();
+        int ordered = 0;
+        while (!current.isEmpty()) {
+            levels.add(current);
+            List<Table> next = new ArrayList<>();
+            for (Table table : current) {
+                ordered++;
+                for (DefaultEdge edge : graph.outgoingEdgesOf(table)) {
+                    Table child = graph.getEdgeTarget(edge);
+                    int remaining = inDegree.get(child) - 1;
+                    inDegree.put(child, remaining);
+                    if (remaining == 0) {
+                        next.add(child);
+                    }
+                }
+            }
+            current = next;
+        }
+
+        if (ordered != graph.vertexSet().size()) {
+            logger.warn("dependency graph contains a cycle; {} of {} table(s) could not be ordered and will not be filled",
+                    graph.vertexSet().size() - ordered, graph.vertexSet().size());
+        }
+
+        return levels;
     }
 
     /**
@@ -219,23 +403,61 @@ public class DatabaseFiller implements Fillable {
     public static class Builder {
 
         private final Connection connection;
+        private final DataSource dataSource;
         private final DatabaseConfiguration configuration;
 
+        private int threads = 1;
+
         /**
-         * Creates a new builder with the required dependencies.
-         * 
+         * Creates a builder that fills sequentially on a single caller-managed connection — the
+         * default, back-compatible mode. {@link #threads(int)} has no effect in this mode (a single
+         * connection cannot be shared across threads); use {@link #Builder(DataSource, DatabaseConfiguration)}
+         * for parallel fills.
+         *
          * @param connection the database connection to use for filling operations
          * @param configuration the configuration specifying batch sizes, record counts, and table settings
-         * @throws NullPointerException if either parameter is null
          */
         public Builder(Connection connection, DatabaseConfiguration configuration) {
             this.connection = connection;
+            this.dataSource = null;
             this.configuration = configuration;
         }
 
         /**
+         * Creates a builder that fills from a pooled {@link DataSource}. With the default of one
+         * thread the fill is sequential (on a single borrowed connection); call {@link #threads(int)}
+         * with a value greater than one to fill independent tables concurrently, one connection per
+         * worker.
+         *
+         * @param dataSource the data source to borrow worker connections from
+         * @param configuration the configuration specifying batch sizes, record counts, and table settings
+         */
+        public Builder(DataSource dataSource, DatabaseConfiguration configuration) {
+            this.connection = null;
+            this.dataSource = dataSource;
+            this.configuration = configuration;
+        }
+
+        /**
+         * Sets the number of worker threads used to fill independent tables concurrently. Only
+         * effective when the builder was created with a {@link DataSource}; the default of {@code 1}
+         * keeps the fill sequential.
+         *
+         * @param threads the worker-thread count; must be at least {@code 1}
+         * @return this builder
+         * @throws IllegalArgumentException if {@code threads} is less than {@code 1}
+         */
+        public Builder threads(int threads) {
+            if (threads < 1) {
+                throw new IllegalArgumentException("threads must be >= 1");
+            }
+            this.threads = threads;
+            return this;
+        }
+
+        /**
          * Builds a new DatabaseFiller instance with the configured parameters.
-         * 
+         *
          * @return a new DatabaseFiller ready to fill the database
          */
         public DatabaseFiller build() {
@@ -250,6 +472,12 @@ public class DatabaseFiller implements Fillable {
      */
     private DatabaseFiller(Builder builder) {
         this.connection = builder.connection;
+        this.dataSource = builder.dataSource;
         this.configuration = builder.configuration;
+        this.threads = builder.threads;
+
+        if (connection != null && threads > 1) {
+            logger.warn("threads({}) is ignored when filling on a single Connection; use the DataSource constructor for parallel fills", threads);
+        }
     }
 }
