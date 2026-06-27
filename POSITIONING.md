@@ -1,8 +1,8 @@
-# Bloviate — Positioning & Competitive Landscape
+# Bloviate — Where it fits & how it compares
 
-Where Bloviate sits in the test-data-generation landscape, who its real rivals are, and the lane it
-defensibly owns. If you just want to *use* it, start with the [README](README.md); this document is
-for evaluators deciding **whether Bloviate fits their problem**.
+Where Bloviate sits in the test-data-generation landscape, who its real peers are, and when it's the
+right (or wrong) tool for the job. If you just want to *use* it, start with the [README](README.md);
+this document is for evaluators deciding **whether Bloviate fits their problem**.
 
 > **A note on freshness.** The competitive facts below (licenses, maintenance status, ownership) were
 > verified mid-2026 and are cited. This space moves fast — treat the citations as the source of truth
@@ -54,7 +54,7 @@ license/ownership constraints (SDV is **BSL/BUSL-1.1**, source-available rather 
 Gretel was **acquired by NVIDIA in March 2025**; MOSTLY AI now operates as "MOSTLY AI powered by
 Syntho").
 
-## Where Bloviate wins
+## Strengths
 
 1. **An intersection few tools occupy.** Open-source **and** JVM/JDBC-native **and** automatic schema
    introspection **and** automatic FK **topological** fill ordering **and** RNG-deterministic **and**
@@ -75,7 +75,7 @@ Syntho").
 6. **Maintained and multi-DB** — PostgreSQL, MySQL, and CockroachDB, actively released — while synth
    is dormant and Benerator CE is frozen.
 
-## Where Bloviate loses
+## Limitations
 
 Stated plainly, so the boundary is clear:
 
@@ -88,17 +88,28 @@ Stated plainly, so the boundary is clear:
 4. **JVM-only reach** — invisible to the Python-centric data-science world.
 5. **No GUI / low-code surface** — it's a library and a CI dependency.
 
-## Recommended positioning
+## When to use Bloviate
 
-Don't chase the ML/privacy platforms — different problem, different buyer. Bloviate's defensible lane:
+In one line:
 
 > **The maintained, open-source, JDBC-native, FK-aware, deterministic test-data filler for JVM
 > developers' CI pipelines.**
 
-Its true rivals each lose to it on at least one decisive axis today: Benerator (frozen, manual FK),
-synth (dormant), Snowfakery (Python, recipe-authored, no schema introspection), DBeaver Mock Data
-(paid, GUI-bound). That intersection — not statistical realism or data masking — is where Bloviate
-should compete and win.
+**Reach for Bloviate when** you need to populate a real relational schema with valid, reproducible
+test data — for CI, integration tests, demos, or local development — without copying production and
+without hand-writing the relationships. Its automatic FK ordering, deterministic seeding, and
+JUnit/Testcontainers integration are built for exactly that.
+
+**Look elsewhere when** your problem is a different one:
+
+- you need data that statistically matches real distributions/correlations (ML training, analytics) — an ML synthesizer (SDV, Gretel, MOSTLY AI);
+- you need to de-identify or subset *existing* production data — a masking/subsetting tool (Tonic, Delphix, Neosync, Jailer);
+- you only need a stream of fake *values* and will wire up the schema and inserts yourself — a value library (Datafaker, faker.js).
+
+Among the tools that *do* overlap Bloviate's job, each differs on an axis that may or may not matter
+for your use case: Benerator (FK relationships are declared by hand; its community edition is frozen),
+synth (dormant), Snowfakery (Python, recipe-authored, no schema introspection), and DBeaver Mock Data
+(paid edition, GUI-only).
 
 ## Sources
 
