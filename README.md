@@ -71,6 +71,7 @@ See **[POSITIONING.md](POSITIONING.md)** for the full competitive landscape, wit
   - [Per-Column Generation Overrides](#per-column-generation-overrides)
   - [Value Distributions](#value-distributions)
   - [Custom Generator Registry](#custom-generator-registry)
+  - [Semantic / Realistic Data (`bloviate-datafaker`)](#semantic--realistic-data-bloviate-datafaker)
   - [Composite Keys & Foreign Key Fidelity](#composite-keys--foreign-key-fidelity)
   - [Variable Parent/Child Cardinality](#variable-parentchild-cardinality)
   - [TPC-C Benchmark Data](#tpc-c-benchmark-data)
@@ -106,6 +107,7 @@ version of JUnit / Testcontainers:
 | `bloviate-core` | The data-generation engine (`DatabaseFiller`, generators, flat files) |
 | `bloviate-junit` | JUnit Jupiter: fill a test database declaratively with `@FillDatabase` |
 | `bloviate-testcontainers` | Fill a started `JdbcDatabaseContainer` in one call |
+| `bloviate-datafaker` | Optional realistic values by column name (email, name, address …) via Datafaker |
 
 ```xml
 <!-- test-scoped: JUnit 5 integration -->
@@ -405,6 +407,42 @@ public class MyGenerators implements GeneratorPlugin {
     }
 }
 ```
+
+### Semantic / Realistic Data (`bloviate-datafaker`)
+
+By default an `email VARCHAR` gets random text, not a plausible email. The optional
+**`bloviate-datafaker`** module maps common column **names** (`email`, `first_name`, `phone`, `city`,
+`zip`, …) to realistic [Datafaker](https://www.datafaker.net/) values — keeping the core
+dependency-free (Datafaker only lands if you add this module).
+
+It's **opt-in twice over**: add the module, and build a `GeneratorRegistry` that includes its plugin —
+either by `discover()` (it registers via `ServiceLoader`) or explicitly:
+
+```java
+import io.bloviate.datafaker.DatafakerGeneratorPlugin;
+import io.bloviate.ext.GeneratorRegistry;
+
+GeneratorRegistry registry = new GeneratorRegistry.Builder()
+    .discover()                                  // picks up DatafakerGeneratorPlugin from the classpath
+    .build();
+
+DatabaseConfiguration config = new DatabaseConfiguration(
+    128, 100, new PostgresSupport(), null, registry);   // registry sits between per-column overrides and type defaults
+```
+
+So an `email` column now yields `jane.doe@example.com`, `first_name` a real first name, `phone` a
+`(555) 555-01xx` number, and so on. Properties:
+
+- **Reproducible** — realistic values are seeded from the engine's column seed, so the same seed gives
+  the same data; the locale is fixed (default `Locale.ENGLISH`) so output is identical across machines.
+- **Safe by default** — reserved `example.*` email domains and `555-01xx` phone numbers (never real
+  identifiers); values are truncated to the column's length.
+- **Unmatched columns are untouched** — anything the dictionary doesn't recognize falls through to the
+  normal type-based generator. Don't route `UNIQUE`/primary-key columns through it — realistic
+  dictionaries repeat at scale, so keep Bloviate's sequence/seeded generators for keys.
+
+> Cross-column *consistency* (a `city`/`state`/`zip` that agree, an `email` derived from the row's name)
+> is a separate, in-progress feature — see [#473](https://github.com/timveil/bloviate/issues/473).
 
 ### Composite Keys & Foreign Key Fidelity
 
