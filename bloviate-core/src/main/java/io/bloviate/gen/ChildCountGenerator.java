@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>The produced values do not depend on the random source; counter state is held by
  * the generator instance and advances on every {@link #generate()}.
  */
-public class ChildCountGenerator extends AbstractDataGenerator<Integer> {
+public class ChildCountGenerator extends AbstractDataGenerator<Integer> implements IndexedDataGenerator {
 
     private final ChildCardinality cardinality;
     private final AtomicLong counter = new AtomicLong(0);
@@ -42,6 +42,20 @@ public class ChildCountGenerator extends AbstractDataGenerator<Integer> {
     @Override
     public Integer generate() {
         return cardinality.count(counter.getAndIncrement());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The value is {@code cardinality.count(rowIndex)}, a pure function of the row index, so
+     * seeking is O(1): the counter is set to {@code rowIndex}.
+     */
+    @Override
+    public void seek(long rowIndex) {
+        if (rowIndex < 0) {
+            throw new IllegalArgumentException("rowIndex must be non-negative: " + rowIndex);
+        }
+        counter.set(rowIndex);
     }
 
     @Override

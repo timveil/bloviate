@@ -17,6 +17,7 @@
 package io.bloviate.bench;
 
 import io.bloviate.db.DatabaseConfiguration;
+import io.bloviate.db.TableConfiguration;
 import io.bloviate.ext.PostgresSupport;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * End-to-end fill throughput on PostgreSQL: a realistic TPC-C schema and a deliberately wide,
@@ -72,6 +74,26 @@ class PostgresFillBenchmark extends AbstractFillBenchmark {
         try (PostgreSQLContainer<?> database = container("create_wide.postgres.sql")) {
             database.start();
             runBenchmark("postgres/wide", database, configuration);
+        }
+    }
+
+    /**
+     * Single dominant table: between-table parallelism cannot help (one table, one level), so only
+     * intra-table partitioning (issue #466) speeds it up. Compare {@code -Dbench.threads=1} (baseline,
+     * partitions ignored on the sequential path) against {@code -Dbench.threads=N} (the one table is
+     * split into {@code bench.partitions} ranges, default {@code N}). Reproducibility is per
+     * configuration: the partitioned non-key values differ from the sequential ones by design.
+     */
+    @Test
+    void singleTable() throws SQLException {
+        int partitions = Integer.getInteger("bench.partitions", Math.max(2, THREADS));
+        Set<TableConfiguration> tables = Set.of(new TableConfiguration("big_t", ROWS, partitions));
+        DatabaseConfiguration configuration = new DatabaseConfiguration(
+                BATCH_SIZE, ROWS, new PostgresSupport(), tables, SEED);
+
+        try (PostgreSQLContainer<?> database = container("create_single.postgres.sql")) {
+            database.start();
+            runBenchmark("postgres/single", database, configuration);
         }
     }
 }

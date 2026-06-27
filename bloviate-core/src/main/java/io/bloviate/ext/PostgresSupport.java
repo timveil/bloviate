@@ -68,6 +68,11 @@ import java.util.Map;
 public class PostgresSupport extends AbstractDatabaseSupport {
 
     @Override
+    public String batchRewriteUrlParameter() {
+        return "reWriteBatchedInserts";
+    }
+
+    @Override
     protected void configure(Map<JDBCType, GeneratorFactory> registry) {
 
         // PostgreSQL reports both bit/bit(n) and boolean as JDBCType.BIT, distinguished by

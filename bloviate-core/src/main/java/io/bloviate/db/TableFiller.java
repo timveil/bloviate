@@ -19,7 +19,9 @@ package io.bloviate.db;
 import io.bloviate.ext.DatabaseSupport;
 import io.bloviate.ext.GeneratorRegistry;
 import io.bloviate.gen.DataGenerator;
+import io.bloviate.gen.IndexedDataGenerator;
 import io.bloviate.util.DatabaseUtils;
+import io.bloviate.util.Mixers;
 import io.bloviate.util.RandomGenerators;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
@@ -48,8 +50,16 @@ public class TableFiller implements Fillable {
     private final DatabaseConfiguration databaseConfiguration;
     private final Table table;
 
+    /** How this filler commits; resolved from the builder override or {@link DatabaseConfiguration}. */
+    private final CommitStrategy commitStrategy;
+
+    /** True when this filler handles a sub-range (one partition) of the table rather than all rows. */
+    private final boolean partitioned;
+    private final long rangeStartInclusive;
+    private final long rangeEndExclusive;
+
     /**
-     * Constructs a new TableFiller.
+     * Constructs a new TableFiller using the configuration's {@link CommitStrategy}.
      *
      * @param connection the database connection to use for filling the table
      * @param database the database metadata containing table relationships
@@ -57,10 +67,27 @@ public class TableFiller implements Fillable {
      * @param table the table to be filled with data
      */
     public TableFiller(Connection connection, Database database, DatabaseConfiguration databaseConfiguration, Table table) {
+        this(connection, database, databaseConfiguration, table, databaseConfiguration.commitStrategy());
+    }
+
+    /**
+     * Constructs a new TableFiller with an explicit {@link CommitStrategy} override.
+     *
+     * @param connection the database connection to use for filling the table
+     * @param database the database metadata containing table relationships
+     * @param databaseConfiguration the configuration settings for the fill operation
+     * @param table the table to be filled with data
+     * @param commitStrategy the commit strategy to use; falls back to the configuration's when null
+     */
+    public TableFiller(Connection connection, Database database, DatabaseConfiguration databaseConfiguration, Table table, CommitStrategy commitStrategy) {
         this.connection = connection;
         this.database = database;
         this.databaseConfiguration = databaseConfiguration;
         this.table = table;
+        this.commitStrategy = commitStrategy != null ? commitStrategy : databaseConfiguration.commitStrategy();
+        this.partitioned = false;
+        this.rangeStartInclusive = 0;
+        this.rangeEndExclusive = 0;
     }
 
     @Override
@@ -138,30 +165,58 @@ public class TableFiller implements Fillable {
 
         int batchSize = databaseConfiguration.batchSize();
 
-        long rowCount = databaseConfiguration.defaultRowCount();
+        long totalRowCount = databaseConfiguration.defaultRowCount();
         if (tableConfiguration != null) {
-            rowCount = tableConfiguration.rowCount();
+            totalRowCount = tableConfiguration.rowCount();
         }
 
-        logger.info("filling table [{}] with [{}] rows", table.name(), rowCount);
+        // when a sub-range is configured this filler handles one partition of the table; otherwise
+        // it fills the whole table on the original, byte-for-byte-unchanged path
+        long startRow = partitioned ? rangeStartInclusive : 0;
+        long endRow = partitioned ? Math.min(rangeEndExclusive, totalRowCount) : totalRowCount;
+
+        if (partitioned) {
+            logger.info("filling table [{}] rows [{}, {}) of [{}]", table.name(), startRow, endRow, totalRowCount);
+        } else {
+            logger.info("filling table [{}] with [{}] rows", table.name(), totalRowCount);
+        }
 
         StopWatch tableWatch = new StopWatch(String.format("filled table [%s] in", table.name()));
         tableWatch.start();
 
+        // For anything other than CONNECTION_DEFAULT the engine owns the transaction: autocommit off
+        // for the fill, commit at the configured cadence, roll back on error, and restore the prior
+        // autocommit in the finally. CONNECTION_DEFAULT leaves the connection exactly as the caller
+        // (or pool) configured it — the original, back-compatible behavior.
+        boolean manageTransaction = commitStrategy.managesTransaction();
+        boolean previousAutoCommit = manageTransaction && connection.getAutoCommit();
+        if (manageTransaction) {
+            connection.setAutoCommit(false);
+        }
+
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
-            int rowCounter = 0;
-            for (long i = 0; i < rowCount; i++) {
+            if (partitioned) {
+                // position every generator at the partition's first absolute row so its values match
+                // the sequential fill: keys/foreign keys stay byte-identical, while non-key random
+                // columns are reseeded per partition (deterministic for the chosen partition count)
+                seekGeneratorsTo(generators, reseedSeeds, maxInvocations, startRow);
+            }
+
+            int batchesSinceCommit = 0;
+            long produced = 0;
+            for (long i = startRow; i < endRow; i++) {
 
                 for (int col = 0; col < columnCount; col++) {
 
                     DataGenerator<?> dataGenerator = generators[col];
 
                     long maxInvocation = maxInvocations[col];
-                    if (maxInvocation > 0 && rowCounter != 0 && rowCounter % maxInvocation == 0) {
+                    if (maxInvocation > 0 && i != 0 && i % maxInvocation == 0) {
                         // foreign-key generator has exhausted the parent key space; reseed its random
                         // source so it replays the same parent keys and never references a non-existent
-                        // parent (generator counter/sequence state is preserved)
+                        // parent (positional generators ignore the unused RNG, so this is a no-op for
+                        // them; the index drives their wraparound by formula)
                         dataGenerator.reseed(reseedSeeds[col]);
                     }
 
@@ -170,18 +225,69 @@ public class TableFiller implements Fillable {
 
                 ps.addBatch();
 
-                if (++rowCounter % batchSize == 0) {
+                if (++produced % batchSize == 0) {
                     ps.executeBatch();
+                    if (commitStrategy.mode() == CommitStrategy.Mode.EVERY_N_BATCHES
+                            && ++batchesSinceCommit % commitStrategy.batches() == 0) {
+                        connection.commit();
+                    }
                 }
             }
 
             ps.executeBatch();
+
+            if (manageTransaction) {
+                // commit the final partial batch (and any whole batches not yet committed under EVERY_N_BATCHES)
+                connection.commit();
+            }
+        } catch (SQLException e) {
+            if (manageTransaction) {
+                connection.rollback();
+            }
+            throw e;
+        } finally {
+            if (manageTransaction) {
+                connection.setAutoCommit(previousAutoCommit);
+            }
         }
 
         tableWatch.stop();
 
         logger.info(tableWatch.toString());
 
+    }
+
+    /**
+     * Positions every column generator so the next value produced is the one for absolute row
+     * {@code startRow}, using a three-way policy that keeps a partitioned fill consistent with a
+     * sequential one:
+     * <ul>
+     *   <li><b>Positional generators</b> ({@link IndexedDataGenerator} — keys, sequences,
+     *       permutations, prefixes) seek directly to the absolute index, so they are byte-identical
+     *       to the sequential fill regardless of partition count.</li>
+     *   <li><b>Foreign-key random-replay columns</b> ({@code maxInvocations[col] > 0}) reseed and
+     *       advance {@code startRow % maxInvocation} draws into the parent key cycle, so the partition
+     *       continues the exact parent-key sequence and never references a missing parent.</li>
+     *   <li><b>Plain non-key random columns</b> are reseeded from a partition-derived seed; their
+     *       values are deterministic for the chosen partition count but (by design) need not match a
+     *       different partitioning, as they carry no cross-row contract.</li>
+     * </ul>
+     */
+    private void seekGeneratorsTo(DataGenerator<?>[] generators, long[] reseedSeeds, long[] maxInvocations, long startRow) {
+        for (int col = 0; col < generators.length; col++) {
+            DataGenerator<?> generator = generators[col];
+            if (generator instanceof IndexedDataGenerator indexed) {
+                indexed.seek(startRow);
+            } else if (maxInvocations[col] > 0) {
+                generator.reseed(reseedSeeds[col]);
+                long advance = startRow % maxInvocations[col];
+                for (long k = 0; k < advance; k++) {
+                    generator.generate();
+                }
+            } else {
+                generator.reseed(Mixers.splitmix64(reseedSeeds[col] + startRow));
+            }
+        }
     }
 
 
@@ -192,6 +298,10 @@ public class TableFiller implements Fillable {
         private final DatabaseConfiguration databaseConfiguration;
 
         private Table table;
+        private CommitStrategy commitStrategy;
+        private boolean partitioned;
+        private long rangeStartInclusive;
+        private long rangeEndExclusive;
 
         public Builder(Connection connection, Database database, DatabaseConfiguration databaseConfiguration) {
             this.connection = connection;
@@ -209,6 +319,39 @@ public class TableFiller implements Fillable {
             return this;
         }
 
+        /**
+         * Overrides the {@link CommitStrategy} for this table fill. When unset (or null), the
+         * configuration's strategy is used.
+         *
+         * @param commitStrategy the commit strategy to use, or null for the configuration default
+         * @return this builder
+         */
+        public Builder commitStrategy(CommitStrategy commitStrategy) {
+            this.commitStrategy = commitStrategy;
+            return this;
+        }
+
+        /**
+         * Restricts this filler to a contiguous sub-range of the table's rows — one partition of an
+         * intra-table parallel fill. Generators are positioned to {@code startInclusive} so the
+         * produced values match the sequential fill for the corresponding rows (see
+         * {@link TableFiller#seekGeneratorsTo}). When unset, the whole table is filled.
+         *
+         * @param startInclusive the first absolute (0-based) row to fill, inclusive
+         * @param endExclusive the row to stop at, exclusive
+         * @return this builder
+         * @throws IllegalArgumentException if the range is negative or empty/inverted
+         */
+        public Builder rowRange(long startInclusive, long endExclusive) {
+            if (startInclusive < 0 || endExclusive < startInclusive) {
+                throw new IllegalArgumentException("invalid row range [" + startInclusive + ", " + endExclusive + ")");
+            }
+            this.rangeStartInclusive = startInclusive;
+            this.rangeEndExclusive = endExclusive;
+            this.partitioned = true;
+            return this;
+        }
+
         public TableFiller build() {
             return new TableFiller(this);
         }
@@ -219,5 +362,9 @@ public class TableFiller implements Fillable {
         this.table = builder.table;
         this.database = builder.database;
         this.databaseConfiguration = builder.databaseConfiguration;
+        this.commitStrategy = builder.commitStrategy != null ? builder.commitStrategy : builder.databaseConfiguration.commitStrategy();
+        this.partitioned = builder.partitioned;
+        this.rangeStartInclusive = builder.rangeStartInclusive;
+        this.rangeEndExclusive = builder.rangeEndExclusive;
     }
 }

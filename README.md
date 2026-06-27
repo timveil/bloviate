@@ -506,10 +506,67 @@ depending on the previous) has little to parallelize. See [BENCHMARKS.md](BENCHM
 The single-`Connection` constructor is unchanged and remains the default sequential path — `threads`
 only applies to the `DataSource` form.
 
+#### Intra-table partitioning
+
+When a **single large table dominates** the fill, between-table parallelism can't help it — it sits
+alone in its topological level. Set `partitions` on that table's `TableConfiguration` to split its
+rows into that many contiguous ranges filled concurrently, one connection per range, on the parallel
+(`DataSource` + `threads`) path:
+
+```java
+// split the one big table into 8 row ranges; ignored on the single-Connection path
+Set<TableConfiguration> tables = Set.of(
+    new TableConfiguration("events", 50_000_000L, 8 /* partitions */));
+
+DatabaseConfiguration config = new DatabaseConfiguration(
+    1000, 0, new PostgresSupport(), tables, 42L);
+
+new DatabaseFiller.Builder(dataSource, config).threads(8).build().fill();
+```
+
+Partitioning is reproducible **for a given configuration, including the partition count**: key
+columns and the columns correlated with them (foreign keys, sequences, permutations) are generated
+positionally, so they are byte-for-byte identical to a sequential fill and **foreign-key validity
+always holds**. Only plain non-key random columns take different (but still deterministic) values
+when you change the partition count — they carry no cross-row contract, so this is by design and
+keeps the default path free of any per-cell cost.
+
+Size the connection pool for the total concurrent demand (`threads`, where a partitioned table counts
+as `partitions` units). One case is unsupported: partitioning a **parent** table whose primary key is
+a plain *random* generator referenced by a foreign key can orphan those references — partition the
+child table instead, or use the positional key generators (as the bundled TPC-C/TPC-H configurations
+do). A custom generator with internal positional state must implement
+`io.bloviate.gen.IndexedDataGenerator` to stay aligned under partitioning.
+
+### Commit Strategy
+
+By default the engine leaves the connection's autocommit untouched (a typical autocommit connection
+commits per `executeBatch()`). Disabling autocommit and committing less often cuts overhead. Pass a
+`CommitStrategy` to `DatabaseConfiguration` for the sequential path:
+
+```java
+import io.bloviate.db.*;
+
+// commit once per table (autocommit off for the fill, restored afterward)
+DatabaseConfiguration perTable = new DatabaseConfiguration(
+    1000, 100_000, new PostgresSupport(), null, 42L, CommitStrategy.perTable());
+
+// or bound the open transaction: commit every 50 JDBC batches
+DatabaseConfiguration everyN = new DatabaseConfiguration(
+    1000, 100_000, new PostgresSupport(), null, 42L, CommitStrategy.everyNBatches(50));
+```
+
+The default, `CommitStrategy.connectionDefault()`, preserves today's behavior (the engine never
+touches autocommit). The parallel path already commits once per table; a configured strategy applies
+there too.
+
 > **Tip — driver batch rewrite.** Bloviate inserts in JDBC batches, but most drivers only collapse a
 > batch into a single multi-row `INSERT` when you opt in via the JDBC URL: PostgreSQL
 > `reWriteBatchedInserts=true`, MySQL `rewriteBatchedStatements=true`. Enabling it is often the
-> single biggest fill speedup, sequential or parallel.
+> single biggest fill speedup, sequential or parallel. Bloviate **logs a warning** at fill time when
+> the parameter is missing, and `io.bloviate.util.JdbcUrls.withBatchRewrite(url, support.batchRewriteUrlParameter())`
+> builds a correctly-parameterized URL if you construct the `DataSource` yourself. CockroachDB ignores
+> the parameter, so no warning is emitted there.
 
 ### Testing Framework Integration
 

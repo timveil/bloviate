@@ -20,6 +20,7 @@ import io.bloviate.gen.AbstractBuilder;
 import io.bloviate.gen.AbstractDataGenerator;
 import io.bloviate.gen.ChildCardinality;
 import io.bloviate.gen.ChildKeyComponentGenerator;
+import io.bloviate.gen.IndexedDataGenerator;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -44,7 +45,7 @@ import java.util.random.RandomGenerator;
  * <p>The delivery timestamp approximates the spec's {@code ol_delivery_d = o_entry_d}; the
  * fidelity that matters is that undelivered orders' lines are NULL.
  */
-public class OrderLineDeliveryDateGenerator extends AbstractDataGenerator<Timestamp> {
+public class OrderLineDeliveryDateGenerator extends AbstractDataGenerator<Timestamp> implements IndexedDataGenerator {
 
     private final ChildKeyComponentGenerator orderId;
     private final int deliveredThreshold;
@@ -53,6 +54,18 @@ public class OrderLineDeliveryDateGenerator extends AbstractDataGenerator<Timest
     public Timestamp generate() {
         int oId = orderId.generate();
         return oId <= deliveredThreshold ? Timestamp.from(Instant.now()) : null;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The delivered/undelivered (timestamp-vs-NULL) decision is positional — it comes entirely
+     * from the wrapped {@link ChildKeyComponentGenerator} walker — so seeking delegates to it,
+     * keeping the column aligned with the {@code order_line} keys under intra-table partitioning.
+     */
+    @Override
+    public void seek(long rowIndex) {
+        orderId.seek(rowIndex);
     }
 
     @Override

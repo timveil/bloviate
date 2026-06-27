@@ -17,6 +17,7 @@
 package io.bloviate.db;
 
 import io.bloviate.util.DatabaseUtils;
+import io.bloviate.util.JdbcUrls;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -41,6 +42,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -127,14 +129,25 @@ public class DatabaseFiller implements Fillable {
 
         visualizeGraph(reversedGraph, database.catalog());
 
+        // recommend the driver batch-rewrite URL parameter once per fill if it is missing
+        if (connection != null) {
+            warnIfBatchRewriteMissing(connection);
+        } else {
+            try (Connection conn = dataSource.getConnection()) {
+                warnIfBatchRewriteMissing(conn);
+            }
+        }
+
         if (connection != null) {
             // back-compat path: fill sequentially on the caller's single connection (unchanged)
+            warnIfPartitionsIgnored();
             fillSequential(connection, database, reversedGraph);
         } else if (threads > 1) {
             // parallel path: fill independent tables within each topological level concurrently
             fillParallel(database, reversedGraph);
         } else {
             // DataSource supplied but no parallelism requested: borrow one connection, fill in order
+            warnIfPartitionsIgnored();
             try (Connection conn = dataSource.getConnection()) {
                 fillSequential(conn, database, reversedGraph);
             }
@@ -184,8 +197,11 @@ public class DatabaseFiller implements Fillable {
     private void fillParallel(Database database, Graph<Table, DefaultEdge> reversedGraph) throws SQLException {
         List<List<Table>> levels = fillLevels(reversedGraph);
 
-        // never spin up more workers than the widest level can use
-        int widest = levels.stream().mapToInt(List::size).max().orElse(1);
+        // never spin up more workers than the widest level can use; a partitioned table contributes
+        // one unit of work per partition, so a single large partitioned table can use all threads
+        int widest = levels.stream()
+                .mapToInt(level -> level.stream().mapToInt(this::partitionsFor).sum())
+                .max().orElse(1);
         int poolSize = Math.max(1, Math.min(threads, widest));
 
         logger.info("filling {} tables across {} topological level(s) with {} worker thread(s)",
@@ -196,10 +212,7 @@ public class DatabaseFiller implements Fillable {
             for (List<Table> level : levels) {
                 List<Callable<Void>> tasks = new ArrayList<>(level.size());
                 for (Table table : level) {
-                    tasks.add(() -> {
-                        fillTableInOwnTransaction(database, table);
-                        return null;
-                    });
+                    addTableTasks(tasks, database, table);
                 }
 
                 // barrier: every table in this level must finish before the next level may start
@@ -213,6 +226,29 @@ public class DatabaseFiller implements Fillable {
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    /**
+     * Logs a one-time recommendation to enable the driver's batch-rewrite URL parameter when the
+     * connection's URL does not already set it to {@code true}. Bloviate fills through a connection
+     * it does not own, so it cannot add the parameter itself; enabling it (e.g. with
+     * {@link io.bloviate.util.JdbcUrls#withBatchRewrite(String, String)}) is often the single biggest
+     * fill speedup. No-op for databases without such a parameter (e.g. CockroachDB).
+     *
+     * @param conn a connection whose URL is inspected; never modified
+     * @throws SQLException if the connection metadata cannot be read
+     */
+    private void warnIfBatchRewriteMissing(Connection conn) throws SQLException {
+        String parameter = configuration.databaseSupport().batchRewriteUrlParameter();
+        if (parameter == null) {
+            return;
+        }
+        String url = conn.getMetaData().getURL();
+        if (url != null && JdbcUrls.parameterEquals(url, parameter, "true")) {
+            return;
+        }
+        logger.warn("JDBC driver batch rewrite is not enabled; add '{}=true' to the JDBC URL for a "
+                + "potentially large fill speedup (see io.bloviate.util.JdbcUrls#withBatchRewrite)", parameter);
     }
 
     /** Unwraps a worker future, re-throwing the underlying {@link SQLException} or runtime failure. */
@@ -232,26 +268,114 @@ public class DatabaseFiller implements Fillable {
     }
 
     /**
-     * Fills one table on its own pooled connection inside a single transaction: autocommit is
-     * disabled and the work is committed once when the table is complete (rolled back on failure).
-     * Committing once per table — rather than once per JDBC batch — also cuts commit overhead.
+     * Adds the worker task(s) for one table to {@code tasks}. A table with the default single
+     * partition contributes one whole-table task; a table configured with {@code partitions > 1}
+     * contributes one task per contiguous row range, so the ranges fill concurrently (intra-table
+     * parallelism) alongside the other tables in the same topological level.
+     */
+    private void addTableTasks(List<Callable<Void>> tasks, Database database, Table table) {
+        int partitions = partitionsFor(table);
+        if (partitions <= 1) {
+            tasks.add(() -> {
+                fillTableInOwnTransaction(database, table);
+                return null;
+            });
+            return;
+        }
+
+        long rowCount = rowCountFor(table);
+        long base = rowCount / partitions;
+        long remainder = rowCount % partitions;
+        long start = 0;
+        for (int p = 0; p < partitions; p++) {
+            long size = base + (p < remainder ? 1 : 0);
+            long end = start + size;
+            if (size > 0) {
+                long rangeStart = start;
+                long rangeEnd = end;
+                tasks.add(() -> {
+                    fillTablePartition(database, table, rangeStart, rangeEnd);
+                    return null;
+                });
+            }
+            start = end;
+        }
+    }
+
+    /**
+     * Fills a whole table on its own pooled connection inside a single transaction — the original,
+     * proven per-table parallel path (no row range, so generation is byte-for-byte identical to a
+     * sequential fill). The transaction is managed by {@link TableFiller} via the effective commit
+     * strategy (see {@link #effectiveParallelCommitStrategy()}).
      */
     private void fillTableInOwnTransaction(Database database, Table table) throws SQLException {
         try (Connection conn = dataSource.getConnection()) {
-            boolean previousAutoCommit = conn.getAutoCommit();
-            conn.setAutoCommit(false);
-            try {
-                new TableFiller.Builder(conn, database, configuration)
-                        .table(table)
-                        .build().fill();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(previousAutoCommit);
+            new TableFiller.Builder(conn, database, configuration)
+                    .table(table)
+                    .commitStrategy(effectiveParallelCommitStrategy())
+                    .build().fill();
+        }
+    }
+
+    /**
+     * Fills one contiguous row range of a table on its own pooled connection inside a single
+     * transaction. The transaction is managed by {@link TableFiller} via the effective commit
+     * strategy (see {@link #effectiveParallelCommitStrategy()}): autocommit off, committed when the
+     * range is complete (or every N batches), and rolled back on failure.
+     */
+    private void fillTablePartition(Database database, Table table, long startInclusive, long endExclusive) throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            new TableFiller.Builder(conn, database, configuration)
+                    .table(table)
+                    .commitStrategy(effectiveParallelCommitStrategy())
+                    .rowRange(startInclusive, endExclusive)
+                    .build().fill();
+        }
+    }
+
+    /** The configured intra-table partition count for a table, or {@code 1} when not configured. */
+    private int partitionsFor(Table table) {
+        TableConfiguration tableConfiguration = configuration.tableConfiguration(table.name());
+        return tableConfiguration != null ? tableConfiguration.partitions() : 1;
+    }
+
+    /** The row count for a table: its per-table override if present, otherwise the default. */
+    private long rowCountFor(Table table) {
+        TableConfiguration tableConfiguration = configuration.tableConfiguration(table.name());
+        return tableConfiguration != null ? tableConfiguration.rowCount() : configuration.defaultRowCount();
+    }
+
+    /**
+     * Logs a warning for any table configured with intra-table {@code partitions > 1} when the fill
+     * will not run on the parallel path, since partitioning has no effect there (mirrors the
+     * {@code threads(...)} warning). Intra-table parallelism requires the {@link DataSource}
+     * constructor with {@code threads > 1}.
+     */
+    private void warnIfPartitionsIgnored() {
+        Set<TableConfiguration> tableConfigurations = configuration.tableConfigurations();
+        if (tableConfigurations == null) {
+            return;
+        }
+        for (TableConfiguration tableConfiguration : tableConfigurations) {
+            if (tableConfiguration.partitions() > 1) {
+                logger.warn("intra-table partitions ({}) for table [{}] are ignored on the sequential fill path; "
+                                + "use the DataSource constructor with threads(n) > 1 for intra-table parallelism",
+                        tableConfiguration.partitions(), tableConfiguration.tableName());
             }
         }
+    }
+
+    /**
+     * The commit strategy used by parallel workers. A pooled worker connection must not be left on
+     * the connection's autocommit (that would commit per batch and lose the per-table transaction),
+     * so {@link CommitStrategy.Mode#CONNECTION_DEFAULT} maps to {@link CommitStrategy#perTable()};
+     * any explicitly configured strategy (e.g. {@link CommitStrategy#everyNBatches(int)}) is honored.
+     */
+    private CommitStrategy effectiveParallelCommitStrategy() {
+        CommitStrategy configured = configuration.commitStrategy();
+        return configured.mode() == CommitStrategy.Mode.CONNECTION_DEFAULT
+                ? CommitStrategy.perTable()
+                : configured;
     }
 
     /**
