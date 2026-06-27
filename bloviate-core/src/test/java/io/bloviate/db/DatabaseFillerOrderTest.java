@@ -18,6 +18,7 @@ package io.bloviate.db;
 
 import org.junit.jupiter.api.Test;
 
+import java.sql.Connection;
 import java.sql.JDBCType;
 import java.util.List;
 
@@ -30,7 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class DatabaseFillerOrderTest {
 
-    private static final DatabaseFiller FILLER = new DatabaseFiller.Builder(null, null).build();
+    // cast disambiguates the Connection vs DataSource builder overloads; this test only exercises
+    // the dependency-ordering logic, which touches neither
+    private static final DatabaseFiller FILLER = new DatabaseFiller.Builder((Connection) null, null).build();
 
     private static Column id(String tableName) {
         return new Column("id", tableName, null, null, JDBCType.INTEGER, 10, null, "int4", false, false, null, 1);

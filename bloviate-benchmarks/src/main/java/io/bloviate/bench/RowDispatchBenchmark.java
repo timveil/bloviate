@@ -57,6 +57,7 @@ public class RowDispatchBenchmark {
 
     private List<Column> filteredColumns;
     private Map<Column, DataGenerator<?>> generatorMap;
+    private DataGenerator<?>[] generators;
 
     @Setup
     public void setup() {
@@ -64,18 +65,39 @@ public class RowDispatchBenchmark {
 
         // mirror TableFiller's setup: one seeded generator per column, resolved through DatabaseSupport
         generatorMap = new HashMap<>();
+        generators = new DataGenerator<?>[filteredColumns.size()];
         PostgresSupport support = new PostgresSupport();
         long seed = 1L;
-        for (Column column : filteredColumns) {
-            generatorMap.put(column, support.getDataGenerator(column, new Random(seed++)));
+        for (int i = 0; i < filteredColumns.size(); i++) {
+            Column column = filteredColumns.get(i);
+            DataGenerator<?> generator = support.getDataGenerator(column, new Random(seed++));
+            generatorMap.put(column, generator);
+            generators[i] = generator;
         }
     }
 
+    /**
+     * The original per-cell dispatch: a {@code generatorMap.get(column)} HashMap lookup (hashing the
+     * value-based {@link Column} record) followed by {@code generate()}. This is the #447 baseline.
+     */
     @Benchmark
     public void dispatchRow(Blackhole blackhole) {
         for (Column column : filteredColumns) {
             DataGenerator<?> generator = generatorMap.get(column);
             blackhole.consume(generator.generate());
+        }
+    }
+
+    /**
+     * The optimized per-cell dispatch: generators are indexed by column position, so the inner loop
+     * does a plain array read instead of hashing the {@link Column} on every cell — exactly the
+     * change applied to {@link io.bloviate.db.TableFiller#fill()}. Compare against {@link #dispatchRow}
+     * to isolate the lookup cost removed (the rest is the unavoidable {@code generate()} work).
+     */
+    @Benchmark
+    public void dispatchRowIndexed(Blackhole blackhole) {
+        for (int i = 0; i < generators.length; i++) {
+            blackhole.consume(generators[i].generate());
         }
     }
 }

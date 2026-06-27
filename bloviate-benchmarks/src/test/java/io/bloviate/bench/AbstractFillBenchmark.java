@@ -60,6 +60,13 @@ abstract class AbstractFillBenchmark {
     protected static final long ROWS = Long.getLong("bench.rows", 50_000L);
     protected static final int BATCH_SIZE = Integer.getInteger("bench.batch", 1000);
 
+    /**
+     * Worker threads for parallel table fill (issue #447, item #1). The default of {@code 1} fills
+     * sequentially on a single connection — the baseline; a value greater than one fills independent
+     * tables concurrently from the pool, one connection per worker. Set with {@code -Dbench.threads}.
+     */
+    protected static final int THREADS = Integer.getInteger("bench.threads", 1);
+
     // TPC-C cardinalities; modest defaults (~60k rows) keep a casual run quick, scale up via -D
     protected static final int WAREHOUSES = Integer.getInteger("bench.warehouses", 1);
     protected static final int ITEMS = Integer.getInteger("bench.items", 10_000);
@@ -79,6 +86,9 @@ abstract class AbstractFillBenchmark {
         config.setUsername(container.getUsername());
         config.setPassword(container.getPassword());
         config.setDriverClassName(container.getDriverClassName());
+        // the parallel fill borrows one connection per worker (plus the harness's own); size the
+        // pool so workers never block waiting for a connection
+        config.setMaximumPoolSize(Math.max(10, THREADS + 2));
         return new HikariDataSource(config);
     }
 
@@ -101,7 +111,7 @@ abstract class AbstractFillBenchmark {
             // warmup primes the JIT, connection pool and DB caches; not timed
             for (int i = 0; i < WARMUP_FILLS; i++) {
                 truncateAll(connection, tables);
-                fill(connection, configuration);
+                fill(dataSource, connection, configuration);
             }
 
             // the dataset is deterministic, so the row total is the same for every iteration
@@ -112,7 +122,7 @@ abstract class AbstractFillBenchmark {
             for (int i = 0; i < MEASURED_FILLS; i++) {
                 truncateAll(connection, tables);
                 long start = System.nanoTime();
-                fill(connection, configuration);
+                fill(dataSource, connection, configuration);
                 long elapsed = System.nanoTime() - start;
                 bestNanos = Math.min(bestNanos, elapsed);
                 sumNanos += elapsed;
@@ -124,8 +134,17 @@ abstract class AbstractFillBenchmark {
         }
     }
 
-    private static void fill(Connection connection, DatabaseConfiguration configuration) throws SQLException {
-        new DatabaseFiller.Builder(connection, configuration).build().fill();
+    /**
+     * Runs one full fill. With {@code bench.threads == 1} (the default) this is the sequential,
+     * single-connection path; with more threads it is the {@link javax.sql.DataSource}-based
+     * parallel path, filling independent tables concurrently — the issue #447 headline optimization.
+     */
+    private static void fill(HikariDataSource dataSource, Connection connection, DatabaseConfiguration configuration) throws SQLException {
+        if (THREADS > 1) {
+            new DatabaseFiller.Builder(dataSource, configuration).threads(THREADS).build().fill();
+        } else {
+            new DatabaseFiller.Builder(connection, configuration).build().fill();
+        }
     }
 
     private static List<String> tableNames(Connection connection) throws SQLException {

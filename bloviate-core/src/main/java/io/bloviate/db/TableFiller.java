@@ -27,9 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 /**
@@ -71,11 +69,18 @@ public class TableFiller implements Fillable {
 
         logger.trace(sql);
 
-        Map<Column, DataGenerator<?>> generatorMap = new HashMap<>();
-        Map<Column, Long> seedMap = new HashMap<>();
-        Map<Column, Long> maxInvocationMap = new HashMap<>();
-
+        // The fill loop is the hot path: it runs once per cell (rowCount * columnCount times).
+        // To keep it allocation- and lookup-free, everything is resolved up front into arrays
+        // indexed by column position, so the inner loop only does positional array reads instead
+        // of hashing the Column record on every cell (the issue #447 micro-optimization).
         List<Column> filteredColumns = table.filteredColumns();
+        int columnCount = filteredColumns.size();
+
+        DataGenerator<?>[] generators = new DataGenerator<?>[columnCount];
+        long[] reseedSeeds = new long[columnCount];
+        // 0 means "this column never reseeds"; a positive value is the parent row count past which
+        // a foreign-key generator must be reseeded to stay within the parent key space (wraparound)
+        long[] maxInvocations = new long[columnCount];
 
         DatabaseSupport databaseSupport = databaseConfiguration.databaseSupport();
 
@@ -83,7 +88,9 @@ public class TableFiller implements Fillable {
 
         long baseSeed = databaseConfiguration.seed();
 
-        for (Column column : filteredColumns) {
+        for (int idx = 0; idx < columnCount; idx++) {
+
+            Column column = filteredColumns.get(idx);
 
             long seed;
 
@@ -96,7 +103,7 @@ public class TableFiller implements Fillable {
 
                 if (primaryTableConfiguration != null) {
                     // this is the number of rows in the primary table.  a foreign key random generator can't be called more than this number of times.
-                    maxInvocationMap.put(column, primaryTableConfiguration.rowCount());
+                    maxInvocations[idx] = primaryTableConfiguration.rowCount();
                 }
 
                 // seed the foreign key from its associated primary key so the two line up;
@@ -124,8 +131,8 @@ public class TableFiller implements Fillable {
                 dataGenerator = custom != null ? custom : databaseSupport.getDataGenerator(column, random);
             }
 
-            generatorMap.put(column, dataGenerator);
-            seedMap.put(column, seed);
+            generators[idx] = dataGenerator;
+            reseedSeeds[idx] = seed;
         }
 
         int batchSize = databaseConfiguration.batchSize();
@@ -145,22 +152,18 @@ public class TableFiller implements Fillable {
             int rowCounter = 0;
             for (long i = 0; i < rowCount; i++) {
 
-                int colCounter = 1;
-                for (Column column : filteredColumns) {
+                for (int col = 0; col < columnCount; col++) {
 
-                    DataGenerator<?> dataGenerator = generatorMap.get(column);
+                    DataGenerator<?> dataGenerator = generators[col];
 
-                    if (maxInvocationMap.containsKey(column)) {
-                        long maxInvocations = maxInvocationMap.get(column);
-
-                        if (rowCounter != 0 && rowCounter % maxInvocations == 0) {
-                            dataGenerator.setSeed(seedMap.get(column));
-                        }
+                    long maxInvocation = maxInvocations[col];
+                    if (maxInvocation > 0 && rowCounter != 0 && rowCounter % maxInvocation == 0) {
+                        // foreign-key generator has exhausted the parent key space; reseed so it
+                        // replays the same parent keys and never references a non-existent parent
+                        dataGenerator.setSeed(reseedSeeds[col]);
                     }
 
-                    dataGenerator.generateAndSet(connection, ps, colCounter);
-
-                    colCounter++;
+                    dataGenerator.generateAndSet(connection, ps, col + 1);
                 }
 
                 ps.addBatch();

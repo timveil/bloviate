@@ -173,13 +173,18 @@
                 </executions>
             </plugin>
 
-            <!-- end-to-end fill runners are JUnit tests tagged @Tag("benchmark"); skipped unless -Pbench -->
+            <!-- end-to-end fill runners are JUnit tests tagged @Tag("benchmark"); skipped unless -Pbench.
+                 They are named *Benchmark, which is outside Surefire's default *Test/*Tests include
+                 patterns, so the runners are listed explicitly or they would never be discovered. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skipTests>${skipBenchmarks}</skipTests>
                     <groups>benchmark</groups>
+                    <includes>
+                        <include>**/*Benchmark.java</include>
+                    </includes>
                 </configuration>
             </plugin>
 
