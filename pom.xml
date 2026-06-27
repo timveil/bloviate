@@ -51,6 +51,7 @@
         <module>bloviate-core</module>
         <module>bloviate-junit</module>
         <module>bloviate-testcontainers</module>
+        <module>bloviate-benchmarks</module>
     </modules>
 
     <properties>
@@ -72,7 +73,11 @@
         <postgresql.version>42.7.11</postgresql.version>
         <mysql.version>9.7.0</mysql.version>
 
+        <!-- benchmark dependency versions -->
+        <jmh.version>1.37</jmh.version>
+
         <!-- plugin versions -->
+        <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
@@ -193,6 +198,18 @@
                 <version>${mysql.version}</version>
             </dependency>
 
+            <!-- benchmarks -->
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-core</artifactId>
+                <version>${jmh.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-generator-annprocess</artifactId>
+                <version>${jmh.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -208,6 +225,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>${maven-shade-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
