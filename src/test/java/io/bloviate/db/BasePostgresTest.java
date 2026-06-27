@@ -30,9 +30,14 @@ class BasePostgresTest extends BaseDatabaseTestCase {
 
     protected void fillDatabase(String initScript, DatabaseConfiguration configuration, Verifier verifier) throws SQLException {
 
-        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:14-alpine")
+        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:18-alpine")
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedInserts", "true")
+                // let the server infer the type of string-bound parameters so values for
+                // uuid/json/jsonb/inet/cidr/macaddr/bit/varbit/xml/interval columns are
+                // accepted; without this pgjdbc sends them as character varying and the
+                // server refuses the implicit cast
+                .withUrlParam("stringtype", "unspecified")
                 .withInitScript(initScript)) {
 
             database.start();

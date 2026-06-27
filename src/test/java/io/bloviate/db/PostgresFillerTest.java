@@ -95,6 +95,24 @@ class PostgresFillerTest extends BasePostgresTest {
     }
 
     @Test
+    void fillTestTables() throws SQLException {
+        // exercises the PostgreSQL vendor types (uuid, json/jsonb, inet/cidr/macaddr,
+        // bit/varbit, interval, arrays, xml); any unsupported type or invalid generated
+        // value would make the fill itself throw
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, 5, new PostgresSupport(), new HashSet<>());
+        fillDatabase("create_tables.postgres.sql", configuration, connection -> {
+            assertRowCount(connection, "uuid_table", 5);
+            assertRowCount(connection, "json_table", 5);
+            assertRowCount(connection, "network_table", 5);
+            assertRowCount(connection, "bit_table", 5);
+            assertRowCount(connection, "interval_table", 5);
+            assertRowCount(connection, "array_table", 5);
+            assertRowCount(connection, "doc_table", 5);
+            assertRowCount(connection, "standard_table", 5);
+        });
+    }
+
+    @Test
     void fillTPCCWithColumnConfigs() throws SQLException {
 
         int w = 2;          // warehouses
