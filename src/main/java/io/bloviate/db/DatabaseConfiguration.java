@@ -17,6 +17,7 @@
 package io.bloviate.db;
 
 import io.bloviate.ext.DatabaseSupport;
+import io.bloviate.ext.GeneratorRegistry;
 
 import java.util.Set;
 
@@ -39,13 +40,29 @@ import java.util.Set;
  * @param defaultRowCount the default number of rows to generate for each table
  * @param databaseSupport the database-specific support implementation
  * @param tableConfigurations optional per-table configuration overrides
- * 
+ * @param generatorRegistry optional registry of custom generator rules (by column-name pattern,
+ *        vendor type name, or JDBCType), consulted between per-column overrides and the
+ *        {@code databaseSupport} defaults; may be null
+ *
  * @author Tim Veil
  * @see DatabaseSupport
  * @see TableConfiguration
+ * @see GeneratorRegistry
  * @see DatabaseFiller
  */
-public record DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations) {
+public record DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, GeneratorRegistry generatorRegistry) {
+
+    /**
+     * Creates a configuration with no custom {@link GeneratorRegistry}.
+     *
+     * @param batchSize the number of rows to include in each batch INSERT operation
+     * @param defaultRowCount the default number of rows to generate for each table
+     * @param databaseSupport the database-specific support implementation
+     * @param tableConfigurations optional per-table configuration overrides
+     */
+    public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations) {
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null);
+    }
 
     /**
      * Retrieves the table-specific configuration for the given table name.

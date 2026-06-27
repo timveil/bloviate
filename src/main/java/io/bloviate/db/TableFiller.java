@@ -17,6 +17,7 @@
 package io.bloviate.db;
 
 import io.bloviate.ext.DatabaseSupport;
+import io.bloviate.ext.GeneratorRegistry;
 import io.bloviate.gen.DataGenerator;
 import io.bloviate.util.DatabaseUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -101,15 +102,23 @@ public class TableFiller implements Fillable {
                 seed = column.hashCode();
             }
 
-            // an explicit per-column configuration overrides the auto-detected generator;
-            // either way the generator is seeded by the engine so it stays reproducible
+            // resolve the generator by precedence; the generator is always seeded by the engine
+            // so it stays reproducible regardless of which path provides it:
+            //   per-column config > custom registry (name > typeName > JDBCType) > support default
+            Random random = new Random(seed);
+
             ColumnConfiguration columnConfiguration = tableConfiguration != null
                     ? tableConfiguration.columnConfiguration(column.name())
                     : null;
 
-            DataGenerator<?> dataGenerator = columnConfiguration != null
-                    ? columnConfiguration.generatorFactory().create(new Random(seed))
-                    : databaseSupport.getDataGenerator(column, new Random(seed));
+            DataGenerator<?> dataGenerator;
+            if (columnConfiguration != null) {
+                dataGenerator = columnConfiguration.generatorFactory().create(random);
+            } else {
+                GeneratorRegistry registry = databaseConfiguration.generatorRegistry();
+                DataGenerator<?> custom = registry != null ? registry.resolve(column, random) : null;
+                dataGenerator = custom != null ? custom : databaseSupport.getDataGenerator(column, random);
+            }
 
             generatorMap.put(column, dataGenerator);
             seedMap.put(column, seed);

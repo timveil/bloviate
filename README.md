@@ -28,6 +28,7 @@ A powerful Java library for generating realistic test data for JDBC-compatible r
 - [Usage Examples](#-usage-examples)
   - [Per-Table Row Counts](#per-table-row-counts)
   - [Per-Column Generation Overrides](#per-column-generation-overrides)
+  - [Custom Generator Registry](#custom-generator-registry)
   - [Composite Keys & Foreign Key Fidelity](#composite-keys--foreign-key-fidelity)
   - [Variable Parent/Child Cardinality](#variable-parentchild-cardinality)
   - [TPC-C Benchmark Data](#tpc-c-benchmark-data)
@@ -229,6 +230,69 @@ new DatabaseFiller.Builder(connection, config)
 
 Column names are matched **case-insensitively**. Any column without an override keeps
 its default, type-based generator.
+
+### Custom Generator Registry
+
+Per-column overrides are precise but must be wired one column at a time. When you want a
+custom generator applied **broadly** — every column named `email`, every `uuid` vendor
+type, or every `INTEGER` — register it once on a `GeneratorRegistry` and attach it to the
+`DatabaseConfiguration`. No subclassing of `DatabaseSupport` required.
+
+```java
+import io.bloviate.db.*;
+import io.bloviate.ext.GeneratorRegistry;
+import io.bloviate.ext.PostgresSupport;
+import io.bloviate.gen.*;
+import java.sql.JDBCType;
+import java.util.Set;
+
+GeneratorRegistry registry = new GeneratorRegistry.Builder()
+    // by column-name pattern (case-insensitive regex, full match)
+    .registerColumnNamePattern("email",
+        (column, random) -> new SimpleStringGenerator.Builder(random).size(column.maxSize()).build())
+    // by vendor type name (case-insensitive)
+    .registerTypeName("uuid",
+        (column, random) -> new UUIDGenerator.Builder(random).build())
+    // by JDBCType (overrides the built-in default for that type)
+    .registerJdbcType(JDBCType.INTEGER,
+        (column, random) -> new IntegerGenerator.Builder(random).start(1).end(1000).build())
+    // auto-discover GeneratorPlugins contributed by other jars on the classpath
+    .discover()
+    .build();
+
+DatabaseConfiguration config = new DatabaseConfiguration(
+    128, 100, new PostgresSupport(), null, registry);
+
+new DatabaseFiller.Builder(connection, config)
+    .build()
+    .fill();
+```
+
+**Resolution precedence** (first match wins, highest to lowest):
+
+1. per-column `ColumnConfiguration` (from a `TableConfiguration`)
+2. registry **column-name pattern**
+3. registry **vendor type name**
+4. registry **JDBCType**
+5. built-in `DatabaseSupport` default
+
+Every path is constructed with the engine's seeded `Random`, so custom generators stay
+**reproducible** exactly like the built-ins.
+
+**Plugin discovery.** Third-party jars can contribute rules automatically by implementing
+`io.bloviate.ext.GeneratorPlugin` and declaring it in
+`META-INF/services/io.bloviate.ext.GeneratorPlugin`. Calling `.discover()` on the builder
+loads every such plugin via `ServiceLoader`:
+
+```java
+public class MyGenerators implements GeneratorPlugin {
+    @Override
+    public void contribute(GeneratorRegistry.Builder builder) {
+        builder.registerTypeName("geometry",
+            (column, random) -> new MyGeometryGenerator.Builder(random).build());
+    }
+}
+```
 
 ### Composite Keys & Foreign Key Fidelity
 
