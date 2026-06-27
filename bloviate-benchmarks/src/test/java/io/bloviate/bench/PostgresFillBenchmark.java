@@ -16,6 +16,7 @@
 
 package io.bloviate.bench;
 
+import io.bloviate.db.CommitStrategy;
 import io.bloviate.db.DatabaseConfiguration;
 import io.bloviate.db.TableConfiguration;
 import io.bloviate.ext.PostgresSupport;
@@ -28,6 +29,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -38,11 +40,27 @@ import java.util.Set;
 class PostgresFillBenchmark extends AbstractFillBenchmark {
 
     private static PostgreSQLContainer<?> container(String initScript) {
-        return new PostgreSQLContainer<>("postgres:18-alpine")
+        PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:18-alpine")
                 .withDatabaseName("bloviate")
-                .withUrlParam("rewriteBatchedInserts", "true")
                 .withUrlParam("stringtype", "unspecified")
                 .withInitScript(initScript);
+        // batch rewrite is on by default; -Dbench.rewriteBatched=false measures the naive baseline
+        if (!"false".equalsIgnoreCase(System.getProperty("bench.rewriteBatched", "true"))) {
+            container = container.withUrlParam("reWriteBatchedInserts", "true");
+        }
+        return container;
+    }
+
+    /** Commit strategy for the single-table progression, from {@code -Dbench.commit} (none|perTable|everyN:K). */
+    private static CommitStrategy commitStrategy() {
+        String value = System.getProperty("bench.commit", "none").toLowerCase(Locale.ROOT);
+        if (value.equals("pertable")) {
+            return CommitStrategy.perTable();
+        }
+        if (value.startsWith("every")) {
+            return CommitStrategy.everyNBatches(Integer.parseInt(value.replaceAll("\\D", "")));
+        }
+        return CommitStrategy.connectionDefault();
     }
 
     @Override
@@ -79,17 +97,23 @@ class PostgresFillBenchmark extends AbstractFillBenchmark {
 
     /**
      * Single dominant table: between-table parallelism cannot help (one table, one level), so only
-     * intra-table partitioning (issue #466) speeds it up. Compare {@code -Dbench.threads=1} (baseline,
-     * partitions ignored on the sequential path) against {@code -Dbench.threads=N} (the one table is
-     * split into {@code bench.partitions} ranges, default {@code N}). Reproducibility is per
-     * configuration: the partitioned non-key values differ from the sequential ones by design.
+     * intra-table partitioning (issue #466) speeds it up. Doubles as the <em>cumulative progression</em>
+     * fixture — layer the #447 follow-ups one at a time via system properties to watch throughput
+     * compound:
+     * <ul>
+     *   <li>{@code -Dbench.rewriteBatched=false|true} — driver batch rewrite (#468), default {@code true}</li>
+     *   <li>{@code -Dbench.commit=none|perTable|everyN:K} — commit strategy (#467), default {@code none}</li>
+     *   <li>{@code -Dbench.threads=N} / {@code -Dbench.partitions=N} — intra-table partitioning (#466)</li>
+     * </ul>
+     * Reproducibility is per configuration: the partitioned non-key values differ from the sequential
+     * ones by design.
      */
     @Test
     void singleTable() throws SQLException {
         int partitions = Integer.getInteger("bench.partitions", Math.max(2, THREADS));
         Set<TableConfiguration> tables = Set.of(new TableConfiguration("big_t", ROWS, partitions));
         DatabaseConfiguration configuration = new DatabaseConfiguration(
-                BATCH_SIZE, ROWS, new PostgresSupport(), tables, SEED);
+                BATCH_SIZE, ROWS, new PostgresSupport(), tables, SEED, commitStrategy());
 
         try (PostgreSQLContainer<?> database = container("create_single.postgres.sql")) {
             database.start();
