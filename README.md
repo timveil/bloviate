@@ -37,6 +37,7 @@ A powerful Java library for generating realistic test data for JDBC-compatible r
   - [Flat File Formats](#flat-file-formats)
   - [Data Generator Types](#data-generator-types)
 - [Configuration](#-configuration)
+- [Architecture](#-architecture)
 - [Contributing](#-contributing)
 - [License](#-license)
 
@@ -603,6 +604,13 @@ intervals). See the `io.bloviate.gen` package for the full set.
 - **Output Format**: CSV, TSV, or pipe-delimited
 - **Row Count**: Number of rows to generate
 - **Custom Column Definitions**: Full control over data generation
+
+## 🏗️ Architecture
+
+Curious how Bloviate works under the hood — the foreign-key dependency DAG and topological fill
+ordering, the schema-identity seeding that makes data reproducible, the Strategy/Registry/SPI
+extension points, and the design patterns throughout? See **[ARCHITECTURE.md](ARCHITECTURE.md)** for
+a technical deep-dive with diagrams.
 
 ## 🤝 Contributing
 
