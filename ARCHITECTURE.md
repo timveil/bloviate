@@ -352,7 +352,11 @@ GeneratorRegistry registry = new GeneratorRegistry.Builder()
 ```
 
 Crucially, registry- and plugin-supplied generators are still constructed with the engine's seeded
-`RandomGenerator`, so they remain just as reproducible as the built-ins.
+`RandomGenerator`, so they remain just as reproducible as the built-ins. The optional
+**[`bloviate-datafaker`](bloviate-datafaker/)** module is exactly this pattern in practice: one
+`GeneratorPlugin` that maps column names (`email`, `first_name`, `phone`, …) to realistic
+[Datafaker](https://www.datafaker.net/) values, seeded from the engine's column seed for
+reproducibility — keeping the core dependency-free.
 
 ## 7. The generator library — Builder pattern
 
@@ -413,10 +417,13 @@ graph TD
     core["bloviate-core<br/><i>dependency-free engine</i><br/>db · ext · gen · file · util"]
     junit["bloviate-junit<br/><i>@FillDatabase / @FillSource</i><br/>BloviateExtension"]
     tc["bloviate-testcontainers<br/><i>BloviateContainers</i>"]
+    df["bloviate-datafaker<br/><i>DatafakerGeneratorPlugin</i>"]
     junit -->|depends on| core
     tc -->|depends on| core
+    df -->|depends on| core
     junit -.->|provided| j[JUnit Jupiter]
     tc -.->|provided| t[Testcontainers]
+    df -->|depends on| d[Datafaker]
 ```
 
 - **[`bloviate-core`](bloviate-core/)** — everything above: introspection, the DAG, generators,
@@ -429,6 +436,9 @@ graph TD
 - **[`bloviate-testcontainers`](bloviate-testcontainers/)** — fill a started
   `JdbcDatabaseContainer` in one fluent call via
   [`BloviateContainers.forContainer(...)`](bloviate-testcontainers/src/main/java/io/bloviate/testcontainers/BloviateContainers.java).
+- **[`bloviate-datafaker`](bloviate-datafaker/)** — optional semantic/realistic values by column name,
+  via a `GeneratorPlugin` over [Datafaker](https://www.datafaker.net/). Unlike the others, Datafaker is
+  a normal (not `provided`) dependency — it only reaches your classpath if you add this module.
 
 ## Design patterns at a glance
 
