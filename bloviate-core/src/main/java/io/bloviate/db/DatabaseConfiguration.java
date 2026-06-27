@@ -23,19 +23,27 @@ import java.util.Set;
 
 /**
  * Configuration settings for database filling operations.
- * 
+ *
  * <p>This record encapsulates all configuration parameters needed to control
  * the database filling process, including batch sizes, row counts, database-specific
  * support, and table-specific overrides.
- * 
+ *
  * <p>The configuration supports:
  * <ul>
  *   <li>Global batch size for INSERT operations</li>
  *   <li>Default row count applied to all tables</li>
  *   <li>Database-specific support implementation</li>
  *   <li>Per-table configuration overrides</li>
+ *   <li>An optional registry of custom generator rules</li>
+ *   <li>A base seed for reproducible, controllable data generation</li>
  * </ul>
- * 
+ *
+ * <p>The {@code seed} makes a fill <strong>reproducible</strong>: the same schema filled with
+ * the same seed always produces identical data, and changing the seed produces a different but
+ * equally reproducible dataset. See
+ * {@link io.bloviate.util.DatabaseUtils#columnSeed(Column, long)} for how per-column seeds are
+ * derived.
+ *
  * @param batchSize the number of rows to include in each batch INSERT operation
  * @param defaultRowCount the default number of rows to generate for each table
  * @param databaseSupport the database-specific support implementation
@@ -43,6 +51,7 @@ import java.util.Set;
  * @param generatorRegistry optional registry of custom generator rules (by column-name pattern,
  *        vendor type name, or JDBCType), consulted between per-column overrides and the
  *        {@code databaseSupport} defaults; may be null
+ * @param seed the base seed for reproducible generation; vary it for a different dataset
  *
  * @author Tim Veil
  * @see DatabaseSupport
@@ -50,10 +59,11 @@ import java.util.Set;
  * @see GeneratorRegistry
  * @see DatabaseFiller
  */
-public record DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, GeneratorRegistry generatorRegistry) {
+public record DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, GeneratorRegistry generatorRegistry, long seed) {
 
     /**
-     * Creates a configuration with no custom {@link GeneratorRegistry}.
+     * Creates a configuration with no custom {@link GeneratorRegistry} and a base {@code seed}
+     * of {@code 0}.
      *
      * @param batchSize the number of rows to include in each batch INSERT operation
      * @param defaultRowCount the default number of rows to generate for each table
@@ -61,12 +71,40 @@ public record DatabaseConfiguration(int batchSize, long defaultRowCount, Databas
      * @param tableConfigurations optional per-table configuration overrides
      */
     public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations) {
-        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null);
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null, 0L);
+    }
+
+    /**
+     * Creates a configuration with a custom {@link GeneratorRegistry} and a base {@code seed}
+     * of {@code 0}.
+     *
+     * @param batchSize the number of rows to include in each batch INSERT operation
+     * @param defaultRowCount the default number of rows to generate for each table
+     * @param databaseSupport the database-specific support implementation
+     * @param tableConfigurations optional per-table configuration overrides
+     * @param generatorRegistry optional registry of custom generator rules; may be null
+     */
+    public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, GeneratorRegistry generatorRegistry) {
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, generatorRegistry, 0L);
+    }
+
+    /**
+     * Creates a configuration with the given base {@code seed} and no custom
+     * {@link GeneratorRegistry}.
+     *
+     * @param batchSize the number of rows to include in each batch INSERT operation
+     * @param defaultRowCount the default number of rows to generate for each table
+     * @param databaseSupport the database-specific support implementation
+     * @param tableConfigurations optional per-table configuration overrides
+     * @param seed the base seed for reproducible generation
+     */
+    public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, long seed) {
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null, seed);
     }
 
     /**
      * Retrieves the table-specific configuration for the given table name.
-     * 
+     *
      * @param tableName the name of the table to find configuration for
      * @return the table configuration if found, or null if using defaults
      */

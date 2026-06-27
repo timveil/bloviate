@@ -11,6 +11,20 @@ project locally, run the test suite, and submit changes.
   via [TestContainers](https://testcontainers.com/). [OrbStack](https://orbstack.dev/)
   or Docker Desktop both work.
 
+## Project Layout
+
+Bloviate is a multi-module Maven build. The root `pom.xml` is the parent (packaging `pom`); the
+code lives in modules:
+
+| Module | Description |
+| --- | --- |
+| `bloviate-core` | The dependency-free data-generation engine and flat-file support |
+| `bloviate-junit` | JUnit Jupiter integration (`@FillDatabase`); JUnit is a `provided` dependency |
+| `bloviate-testcontainers` | Testcontainers integration; Testcontainers is a `provided` dependency |
+
+Shared dependency and plugin versions are managed centrally in the parent `pom.xml`. `./mvnw`
+commands run from the repository root build the whole reactor.
+
 ## Building the Project
 
 ```bash
@@ -45,7 +59,7 @@ Docker must be running.
 ./mvnw test -Dtest=CockroachDBFillerTest
 ```
 
-Test schemas live under `src/test/resources/` (TPCC, AuctionMark, Wikipedia, and
+Test schemas live under `bloviate-core/src/test/resources/` (TPCC, AuctionMark, Wikipedia, and
 others). `BaseDatabaseTestCase` provides the shared `DataSource` plumbing and the
 fidelity assertions used by the TPC-C tests.
 

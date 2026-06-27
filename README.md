@@ -32,6 +32,8 @@ A powerful Java library for generating realistic test data for JDBC-compatible r
   - [Composite Keys & Foreign Key Fidelity](#composite-keys--foreign-key-fidelity)
   - [Variable Parent/Child Cardinality](#variable-parentchild-cardinality)
   - [TPC-C Benchmark Data](#tpc-c-benchmark-data)
+  - [Reproducible Data with Seeds](#reproducible-data-with-seeds)
+  - [Testing Framework Integration](#testing-framework-integration)
   - [Flat File Formats](#flat-file-formats)
   - [Data Generator Types](#data-generator-types)
 - [Configuration](#-configuration)
@@ -47,6 +49,34 @@ A powerful Java library for generating realistic test data for JDBC-compatible r
     <groupId>io.bloviate</groupId>
     <artifactId>bloviate-core</artifactId>
     <version>LATEST</version>
+</dependency>
+```
+
+Bloviate is a multi-module build. `bloviate-core` is the dependency-free engine; the optional
+integration modules pull in their framework as a `provided` dependency, so you bring your own
+version of JUnit / Testcontainers:
+
+| Artifact | Use it for |
+| --- | --- |
+| `bloviate-core` | The data-generation engine (`DatabaseFiller`, generators, flat files) |
+| `bloviate-junit` | JUnit Jupiter: fill a test database declaratively with `@FillDatabase` |
+| `bloviate-testcontainers` | Fill a started `JdbcDatabaseContainer` in one call |
+
+```xml
+<!-- test-scoped: JUnit 5 integration -->
+<dependency>
+    <groupId>io.bloviate</groupId>
+    <artifactId>bloviate-junit</artifactId>
+    <version>LATEST</version>
+    <scope>test</scope>
+</dependency>
+
+<!-- test-scoped: Testcontainers integration -->
+<dependency>
+    <groupId>io.bloviate</groupId>
+    <artifactId>bloviate-testcontainers</artifactId>
+    <version>LATEST</version>
+    <scope>test</scope>
 </dependency>
 ```
 
@@ -409,11 +439,92 @@ Set<TableConfiguration> tpcc = TPCCConfiguration.build(
 );
 ```
 
-The corresponding DDL lives in `src/test/resources/create_tpcc.{postgres,mysql,cockroachdb}.sql`.
+The corresponding DDL lives in
+`bloviate-core/src/test/resources/create_tpcc.{postgres,mysql,cockroachdb}.sql`.
 The reusable building blocks behind `TPCCConfiguration` — `CompositeKeyComponentGenerator`,
 `ChildCardinality`, `GroupedPermutationGenerator` (per-group shuffles), and
 `GroupedPrefixGenerator` (nullable/sparse columns) — live in `io.bloviate.gen` and can
 be composed for other benchmark schemas (TPC-H, TPC-DS, and so on).
+
+### Reproducible Data with Seeds
+
+`DatabaseConfiguration` takes a base **seed**. The same schema filled with the same seed always
+produces identical data, so test fixtures are deterministic; change the seed for a different —
+but still reproducible — dataset. Per-column seeds are derived from stable column identity, and
+foreign keys are seeded from their referenced primary key, so referential fidelity holds for any
+seed.
+
+```java
+import io.bloviate.db.*;
+import io.bloviate.ext.PostgresSupport;
+
+// batch size, rows/table, support, table configs, seed
+DatabaseConfiguration config = new DatabaseConfiguration(
+    128, 100, new PostgresSupport(), null, 42L);
+
+new DatabaseFiller.Builder(connection, config).build().fill();
+```
+
+The seed defaults to `0` when you use the four-argument constructor, so existing code keeps a
+single, stable dataset without changes.
+
+### Testing Framework Integration
+
+#### JUnit 5 (`bloviate-junit`)
+
+Fill a test database declaratively. Annotate the test with `@FillDatabase` and mark the
+`DataSource`/`Connection` to fill with `@FillSource`; the data is regenerated before each test,
+reproducibly via `seed`. Create the schema first (init script, Flyway/Liquibase, etc.) — Bloviate
+fills the tables it discovers.
+
+```java
+import io.bloviate.junit.FillDatabase;
+import io.bloviate.junit.FillSource;
+import javax.sql.DataSource;
+
+@FillDatabase(rows = 250, seed = 42)
+class OrderRepositoryTest {
+
+    @FillSource
+    static DataSource dataSource = createDataSource(); // schema already created
+
+    @Test
+    void queriesGeneratedData() throws Exception {
+        // dataSource now holds 250 reproducible rows per table
+    }
+
+    @Test
+    @FillDatabase(rows = 5, seed = 7) // method-level overrides the class default
+    void worksWithASmallDataset() throws Exception {
+        // ...
+    }
+}
+```
+
+`@FillDatabase` is meta-annotated with `@ExtendWith(BloviateExtension.class)`, so no separate
+`@ExtendWith` is needed. The database support is auto-detected from the connection.
+
+#### Testcontainers (`bloviate-testcontainers`)
+
+Fill a started `JdbcDatabaseContainer` in one call — the public form of the pattern Bloviate uses
+in its own tests:
+
+```java
+import io.bloviate.testcontainers.BloviateContainers;
+import org.testcontainers.containers.PostgreSQLContainer;
+
+try (var postgres = new PostgreSQLContainer<>("postgres:18-alpine")
+        .withInitScript("schema.sql")) {  // creates the schema on startup
+    postgres.start();
+
+    BloviateContainers.forContainer(postgres)
+        .rows(500)
+        .seed(42)
+        .fill();
+
+    // ... assert against the filled database
+}
+```
 
 ### Flat File Formats
 
@@ -484,6 +595,8 @@ intervals). See the `io.bloviate.gen` package for the full set.
 - **Database Support**: Database-specific implementation for optimal compatibility
 - **Table Configurations**: Override the row count for specific tables
 - **Column Configurations**: Override the generator for specific columns (case-insensitive, reproducible)
+- **Seed**: Base seed for reproducible generation; the same schema and seed always produce the
+  same data (defaults to `0`)
 
 ### File Generation Options
 
