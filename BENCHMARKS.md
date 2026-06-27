@@ -112,18 +112,22 @@ Run on a quiet machine and record the environment alongside the numbers — JMH 
 throughput are only comparable within the same hardware/JDK/DB image. Capture the machine/CPU, the
 JDK, and the Docker/DB image next to the figures, exactly as the recorded results below do.
 
-## Recorded results — issue #447 optimizations
+## Recorded results — fill throughput (issues #447 + #466)
 
-Measured before/after the first round of [issue #447](https://github.com/timveil/bloviate/issues/447)
-optimizations: the **hot-loop micro-opt** (positional generator dispatch in `TableFiller`) and the
-**parallel table fill** (`DataSource` + `threads`, one connection per worker, commit per table).
+Measured across the [#447](https://github.com/timveil/bloviate/issues/447) optimizations and the
+[#466](https://github.com/timveil/bloviate/issues/466) follow-up — a single baseline and the effect
+of each change, side by side:
+
+- **hot-loop micro-opt** — positional generator dispatch in `TableFiller` (within end-to-end noise; see CPU table).
+- **parallel table fill** — `DataSource` + `threads`, one connection per worker, commit per table. Speeds up schemas with many *independent* tables.
+- **intra-table partitioning** — split one large table's rows across workers. Speeds up the case a single table dominates (one table, one topological level), which parallel table fill cannot help.
 
 **Environment**
 
 - Machine / CPU: Apple M5 (Mac17,3), 10 cores
 - JDK: Temurin 25.0.3+9 LTS
 - Docker / DB image: OrbStack (Docker 29.4.0); `postgres:18-alpine`, `mysql:9` (Testcontainers default), `cockroachdb`
-- Harness: `bench.rows=100000` (wide), `bench.warmup=1`, `bench.iterations=3`, `bench.batch=1000`; TPC-C at default cardinalities (~62k rows). Reported figure is **best of 3**.
+- Harness: `bench.warmup=1`, `bench.iterations=3`, `bench.batch=1000`; `bench.rows=1000000` for `wide`/`single`, TPC-C at default cardinalities (~62k rows). Reported figure is **best of 3**.
 
 ### CPU (JMH, ops/us — higher is better)
 
@@ -142,40 +146,50 @@ slowest types in the baseline run: `VARCHAR_LONG` 0.59, `JSONB` 2.2, `UUID` 8.7,
 
 ### End-to-end (rows/sec, best of 3 — higher is better)
 
-| Scenario | Rows | Baseline | Sequential (after) | Parallel (8 threads) | Parallel speedup |
-|----------|-----:|---------:|-------------------:|---------------------:|-----------------:|
-| `postgres/wide` | 1,000,000 | 126,984 | 122,923 | **414,126** | **3.26×** |
-| `postgres/tpcc` | 61,983 | 75,520 | 77,535 | 83,694 | 1.11× |
-| `mysql/tpcc` | 61,983 | 40,043 | 54,879 | 57,973 | 1.45× |
-| `cockroach/tpcc` | 61,983 | 12,403 | 12,516 | 13,304 | 1.07× |
+Baseline is the sequential single-`Connection` fill. The two parallel columns are the headline
+changes; each applies to a different bottleneck, so a `—` means that strategy doesn't apply to that
+scenario (a single table can't fan out across tables; the multi-table schemas weren't separately
+row-partitioned).
 
-The headline `wide` case (1M rows across ten independent tables) at ~3× throughput — the FK-free
-schema the parallel fill targets:
+| Scenario | Rows | Baseline | + parallel table fill (8) | + intra-table partitions (8) | Best speedup |
+|----------|-----:|---------:|--------------------------:|-----------------------------:|-------------:|
+| `postgres/single` | 1,000,000 | 154,211 | — | **489,870** | **3.18×** |
+| `postgres/wide` | 1,000,000 | 126,984 | **414,126** | — | **3.26×** |
+| `postgres/tpcc` | 61,983 | 75,520 | 83,694 | — | 1.11× |
+| `mysql/tpcc` | 61,983 | 40,043 | 57,973 | — | 1.45× |
+| `cockroach/tpcc` | 61,983 | 12,403 | 13,304 | — | 1.07× |
+
+The two headline wins side by side — `wide` (ten independent tables, fanned across workers) and
+`single` (one dominant table, rows partitioned across workers) — each ~3.2× over its baseline:
 
 ```mermaid
 xychart-beta
-    title "postgres/wide throughput — 1,000,000 rows (higher is better)"
-    x-axis ["Baseline", "Sequential (micro-opt)", "Parallel (8 workers)"]
-    y-axis "rows / sec" 0 --> 450000
-    bar [126984, 122923, 414126]
+    title "Headline throughput — 1,000,000 rows, rows/sec (higher is better)"
+    x-axis ["wide: baseline", "wide: parallel (8)", "single: baseline", "single: partitioned (8)"]
+    y-axis "rows / sec" 0 --> 520000
+    bar [126984, 414126, 154211, 489870]
 ```
 
-Speedup of the 8-worker parallel fill over the single-connection baseline, per scenario. `wide`
-parallelizes fully; TPC-C's deep, narrow foreign-key graph leaves little to run concurrently:
+Best speedup over the single-connection baseline, per scenario. `single` and `wide` parallelize
+fully; TPC-C's deep, narrow foreign-key graph leaves little to run concurrently:
 
 ```mermaid
 xychart-beta
-    title "Parallel fill speedup vs baseline (x, higher is better)"
-    x-axis ["postgres/wide", "mysql/tpcc", "postgres/tpcc", "cockroach/tpcc"]
+    title "Best speedup vs baseline (x, higher is better)"
+    x-axis ["postgres/wide", "postgres/single", "mysql/tpcc", "postgres/tpcc", "cockroach/tpcc"]
     y-axis "speedup (x)" 0 --> 3.5
-    bar [3.26, 1.45, 1.11, 1.07]
+    bar [3.26, 3.18, 1.45, 1.11, 1.07]
 ```
 
 **Reading the numbers**
 
-- **`wide` is the headline.** Ten independent, FK-free tables sit in a single topological level, so
-  eight workers fill them concurrently: **3.26×** over the single-connection baseline. This is the
-  case the parallel optimization targets.
+- **`wide` is the headline for parallel table fill.** Ten independent, FK-free tables sit in a single
+  topological level, so eight workers fill them concurrently: **3.26×** over the single-connection
+  baseline. This is the case the parallel optimization targets.
+- **`single` is the headline for intra-table partitioning.** One 1M-row table sits alone in its level,
+  so parallel *table* fill can't touch it; splitting its rows into eight partitions fills it **3.18×**
+  faster (154,211 → 489,870 rows/sec) with foreign-key validity preserved and data reproducible for
+  the chosen partition count. The default (unpartitioned) path is byte-for-byte unchanged.
 - **TPC-C gains are modest by design.** Its foreign keys form a deep, narrow dependency graph — most
   levels hold only one or two independent tables — so there is little to parallelize within a level;
   the barrier between levels caps the win. The improvement that remains comes mostly from committing
@@ -245,36 +259,3 @@ xychart-beta
 
 **Bottom line:** ~2× faster per-row generation with better statistical quality, no new dependency,
 and unchanged reproducibility.
-
-## Recorded results — issue #466 (intra-table partitioning)
-
-Measured for the [issue #466](https://github.com/timveil/bloviate/issues/466) intra-table
-partitioning follow-up: a **single dominant table** (`create_single.postgres.sql`,
-`PostgresFillBenchmark#singleTable`), which between-table parallelism cannot speed up because it sits
-alone in its topological level. The baseline is the sequential single-`Connection` fill (`partitions`
-ignored); "partitioned" splits the one table into eight contiguous row ranges filled concurrently.
-
-**Environment**
-
-- Machine / CPU: Apple M5 (Mac17,3), 10 cores
-- JDK: Temurin 25.0.3+9 LTS
-- Docker / DB image: OrbStack (Docker 29.4.0); `postgres:18-alpine`
-- Harness: `bench.rows=1000000`, `bench.warmup=1`, `bench.iterations=3`, `bench.batch=1000`. Reported figure is **best of 3**.
-
-### End-to-end (rows/sec, best of 3 — higher is better)
-
-| Scenario | Rows | Baseline (1 thread) | Partitioned (8 threads / 8 partitions) | Speedup |
-|----------|-----:|--------------------:|---------------------------------------:|--------:|
-| `postgres/single` | 1,000,000 | 154,211 | **489,870** | **3.18×** |
-
-```mermaid
-xychart-beta
-    title "postgres/single throughput — 1,000,000 rows (higher is better)"
-    x-axis ["baseline (1 thread)", "partitioned (8 threads)"]
-    y-axis "rows / sec" 0 --> 520000
-    bar [154211, 489870]
-```
-
-**Bottom line:** a single large table — which the v2.9.0 between-table parallel fill leaves at
-sequential speed — fills **~3.2× faster** at 8 partitions, with foreign-key validity preserved and
-the data reproducible for the chosen partition count. The default (unpartitioned) path is unchanged.
