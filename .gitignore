@@ -6,6 +6,8 @@ target/
 .idea/
 *.iml
 *.csv
+# but keep CSV files that are bundled module resources (e.g. reference datasets)
+!**/src/main/resources/**/*.csv
 .env
 
 # maven-shade-plugin output

@@ -1,0 +1,96 @@
+# Reference dataset of real, internally consistent US geographic tuples used by io.bloviate.datafaker.Places.
+# Each row is one coherent place: a real city in its state with a valid local ZIP and area code.
+# Format: city,stateAbbreviation,state,zip,areaCode   (country is United States)
+# Lines starting with '#' and the header row are ignored.
+city,stateAbbreviation,state,zip,areaCode
+New York,NY,New York,10001,212
+Brooklyn,NY,New York,11201,718
+Buffalo,NY,New York,14202,716
+Rochester,NY,New York,14604,585
+Los Angeles,CA,California,90001,213
+San Francisco,CA,California,94103,415
+San Diego,CA,California,92101,619
+San Jose,CA,California,95113,408
+Sacramento,CA,California,95814,916
+Fresno,CA,California,93721,559
+Long Beach,CA,California,90802,562
+Oakland,CA,California,94607,510
+Chicago,IL,Illinois,60601,312
+Springfield,IL,Illinois,62701,217
+Houston,TX,Texas,77002,713
+Dallas,TX,Texas,75201,214
+Austin,TX,Texas,78701,512
+San Antonio,TX,Texas,78205,210
+Fort Worth,TX,Texas,76102,817
+El Paso,TX,Texas,79901,915
+Phoenix,AZ,Arizona,85003,602
+Tucson,AZ,Arizona,85701,520
+Mesa,AZ,Arizona,85201,480
+Philadelphia,PA,Pennsylvania,19103,215
+Pittsburgh,PA,Pennsylvania,15222,412
+Columbus,OH,Ohio,43215,614
+Cleveland,OH,Ohio,44114,216
+Cincinnati,OH,Ohio,45202,513
+Indianapolis,IN,Indiana,46204,317
+Detroit,MI,Michigan,48226,313
+Grand Rapids,MI,Michigan,49503,616
+Charlotte,NC,North Carolina,28202,704
+Raleigh,NC,North Carolina,27601,919
+Seattle,WA,Washington,98101,206
+Spokane,WA,Washington,99201,509
+Denver,CO,Colorado,80202,303
+Colorado Springs,CO,Colorado,80903,719
+Washington,DC,District of Columbia,20001,202
+Boston,MA,Massachusetts,02108,617
+Nashville,TN,Tennessee,37203,615
+Memphis,TN,Tennessee,38103,901
+Portland,OR,Oregon,97205,503
+Las Vegas,NV,Nevada,89101,702
+Reno,NV,Nevada,89501,775
+Louisville,KY,Kentucky,40202,502
+Baltimore,MD,Maryland,21202,410
+Milwaukee,WI,Wisconsin,53202,414
+Madison,WI,Wisconsin,53703,608
+Albuquerque,NM,New Mexico,87102,505
+Atlanta,GA,Georgia,30303,404
+Savannah,GA,Georgia,31401,912
+Miami,FL,Florida,33130,305
+Orlando,FL,Florida,32801,407
+Tampa,FL,Florida,33602,813
+Jacksonville,FL,Florida,32202,904
+Kansas City,MO,Missouri,64106,816
+Saint Louis,MO,Missouri,63101,314
+Omaha,NE,Nebraska,68102,402
+Minneapolis,MN,Minnesota,55401,612
+Saint Paul,MN,Minnesota,55102,651
+New Orleans,LA,Louisiana,70112,504
+Baton Rouge,LA,Louisiana,70801,225
+Oklahoma City,OK,Oklahoma,73102,405
+Tulsa,OK,Oklahoma,74103,918
+Salt Lake City,UT,Utah,84101,801
+Boise,ID,Idaho,83702,208
+Honolulu,HI,Hawaii,96813,808
+Anchorage,AK,Alaska,99501,907
+Richmond,VA,Virginia,23219,804
+Virginia Beach,VA,Virginia,23451,757
+Hartford,CT,Connecticut,06103,860
+Providence,RI,Rhode Island,02903,401
+Newark,NJ,New Jersey,07102,973
+Jersey City,NJ,New Jersey,07302,201
+Birmingham,AL,Alabama,35203,205
+Montgomery,AL,Alabama,36104,334
+Little Rock,AR,Arkansas,72201,501
+Des Moines,IA,Iowa,50309,515
+Wichita,KS,Kansas,67202,316
+Jackson,MS,Mississippi,39201,601
+Columbia,SC,South Carolina,29201,803
+Charleston,SC,South Carolina,29401,843
+Sioux Falls,SD,South Dakota,57104,605
+Fargo,ND,North Dakota,58102,701
+Billings,MT,Montana,59101,406
+Cheyenne,WY,Wyoming,82001,307
+Burlington,VT,Vermont,05401,802
+Manchester,NH,New Hampshire,03101,603
+Portland,ME,Maine,04101,207
+Wilmington,DE,Delaware,19801,302
+Charleston,WV,West Virginia,25301,304
