@@ -51,6 +51,7 @@ public class SqlClobGenerator extends AbstractDataGenerator<Clob> {
         return resultSet.getClob(columnIndex);
     }
 
+    /** Fluent builder for {@link SqlClobGenerator}. */
     public static class Builder extends AbstractBuilder<Clob> {
 
         /**

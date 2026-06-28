@@ -67,12 +67,19 @@ import java.util.Set;
  */
 public final class TPCCConfiguration {
 
+    /** Default number of items (I), per the spec. */
     public static final int DEFAULT_ITEMS = 100_000;
+    /** Default districts per warehouse (D), per the spec. */
     public static final int DEFAULT_DISTRICTS_PER_WAREHOUSE = 10;
+    /** Default customers (and orders) per district (C), per the spec. */
     public static final int DEFAULT_CUSTOMERS_PER_DISTRICT = 3_000;
+    /** Default minimum order lines per order (inclusive), per the spec. */
     public static final int DEFAULT_MIN_LINES_PER_ORDER = 5;
+    /** Default maximum order lines per order (inclusive), per the spec. */
     public static final int DEFAULT_MAX_LINES_PER_ORDER = 15;
+    /** Default most-recent (undelivered) orders per district held in {@code new_order}, per the spec. */
     public static final int DEFAULT_NEW_ORDERS_PER_DISTRICT = 900;
+    /** Default number of {@code c_last} names enumerated deterministically per district. */
     public static final int DEFAULT_ENUMERATED_LAST_NAMES = CustomerLastNameGenerator.MAX_ENUMERATED;
 
     // salt for the deterministic per-order line-count hash; fixed so datasets are reproducible

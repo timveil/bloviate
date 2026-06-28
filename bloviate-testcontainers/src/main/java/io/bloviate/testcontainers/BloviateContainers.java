@@ -77,6 +77,8 @@ public final class BloviateContainers {
         }
 
         /**
+         * Sets the JDBC batch size for INSERTs.
+         *
          * @param batchSize the JDBC batch size for INSERTs (default 1000)
          * @return this builder
          */
@@ -86,6 +88,8 @@ public final class BloviateContainers {
         }
 
         /**
+         * Sets the default number of rows to generate per table.
+         *
          * @param rows the default number of rows to generate per table (default 100)
          * @return this builder
          */
@@ -95,6 +99,8 @@ public final class BloviateContainers {
         }
 
         /**
+         * Sets the base seed for reproducible generation.
+         *
          * @param seed the base seed for reproducible generation (default 0); vary it for a
          *             different but reproducible dataset
          * @return this builder
@@ -116,6 +122,8 @@ public final class BloviateContainers {
         }
 
         /**
+         * Sets optional per-table overrides.
+         *
          * @param tableConfigurations optional per-table overrides (row counts, column generators)
          * @return this builder
          */

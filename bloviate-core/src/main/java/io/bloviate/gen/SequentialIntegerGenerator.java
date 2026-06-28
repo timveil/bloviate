@@ -69,11 +69,17 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> i
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link SequentialIntegerGenerator}. */
     public static class Builder extends AbstractBuilder<Integer> {
 
         private int startInclusive = 1;
         private int endInclusive = Integer.MAX_VALUE;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

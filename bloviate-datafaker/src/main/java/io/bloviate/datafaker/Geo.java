@@ -23,6 +23,12 @@ package io.bloviate.datafaker;
  * WY 90210". Drawn from a bundled reference dataset by {@link Places}; this is what Datafaker's
  * independent address parts cannot provide.
  *
+ * @param city              the city name
+ * @param stateAbbreviation the state's two-letter abbreviation
+ * @param state             the full state name
+ * @param zip               a valid zip/postal code for the city
+ * @param areaCode          a telephone area code local to the city
+ * @param country           the country name
  * @since 2.12.0
  * @see Places
  * @see RowContext

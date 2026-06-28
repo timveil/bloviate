@@ -51,6 +51,7 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
         return null;
     }
 
+    /** Fluent builder for {@link CharacterGenerator}. */
     public static class Builder extends AbstractBuilder<Character> {
         /**
          * Creates a builder backed by the given seeded random source.

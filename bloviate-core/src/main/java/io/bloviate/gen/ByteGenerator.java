@@ -61,6 +61,7 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
         return ArrayUtils.toObject(resultSet.getBytes(columnIndex));
     }
 
+    /** Fluent builder for {@link ByteGenerator}. */
     public static class Builder extends AbstractBuilder<Byte[]> {
 
         private int size = 25;

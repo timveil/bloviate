@@ -138,6 +138,10 @@ public final class GeneratorRegistry {
         private final Map<String, GeneratorFactory> typeNameRules = new LinkedHashMap<>();
         private final Map<JDBCType, GeneratorFactory> jdbcTypeRules = new EnumMap<>(JDBCType.class);
 
+        /** Creates an empty builder with no rules registered. */
+        public Builder() {
+        }
+
         /**
          * Registers a generator for columns whose {@link Column#name() name} matches the given
          * regular expression. Matching is full ({@link java.util.regex.Matcher#matches()}) and
@@ -207,6 +211,8 @@ public final class GeneratorRegistry {
         }
 
         /**
+         * Builds the registry from the rules registered so far.
+         *
          * @return an immutable registry holding the rules registered so far
          */
         public GeneratorRegistry build() {

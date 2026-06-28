@@ -93,12 +93,22 @@ public class GroupedPrefixGenerator<T> extends AbstractDataGenerator<T> implemen
         return delegate.get(resultSet, columnIndex);
     }
 
+    /**
+     * Builder for {@link GroupedPrefixGenerator}.
+     *
+     * @param <T> the Java type produced by the wrapped delegate
+     */
     public static class Builder<T> extends AbstractBuilder<T> {
 
         private int groupSize = 1;
         private int prefixSize = 0;
         private DataGenerator<T> delegate;
 
+        /**
+         * Creates a builder.
+         *
+         * @param random the random source (the wrapped delegate may use it)
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

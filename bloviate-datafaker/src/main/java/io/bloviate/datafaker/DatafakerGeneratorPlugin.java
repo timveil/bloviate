@@ -58,6 +58,8 @@ public class DatafakerGeneratorPlugin implements GeneratorPlugin {
     }
 
     /**
+     * Creates a plugin that generates realistic values in the given locale.
+     *
      * @param locale the locale for realistic values; fixed (not the JVM default) for reproducibility
      */
     public DatafakerGeneratorPlugin(Locale locale) {

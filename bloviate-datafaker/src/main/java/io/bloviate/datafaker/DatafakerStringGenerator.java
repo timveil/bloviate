@@ -51,6 +51,8 @@ public class DatafakerStringGenerator extends AbstractDataGenerator<String> {
     private Faker faker;
 
     /**
+     * Creates a generator that draws realistic values from the given Datafaker provider.
+     *
      * @param random        the engine-supplied, column-seeded random source
      * @param locale        the locale for realistic values (fixed for reproducibility)
      * @param maxSize        the column's max length, or null/0 for unbounded; longer values are truncated

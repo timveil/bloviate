@@ -94,6 +94,7 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
         return resultSet.getBigDecimal(columnIndex);
     }
 
+    /** Fluent builder for {@link BigDecimalGenerator}. */
     public static class Builder extends AbstractBuilder<BigDecimal> {
 
         private Integer maxPrecision;

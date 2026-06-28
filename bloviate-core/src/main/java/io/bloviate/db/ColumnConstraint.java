@@ -39,22 +39,41 @@ import java.util.List;
  */
 public record ColumnConstraint(List<String> allowedValues, BigDecimal min, boolean minInclusive, BigDecimal max, boolean maxInclusive) {
 
-    /** A set-of-allowed-values constraint (categorical / enum / {@code IN}). */
+    /**
+     * A set-of-allowed-values constraint (categorical / enum / {@code IN}).
+     *
+     * @param allowedValues the permitted values (their text form); defensively copied
+     * @return a constraint that admits only {@code allowedValues}
+     */
     public static ColumnConstraint ofValues(List<String> allowedValues) {
         return new ColumnConstraint(List.copyOf(allowedValues), null, false, null, false);
     }
 
-    /** A closed numeric range {@code [min, max]} (both inclusive). */
+    /**
+     * A closed numeric range {@code [min, max]} (both inclusive).
+     *
+     * @param min the inclusive lower bound
+     * @param max the inclusive upper bound
+     * @return a constraint that admits values in {@code [min, max]}
+     */
     public static ColumnConstraint ofRange(BigDecimal min, BigDecimal max) {
         return new ColumnConstraint(null, min, true, max, true);
     }
 
-    /** True if this is a set-of-allowed-values constraint. */
+    /**
+     * True if this is a set-of-allowed-values constraint.
+     *
+     * @return whether allowed values are present
+     */
     public boolean hasAllowedValues() {
         return allowedValues != null && !allowedValues.isEmpty();
     }
 
-    /** True if this is a numeric range with <em>both</em> bounds (the form the engine can honor). */
+    /**
+     * True if this is a numeric range with <em>both</em> bounds (the form the engine can honor).
+     *
+     * @return whether both {@code min} and {@code max} are present
+     */
     public boolean hasBoundedRange() {
         return min != null && max != null;
     }

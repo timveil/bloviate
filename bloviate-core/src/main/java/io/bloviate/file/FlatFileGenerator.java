@@ -126,18 +126,38 @@ public class FlatFileGenerator implements FileGenerator {
         }
     }
 
+    /**
+     * Returns the base output file name (the format-specific extension is appended at generation time).
+     *
+     * @return the base file name
+     */
     public String getFileName() {
         return fileName;
     }
 
+    /**
+     * Returns the file format definition controlling the delimiter and extension.
+     *
+     * @return the file format definition
+     */
     public FileDefinition getDefinition() {
         return definition;
     }
 
+    /**
+     * Returns the column definitions, in output order.
+     *
+     * @return the column definitions
+     */
     public List<ColumnDefinition> getColumnDefinitions() {
         return columnDefinitions;
     }
 
+    /**
+     * Returns the number of data rows to generate, excluding the header row.
+     *
+     * @return the data row count
+     */
     public long getRows() {
         return rows;
     }
@@ -157,6 +177,7 @@ public class FlatFileGenerator implements FileGenerator {
         csvPrinter.println();
     }
 
+    /** Builds a {@link FlatFileGenerator}, defaulting to CSV output and {@code 1000} rows with no columns. */
     public static class Builder {
 
         private final String fileName;
@@ -165,6 +186,11 @@ public class FlatFileGenerator implements FileGenerator {
         private List<ColumnDefinition> columnDefinitions = new ArrayList<>();
         private long rows = 1000;
 
+        /**
+         * Creates a builder for the given base output file name (the extension is added per output format).
+         *
+         * @param fileName the base file name, without extension
+         */
         public Builder(String fileName) {
             this.fileName = fileName;
         }

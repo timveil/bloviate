@@ -52,6 +52,10 @@ import java.util.*;
  */
 public class DatabaseUtils {
 
+    /** Static utility holder — not instantiable. */
+    private DatabaseUtils() {
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(DatabaseUtils.class);
 
     /**

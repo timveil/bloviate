@@ -50,6 +50,7 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link DoubleGenerator}. */
     public static class Builder extends AbstractBuilder<Double> {
 
         private double startInclusive = 0;

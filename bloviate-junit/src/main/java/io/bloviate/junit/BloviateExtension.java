@@ -49,6 +49,10 @@ import java.util.Optional;
  */
 public class BloviateExtension implements BeforeEachCallback {
 
+    /** Creates the extension; instantiated by JUnit via {@code @ExtendWith}. */
+    public BloviateExtension() {
+    }
+
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         FillDatabase fill = resolveAnnotation(context);

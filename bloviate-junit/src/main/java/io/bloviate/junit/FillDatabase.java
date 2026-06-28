@@ -59,11 +59,15 @@ import java.lang.annotation.Target;
 public @interface FillDatabase {
 
     /**
+     * The number of rows to generate per table.
+     *
      * @return the number of rows to generate per table (the default row count); defaults to 100
      */
     long rows() default 100L;
 
     /**
+     * The JDBC batch size used for INSERTs.
+     *
      * @return the JDBC batch size used for INSERTs; defaults to 1000
      */
     int batchSize() default 1000;

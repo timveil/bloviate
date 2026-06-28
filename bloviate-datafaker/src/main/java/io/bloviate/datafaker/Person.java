@@ -22,6 +22,11 @@ package io.bloviate.datafaker;
  * different fields of the same {@link Person} agree (no "jane.doe with email bob@…"). Materialized
  * once per row by {@link People}.
  *
+ * @param firstName the given name
+ * @param lastName  the family name
+ * @param fullName  the full name, derived from {@code firstName} and {@code lastName}
+ * @param email     an email address derived from the name (reserved {@code example.*} domain)
+ * @param username  a username derived from the name
  * @since 2.12.0
  * @see People
  * @see RowContext

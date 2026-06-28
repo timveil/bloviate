@@ -72,6 +72,7 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
         return result;
     }
 
+    /** Fluent builder for {@link StringArrayGenerator}. */
     public static class Builder extends AbstractBuilder<String[]> {
 
         private int length = 3;

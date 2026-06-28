@@ -54,6 +54,7 @@ public class NormalIntegerGenerator extends AbstractDataGenerator<Integer> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Builds a {@link NormalIntegerGenerator}, defaulting to a standard normal distribution (mean 0, standard deviation 1) spanning the full {@code int} range. */
     public static class Builder extends AbstractBuilder<Integer> {
 
         private double mean = 0.0;
@@ -61,25 +62,54 @@ public class NormalIntegerGenerator extends AbstractDataGenerator<Integer> {
         private int min = Integer.MIN_VALUE;
         private int max = Integer.MAX_VALUE;
 
+        /**
+         * Creates a builder drawing from the given random source.
+         *
+         * @param random the random source backing the generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the distribution mean (center); kept as a {@code double} so the center may sit between integers. Returns this builder for chaining.
+         *
+         * @param mean the mean of the normal distribution
+         * @return this builder
+         */
         public Builder mean(double mean) {
             this.mean = mean;
             return this;
         }
 
+        /**
+         * Sets the distribution standard deviation (spread); must be non-negative. Returns this builder for chaining.
+         *
+         * @param standardDeviation the standard deviation of the normal distribution
+         * @return this builder
+         */
         public Builder standardDeviation(double standardDeviation) {
             this.standardDeviation = standardDeviation;
             return this;
         }
 
+        /**
+         * Sets the inclusive lower bound that rounded values are clamped to. Returns this builder for chaining.
+         *
+         * @param min the minimum value
+         * @return this builder
+         */
         public Builder min(int min) {
             this.min = min;
             return this;
         }
 
+        /**
+         * Sets the inclusive upper bound that rounded values are clamped to. Returns this builder for chaining.
+         *
+         * @param max the maximum value
+         * @return this builder
+         */
         public Builder max(int max) {
             this.max = max;
             return this;

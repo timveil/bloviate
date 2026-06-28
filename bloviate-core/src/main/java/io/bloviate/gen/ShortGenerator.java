@@ -49,6 +49,7 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link ShortGenerator}. */
     public static class Builder extends AbstractBuilder<Short> {
 
         private int startInclusive = 0;

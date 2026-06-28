@@ -45,6 +45,7 @@ public class XmlGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Fluent builder for {@link XmlGenerator}. */
     public static class Builder extends AbstractBuilder<String> {
 
         /**

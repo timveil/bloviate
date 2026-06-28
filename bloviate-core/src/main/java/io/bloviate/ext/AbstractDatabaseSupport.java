@@ -39,6 +39,10 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
     private final Map<JDBCType, GeneratorFactory> registry;
 
+    /**
+     * Builds the support, seeding the registry with cross-database defaults and then invoking
+     * {@link #configure(Map)} so subclasses can add or replace entries.
+     */
     protected AbstractDatabaseSupport() {
         Map<JDBCType, GeneratorFactory> defaults = new EnumMap<>(JDBCType.class);
         registerDefaults(defaults);

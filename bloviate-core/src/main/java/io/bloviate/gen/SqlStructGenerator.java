@@ -59,6 +59,7 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
         return (Struct) resultSet.getObject(columnIndex);
     }
 
+    /** Fluent builder for {@link SqlStructGenerator}. */
     public static class Builder extends AbstractBuilder<Struct> {
 
         /**

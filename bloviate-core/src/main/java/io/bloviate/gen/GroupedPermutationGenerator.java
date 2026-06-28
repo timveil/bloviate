@@ -110,12 +110,18 @@ public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> 
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Builder for {@link GroupedPermutationGenerator}. */
     public static class Builder extends AbstractBuilder<Integer> {
 
         private int groupSize = 1;
         private int start = 0;
         private long seed = 0;
 
+        /**
+         * Creates a builder.
+         *
+         * @param random the random source (unused by this generator, but required by the contract)
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

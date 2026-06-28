@@ -75,6 +75,11 @@ public class WeightedCategoricalGenerator<T> extends AbstractDataGenerator<T> {
         return (T) resultSet.getObject(columnIndex);
     }
 
+    /**
+     * Fluent builder for {@link WeightedCategoricalGenerator}.
+     *
+     * @param <T> the category value type produced by the generator
+     */
     public static class Builder<T> extends AbstractBuilder<T> {
 
         private record Entry<T>(T value, double weight) {
@@ -82,12 +87,21 @@ public class WeightedCategoricalGenerator<T> extends AbstractDataGenerator<T> {
 
         private final List<Entry<T>> entries = new ArrayList<>();
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
         /**
          * Adds one value with its (positive) weight. Calls accumulate, so this can be chained.
+         *
+         * @param value  the value to emit
+         * @param weight the relative weight of the value; must be positive
+         * @return this builder, for chaining
          */
         public Builder<T> add(T value, double weight) {
             if (weight <= 0) {
@@ -100,6 +114,9 @@ public class WeightedCategoricalGenerator<T> extends AbstractDataGenerator<T> {
         /**
          * Adds every value/weight pair from the map. Order is irrelevant — the generator imposes a
          * stable canonical order so output is reproducible regardless of the map's iteration order.
+         *
+         * @param weights a map of values to their relative (positive) weights
+         * @return this builder, for chaining
          */
         public Builder<T> weights(Map<? extends T, ? extends Number> weights) {
             for (Map.Entry<? extends T, ? extends Number> entry : weights.entrySet()) {

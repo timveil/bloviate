@@ -61,27 +61,50 @@ public class SkewedTimestampGenerator extends AbstractDataGenerator<Timestamp> {
         return resultSet.getTimestamp(columnIndex);
     }
 
+    /** Fluent builder for {@link SkewedTimestampGenerator}. */
     public static class Builder extends AbstractBuilder<Timestamp> {
 
         private Instant start = DEFAULT_REFERENCE;
         private Instant end = DEFAULT_REFERENCE.plus(Duration.ofDays(5 * 365));
         private double skew = 3.0;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * The earliest timestamp, inclusive.
+         *
+         * @param start the lower bound of the generated range
+         * @return this builder, for chaining
+         */
         public Builder start(Instant start) {
             this.start = start;
             return this;
         }
 
+        /**
+         * The latest timestamp, inclusive.
+         *
+         * @param end the upper bound of the generated range
+         * @return this builder, for chaining
+         */
         public Builder end(Instant end) {
             this.end = end;
             return this;
         }
 
-        /** Recency skew; {@code 1.0} is uniform, larger pulls mass toward {@code end}. Must be {@code > 0}. */
+        /**
+         * Recency skew; {@code 1.0} is uniform, larger pulls mass toward {@code end}. Must be {@code > 0}.
+         *
+         * @param skew the skew exponent applied across the range
+         * @return this builder, for chaining
+         */
         public Builder skew(double skew) {
             this.skew = skew;
             return this;

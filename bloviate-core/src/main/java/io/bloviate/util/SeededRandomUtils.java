@@ -32,6 +32,8 @@ import java.util.random.RandomGenerator;
  * characters {@code RandomStringUtils} would yield for those flags &mdash; which avoids the
  * draw-and-reject loop entirely. The general {@code [start, end)} code-point path is retained for
  * completeness and mirrors the classic {@code RandomStringUtils.random(...)} rejection algorithm.
+ *
+ * @param random the seeded random source backing all helpers
  */
 
 public record SeededRandomUtils(RandomGenerator random) {

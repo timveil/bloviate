@@ -41,6 +41,7 @@ public class BitGenerator extends AbstractDataGenerator<Integer> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link BitGenerator}. */
     public static class Builder extends AbstractBuilder<Integer> {
 
         /**

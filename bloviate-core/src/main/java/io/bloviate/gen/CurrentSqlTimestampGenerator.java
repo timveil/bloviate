@@ -45,8 +45,14 @@ public class CurrentSqlTimestampGenerator extends AbstractDataGenerator<Timestam
         return resultSet.getTimestamp(columnIndex);
     }
 
+    /** Fluent builder for {@link CurrentSqlTimestampGenerator}. */
     public static class Builder extends AbstractBuilder<Timestamp> {
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

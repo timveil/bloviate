@@ -42,8 +42,14 @@ public class ZipCodeGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Builds {@link ZipCodeGenerator} instances. */
     public static class Builder extends AbstractBuilder<String> {
 
+        /**
+         * Creates a builder.
+         *
+         * @param random the random generator to seed the generator with
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

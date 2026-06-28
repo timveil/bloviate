@@ -78,21 +78,39 @@ public class OrderLineDeliveryDateGenerator extends AbstractDataGenerator<Timest
         return resultSet.getTimestamp(columnIndex);
     }
 
+    /** Builds {@link OrderLineDeliveryDateGenerator} instances. */
     public static class Builder extends AbstractBuilder<Timestamp> {
 
         private ChildCardinality cardinality;
         private int ordersPerDistrict = 1;
         private int deliveredThreshold = 0;
 
+        /**
+         * Creates a builder.
+         *
+         * @param random the random generator to seed the generator with
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the shared per-order line-count cardinality (required).
+         *
+         * @param cardinality the {@link ChildCardinality} shared with the {@code order_line} keys
+         * @return this builder
+         */
         public Builder cardinality(ChildCardinality cardinality) {
             this.cardinality = cardinality;
             return this;
         }
 
+        /**
+         * Sets the number of orders per district, used to wrap the parent {@code o_id} walker.
+         *
+         * @param ordersPerDistrict the number of orders per district
+         * @return this builder
+         */
         public Builder ordersPerDistrict(int ordersPerDistrict) {
             this.ordersPerDistrict = ordersPerDistrict;
             return this;
@@ -101,6 +119,9 @@ public class OrderLineDeliveryDateGenerator extends AbstractDataGenerator<Timest
         /**
          * Orders with {@code o_id <= deliveredThreshold} are delivered (timestamp); the rest are
          * undelivered (NULL). For TPC-C this is {@code ordersPerDistrict - newOrdersPerDistrict}.
+         *
+         * @param deliveredThreshold the highest {@code o_id} considered delivered
+         * @return this builder
          */
         public Builder deliveredThreshold(int deliveredThreshold) {
             this.deliveredThreshold = deliveredThreshold;

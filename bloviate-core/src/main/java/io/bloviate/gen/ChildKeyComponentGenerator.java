@@ -135,6 +135,7 @@ public class ChildKeyComponentGenerator extends AbstractDataGenerator<Integer> i
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Builder for {@link ChildKeyComponentGenerator}. */
     public static class Builder extends AbstractBuilder<Integer> {
 
         private ChildCardinality cardinality;
@@ -143,6 +144,11 @@ public class ChildKeyComponentGenerator extends AbstractDataGenerator<Integer> i
         private long repeat = 1;
         private int cycle = 1;
 
+        /**
+         * Creates a builder.
+         *
+         * @param random the random source (unused by this generator, but required by the contract)
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

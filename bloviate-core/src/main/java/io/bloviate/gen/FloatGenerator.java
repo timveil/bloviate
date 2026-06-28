@@ -49,6 +49,7 @@ public class FloatGenerator extends AbstractDataGenerator<Float> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link FloatGenerator}. */
     public static class Builder extends AbstractBuilder<Float> {
 
         private float startInclusive = 0;

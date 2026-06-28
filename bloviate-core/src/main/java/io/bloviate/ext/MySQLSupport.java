@@ -41,6 +41,10 @@ import java.util.Map;
  */
 public class MySQLSupport extends AbstractDatabaseSupport {
 
+    /** Creates the MySQL support with its default configuration. */
+    public MySQLSupport() {
+    }
+
     /**
      * Returns {@code rewriteBatchedStatements}, the MySQL Connector/J parameter that rewrites a batch
      * of single-row {@code INSERT}s into one multi-row statement. Enabling it (e.g.

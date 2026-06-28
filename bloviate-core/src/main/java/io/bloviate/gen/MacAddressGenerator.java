@@ -53,6 +53,7 @@ public class MacAddressGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Fluent builder for {@link MacAddressGenerator}. */
     public static class Builder extends AbstractBuilder<String> {
 
         private int octets = 6;

@@ -82,11 +82,17 @@ public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Builds {@link CustomerLastNameGenerator} instances. */
     public static class Builder extends AbstractBuilder<String> {
 
         private int groupSize = 0;
         private int enumeratedCount = 0;
 
+        /**
+         * Creates a builder.
+         *
+         * @param random the random generator backing the produced generator
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
@@ -94,6 +100,9 @@ public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
         /**
          * The number of customers per district, used to locate each row's position within its
          * district when {@link #enumeratedCount(int)} is set.
+         *
+         * @param groupSize the number of customers per district
+         * @return this builder
          */
         public Builder groupSize(int groupSize) {
             this.groupSize = groupSize;
@@ -104,6 +113,9 @@ public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
          * The number of customers at the start of each district whose last name is enumerated
          * deterministically ({@code 0..enumeratedCount-1}); the rest use {@code NURand}. Must be
          * in {@code [0, }{@value #MAX_ENUMERATED}{@code ]}; {@code 0} disables enumeration.
+         *
+         * @param enumeratedCount the number of deterministically enumerated customers per district
+         * @return this builder
          */
         public Builder enumeratedCount(int enumeratedCount) {
             this.enumeratedCount = enumeratedCount;
