@@ -79,14 +79,11 @@ Syntho").
 
 Stated plainly, so the boundary is clear:
 
-1. **No statistical fidelity.** It does not learn real distributions or cross-column correlations —
-   SDV / Gretel / MOSTLY AI are the right tools for ML-training or analytics realism.
+1. **No learned statistical fidelity.** It generates *specified* distributions, not ones learned from
+   real data — SDV / Gretel / MOSTLY AI are the right tools for ML-training or analytics realism.
 2. **No PII masking / de-identification** of existing data — that's Tonic / Delphix / Neosync / Jailer.
-3. **Type-driven, not yet semantically aware.** An `email VARCHAR` gets random text, not a plausible
-   email. Tracked in [#472](https://github.com/timveil/bloviate/issues/472) (semantic/column-name
-   inference) and [#473](https://github.com/timveil/bloviate/issues/473) (correlated columns).
-4. **JVM-only reach** — invisible to the Python-centric data-science world.
-5. **No GUI / low-code surface** — it's a library and a CI dependency.
+3. **JVM-only reach** — invisible to the Python-centric data-science world.
+4. **No GUI / low-code surface** — it's a library and a CI dependency.
 
 ## When to use Bloviate
 

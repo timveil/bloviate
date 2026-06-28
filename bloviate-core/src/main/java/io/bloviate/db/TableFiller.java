@@ -31,6 +31,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.random.RandomGenerator;
 
 /**
@@ -117,6 +119,11 @@ public class TableFiller implements Fillable {
 
         long baseSeed = databaseConfiguration.seed();
 
+        // value constraints (CHECK / enum) for this table's columns, so generated values conform
+        // (issue #479). Empty for databases without support; keyed by lower-cased column name.
+        String schema = filteredColumns.isEmpty() ? null : filteredColumns.get(0).schema();
+        Map<String, ColumnConstraint> constraints = databaseSupport.readConstraints(connection, schema, table.name());
+
         for (int idx = 0; idx < columnCount; idx++) {
 
             Column column = filteredColumns.get(idx);
@@ -156,7 +163,18 @@ public class TableFiller implements Fillable {
                 dataGenerator = columnConfiguration.generatorFactory().create(random);
             } else {
                 DataGenerator<?> custom = registry != null ? registry.resolve(column, random) : null;
-                dataGenerator = custom != null ? custom : databaseSupport.getDataGenerator(column, random);
+                if (custom != null) {
+                    dataGenerator = custom;
+                } else {
+                    // honor a CHECK/enum constraint when one applies and the user hasn't overridden the column
+                    ColumnConstraint constraint = constraints.get(column.name().toLowerCase(Locale.ROOT));
+                    DataGenerator<?> constrained = constraint != null ? ConstraintGenerators.create(column, constraint, random) : null;
+                    if (constraint != null && constrained == null) {
+                        logger.warn("constraint on column [{}.{}] could not be applied to its {} type; using the type default",
+                                table.name(), column.name(), column.jdbcType());
+                    }
+                    dataGenerator = constrained != null ? constrained : databaseSupport.getDataGenerator(column, random);
+                }
             }
 
             generators[idx] = dataGenerator;

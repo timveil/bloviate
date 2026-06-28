@@ -17,11 +17,13 @@
 package io.bloviate.ext;
 
 import io.bloviate.db.Column;
+import io.bloviate.db.ColumnConstraint;
 import io.bloviate.gen.DataGenerator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Locale;
+import java.util.Map;
 import java.util.random.RandomGenerator;
 
 /**
@@ -74,6 +76,25 @@ public interface DatabaseSupport {
      */
     default String batchRewriteUrlParameter() {
         return null;
+    }
+
+    /**
+     * Reads the value constraints (CHECK constraints and enum/domain allowed values) for a table's
+     * columns, so the fill engine can generate values that satisfy them (issue #479). The default
+     * returns an empty map (no constraint awareness); database-specific implementations override it
+     * with vendor catalog queries.
+     *
+     * <p>Constraint reading is best-effort and must never fail a fill: an implementation that cannot
+     * read the catalog should log and return what it has.
+     *
+     * @param connection an open connection to query the catalog with
+     * @param schema     the table's schema (may be null for the default schema)
+     * @param table      the table name
+     * @return constraints keyed by lower-cased column name; empty when none are found or supported
+     * @since 2.14.0
+     */
+    default Map<String, ColumnConstraint> readConstraints(Connection connection, String schema, String table) {
+        return Map.of();
     }
 
     /**

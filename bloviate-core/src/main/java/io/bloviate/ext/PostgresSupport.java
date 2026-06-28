@@ -73,6 +73,11 @@ public class PostgresSupport extends AbstractDatabaseSupport {
     }
 
     @Override
+    public java.util.Map<String, io.bloviate.db.ColumnConstraint> readConstraints(java.sql.Connection connection, String schema, String table) {
+        return PostgresConstraints.read(connection, schema, table);
+    }
+
+    @Override
     protected void configure(Map<JDBCType, GeneratorFactory> registry) {
 
         // PostgreSQL reports both bit/bit(n) and boolean as JDBCType.BIT, distinguished by
