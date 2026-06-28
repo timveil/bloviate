@@ -1,26 +1,74 @@
 ## [2.15.0](https://github.com/timveil/bloviate/compare/v2.14.0...v2.15.0) (2026-06-28)
 
+### ✨ Features
+
+* **ext:** honor check and enum constraints on postgres ([#479](https://github.com/timveil/bloviate/issues/479) Part B) ([#491](https://github.com/timveil/bloviate/issues/491)) ([886340d](https://github.com/timveil/bloviate/commit/886340de304915144817332a4da262f3a33c934c)), closes [#472](https://github.com/timveil/bloviate/issues/472) [#473](https://github.com/timveil/bloviate/issues/473)
+
 ## [2.14.0](https://github.com/timveil/bloviate/compare/v2.13.0...v2.14.0) (2026-06-28)
+
+### ✨ Features
+
+* **datafaker:** referential realism — correlated person & geo columns ([#473](https://github.com/timveil/bloviate/issues/473)) ([#484](https://github.com/timveil/bloviate/issues/484)) ([4cfa56e](https://github.com/timveil/bloviate/commit/4cfa56eaf6a3adb52a61817ae2cffd9ea42752a8))
 
 ## [2.13.0](https://github.com/timveil/bloviate/compare/v2.12.0...v2.13.0) (2026-06-27)
 
+### ✨ Features
+
+* **datafaker:** optional semantic/realistic data via column-name inference ([#472](https://github.com/timveil/bloviate/issues/472)) ([#483](https://github.com/timveil/bloviate/issues/483)) ([3097f73](https://github.com/timveil/bloviate/commit/3097f734c26ff7d95c54a9398de985a5e12b1043))
+
 ## [2.12.0](https://github.com/timveil/bloviate/compare/v2.11.0...v2.12.0) (2026-06-27)
+
+### ✨ Features
+
+* **gen:** non-uniform value distributions ([#479](https://github.com/timveil/bloviate/issues/479) Part A) ([#482](https://github.com/timveil/bloviate/issues/482)) ([b26dfd3](https://github.com/timveil/bloviate/commit/b26dfd3fd88e8f430369fe6999d39089521749d9))
 
 ## [2.11.0](https://github.com/timveil/bloviate/compare/v2.10.0...v2.11.0) (2026-06-27)
 
+### ✨ Features
+
+* **perf:** intra-table partitioning, commit strategy, batch-rewrite warning ([#466](https://github.com/timveil/bloviate/issues/466), [#467](https://github.com/timveil/bloviate/issues/467), [#468](https://github.com/timveil/bloviate/issues/468)) ([5486aca](https://github.com/timveil/bloviate/commit/5486aca20aa2379471b5edd71e7377f782f44e96)), closes [#447](https://github.com/timveil/bloviate/issues/447)
+
 ## [2.10.0](https://github.com/timveil/bloviate/compare/v2.9.1...v2.10.0) (2026-06-27)
+
+### ✨ Features
+
+* **gen:** migrate RNG to java.util.random.RandomGenerator (L64X128MixRandom) ([cbff860](https://github.com/timveil/bloviate/commit/cbff860c54701eb48480e3605d31a4bb84fe3668)), closes [#471](https://github.com/timveil/bloviate/issues/471) [#471](https://github.com/timveil/bloviate/issues/471)
 
 ## [2.9.1](https://github.com/timveil/bloviate/compare/v2.9.0...v2.9.1) (2026-06-27)
 
+### 🐛 Bug Fixes
+
+* **gen:** make default temporal generators reproducible ([#464](https://github.com/timveil/bloviate/issues/464)) ([#465](https://github.com/timveil/bloviate/issues/465)) ([b97bb0f](https://github.com/timveil/bloviate/commit/b97bb0fac16c6bbf42a7f7611a85c441d9665b3d))
+
 ## [2.9.0](https://github.com/timveil/bloviate/compare/v2.8.0...v2.9.0) (2026-06-27)
+
+### ✨ Features
+
+* **perf:** parallel table fill, per-table commit, and hot-loop dispatch ([#447](https://github.com/timveil/bloviate/issues/447)) ([#463](https://github.com/timveil/bloviate/issues/463)) ([ac93f3f](https://github.com/timveil/bloviate/commit/ac93f3fbe4888e37c722d08531ee88e97dbe9eb0)), closes [#1](https://github.com/timveil/bloviate/issues/1) [#3](https://github.com/timveil/bloviate/issues/3) [#5](https://github.com/timveil/bloviate/issues/5) [#4](https://github.com/timveil/bloviate/issues/4)
 
 ## [2.8.0](https://github.com/timveil/bloviate/compare/v2.7.0...v2.8.0) (2026-06-27)
 
+### ✨ Features
+
+* **benchmarks:** add JMH and end-to-end fill benchmark harness ([b214b32](https://github.com/timveil/bloviate/commit/b214b323ed9abad7558d98a45434387685463f0f)), closes [#447](https://github.com/timveil/bloviate/issues/447)
+
 ## [2.7.0](https://github.com/timveil/bloviate/compare/v2.6.0...v2.7.0) (2026-06-27)
+
+### ✨ Features
+
+* add JUnit 5 and Testcontainers integration modules ([73f4c63](https://github.com/timveil/bloviate/commit/73f4c6332891154ff4bddcbc8a002ca0b3d71b37)), closes [#448](https://github.com/timveil/bloviate/issues/448)
 
 ## [2.6.0](https://github.com/timveil/bloviate/compare/v2.5.0...v2.6.0) (2026-06-27)
 
+### ✨ Features
+
+* **ext:** pluggable custom data generators via registry + ServiceLoader ([6bd1224](https://github.com/timveil/bloviate/commit/6bd1224edc078b813f1fc05c01fafa341d0a4a45)), closes [#446](https://github.com/timveil/bloviate/issues/446)
+
 ## [2.5.0](https://github.com/timveil/bloviate/compare/v2.4.0...v2.5.0) (2026-06-27)
+
+### ✨ Features
+
+* **ext:** full PostgreSQL and MySQL vendor-type support ([f17e03f](https://github.com/timveil/bloviate/commit/f17e03fd49de2863538692e63dcf1c34b163938d)), closes [#443](https://github.com/timveil/bloviate/issues/443)
 
 ## [2.4.0](https://github.com/timveil/bloviate/compare/v2.3.0...v2.4.0) (2026-06-26)
 
