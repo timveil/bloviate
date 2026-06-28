@@ -1,0 +1,53 @@
+name: Update Maven Wrapper
+
+# Dependabot does not manage the Maven wrapper, so this keeps it current: monthly (and on demand)
+# it bumps the wrapper to the latest Maven 3.9.x and opens a PR for review.
+on:
+  schedule:
+    - cron: '0 6 1 * *'   # 06:00 UTC on the 1st of each month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Bump wrapper to the latest Maven 3.9.x
+        id: bump
+        run: |
+          latest=$(curl -fsSL https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml \
+            | grep -oE '<version>3\.9\.[0-9]+</version>' | sed -E 's@</?version>@@g' | sort -V | tail -1)
+          echo "Latest Maven 3.9.x is $latest"
+          echo "version=$latest" >> "$GITHUB_OUTPUT"
+          ./mvnw -B -ntp -N wrapper:wrapper "-Dmaven=$latest"
+          ./mvnw -B -ntp -version   # sanity-check that the regenerated wrapper runs
+
+      - name: Open a PR if the wrapper changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet; then
+            echo "Maven wrapper already up to date."
+            exit 0
+          fi
+          version="${{ steps.bump.outputs.version }}"
+          branch="chore/maven-wrapper-${version}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git commit -am "chore: update Maven wrapper to ${version}"
+          git push -u origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "chore: update Maven wrapper to ${version}" \
+            --body "Automated bump of the Maven wrapper to ${version} (latest 3.9.x). The regenerated wrapper was sanity-checked with \`mvnw -version\`. Review and merge. (A major bump to Maven 4 is intentionally out of scope to avoid a surprise breaking change.)"
