@@ -442,7 +442,7 @@ public class MyGenerators implements GeneratorPlugin {
 
 ### Semantic / Realistic Data (`bloviate-datafaker`)
 
-By default an `email VARCHAR` gets random text, not a plausible email. The optional
+The type-driven default fills an `email VARCHAR` from its type (random text). The optional
 **`bloviate-datafaker`** module maps common column **names** (`email`, `first_name`, `phone`, `city`,
 `zip`, …) to realistic [Datafaker](https://www.datafaker.net/) values — keeping the core
 dependency-free (Datafaker only lands if you add this module).
