@@ -85,6 +85,12 @@
         <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
+
+        <!-- Per-package test-coverage floor enforced by jacoco:check (bound to verify). Set just
+             below current coverage to lock in no-regression; ratchet upward over time. Modules that
+             cannot yet meet the default override these properties in their own pom. -->
+        <jacoco.line.min>0.78</jacoco.line.min>
+        <jacoco.branch.min>0.55</jacoco.branch.min>
     </properties>
 
     <distributionManagement>
@@ -264,6 +270,35 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <haltOnFailure>true</haltOnFailure>
+                            <rules>
+                                <!-- every package in the module must meet the floor; thresholds are
+                                     properties so weak modules can relax them in their own pom -->
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.line.min}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.branch.min}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
