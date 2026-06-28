@@ -1,3 +1,9 @@
+## [2.15.1](https://github.com/timveil/bloviate/compare/v2.15.0...v2.15.1) (2026-06-28)
+
+### 🔧 Build System
+
+* give the core and parent artifacts meaningful descriptions ([#495](https://github.com/timveil/bloviate/issues/495)) ([4132c12](https://github.com/timveil/bloviate/commit/4132c12368926a65f16f61e97fd6ccd931372281))
+
 ## [2.15.0](https://github.com/timveil/bloviate/compare/v2.14.0...v2.15.0) (2026-06-28)
 
 ### ✨ Features
