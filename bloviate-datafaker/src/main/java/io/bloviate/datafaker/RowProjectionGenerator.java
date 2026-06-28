@@ -50,11 +50,27 @@ public final class RowProjectionGenerator<E> extends AbstractDataGenerator<Strin
         this.selector = selector;
     }
 
+    /**
+     * Projects the selected field of the entity for the current row, then advances this
+     * projection's row counter by one. The entity is resolved from the shared {@link RowContext}
+     * for the current row index, so sibling projections of the same context yield a consistent
+     * tuple.
+     *
+     * @return the selected field of the current row's entity, as a string
+     */
     @Override
     public String generate() {
         return selector.apply(context.at(counter.getAndIncrement()));
     }
 
+    /**
+     * Positions this projection's row counter at the given row index, so the next
+     * {@link #generate()} projects that row's entity. Used for positional or partitioned access,
+     * where each partition seeks to its first row and then walks forward.
+     *
+     * @param rowIndex the zero-based row index to position at
+     * @throws IllegalArgumentException if {@code rowIndex} is negative
+     */
     @Override
     public void seek(long rowIndex) {
         if (rowIndex < 0) {
@@ -63,6 +79,14 @@ public final class RowProjectionGenerator<E> extends AbstractDataGenerator<Strin
         counter.set(rowIndex);
     }
 
+    /**
+     * Reads this projection's value back from a {@link ResultSet} as a string.
+     *
+     * @param resultSet   the result set positioned on the row to read
+     * @param columnIndex the one-based column index to read
+     * @return the column value as a string
+     * @throws SQLException if the value cannot be read from the result set
+     */
     @Override
     public String get(ResultSet resultSet, int columnIndex) throws SQLException {
         return resultSet.getString(columnIndex);

@@ -93,16 +93,41 @@ public class CompositeKeyComponentGenerator extends AbstractDataGenerator<Intege
             super(random);
         }
 
+        /**
+         * The first (lowest) value this dimension takes, inclusive — the {@code start} term in
+         * {@code start + ((rowIndex / repeat) % cycle)}. It is the value emitted for row 0, and the
+         * dimension then ranges over {@code [start, start + cycle)}. Defaults to {@code 1}.
+         *
+         * @param start the first value of this dimension, inclusive
+         * @return this builder, for chaining
+         */
         public Builder start(int start) {
             this.start = start;
             return this;
         }
 
+        /**
+         * How many consecutive rows share this dimension's value before it advances — the
+         * {@code repeat} term in {@code start + ((rowIndex / repeat) % cycle)}. It must equal the
+         * product of the sizes ({@code cycle}s) of all dimensions nested inside this one (use
+         * {@code 1} for the innermost dimension). Defaults to {@code 1}.
+         *
+         * @param repeat the number of consecutive rows per value (product of inner dimension sizes)
+         * @return this builder, for chaining
+         */
         public Builder repeat(long repeat) {
             this.repeat = repeat;
             return this;
         }
 
+        /**
+         * This dimension's cardinality — how many distinct values it takes before wrapping back to
+         * {@code start}; the {@code cycle} term in {@code start + ((rowIndex / repeat) % cycle)}.
+         * Defaults to {@code 1}.
+         *
+         * @param cycle the number of distinct values (size) of this dimension
+         * @return this builder, for chaining
+         */
         public Builder cycle(int cycle) {
             this.cycle = cycle;
             return this;

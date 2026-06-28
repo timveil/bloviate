@@ -16,6 +16,18 @@
 
 package io.bloviate.ext;
 
+/**
+ * Fallback {@link DatabaseSupport} for generic or unknown JDBC databases.
+ *
+ * <p>This support adds no vendor-specific generators on top of {@link AbstractDatabaseSupport}, so it
+ * handles only the standard JDBC types every driver reports. It is used when no product-specific
+ * support (PostgreSQL, MySQL, CockroachDB, etc.) matches the database, providing reasonable default
+ * behavior at the cost of not understanding any non-standard, vendor-specific column types.
+ *
+ * @since 1.0.0
+ * @see AbstractDatabaseSupport
+ * @see DatabaseSupport
+ */
 public class DefaultSupport extends AbstractDatabaseSupport {
 
 }

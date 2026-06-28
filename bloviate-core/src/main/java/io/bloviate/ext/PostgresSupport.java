@@ -67,6 +67,16 @@ import java.util.Map;
  */
 public class PostgresSupport extends AbstractDatabaseSupport {
 
+    /**
+     * Returns {@code reWriteBatchedInserts}, the PostgreSQL JDBC driver parameter that rewrites a
+     * batch of single-row {@code INSERT}s into one multi-row statement. Enabling it (e.g.
+     * {@code jdbc:postgresql://host/db?reWriteBatchedInserts=true}) drastically cuts the number of
+     * round trips and is often the single biggest fill speedup; Bloviate logs a one-time
+     * recommendation when a fill connection's URL does not set it.
+     *
+     * @return the {@code reWriteBatchedInserts} parameter name
+     * @since 2.10.0
+     */
     @Override
     public String batchRewriteUrlParameter() {
         return "reWriteBatchedInserts";

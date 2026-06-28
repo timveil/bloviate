@@ -147,29 +147,61 @@ public class ChildKeyComponentGenerator extends AbstractDataGenerator<Integer> i
             super(random);
         }
 
+        /**
+         * The {@link ChildCardinality} that supplies each parent's child count. This drives the walk
+         * over parents in both modes, so it <b>must be the same {@link ChildCardinality} instance</b>
+         * shared with this child table's other component generators and with the parent table's
+         * {@link ChildCountGenerator}; otherwise the parent keys, sequence numbers, and declared child
+         * counts will not line up. Required — {@link #build()} throws if left unset.
+         *
+         * @param cardinality the shared per-parent child-count source
+         * @return this builder, for chaining
+         */
         public Builder cardinality(ChildCardinality cardinality) {
             this.cardinality = cardinality;
             return this;
         }
 
         /**
-         * Emit the child's 1-based sequence number within its parent (using {@code start}
-         * as the base). Mutually exclusive with {@link #repeat(long)}/{@link #cycle(int)}.
+         * Switches this generator into <b>sequence mode</b>: it emits the child's 1-based sequence
+         * number within its parent ({@code start + positionWithinParent}, so {@code start = 1} yields
+         * {@code 1, 2, 3, ...}). Use this for the trailing sequence column of the child key. Mutually
+         * exclusive with the parent-component mode configured via {@link #repeat(long)}/
+         * {@link #cycle(int)} (which is the default when {@code sequence()} is not called); in that
+         * mode the generator instead reproduces one dimension of the parent's key.
+         *
+         * @return this builder, for chaining
          */
         public Builder sequence() {
             this.sequence = true;
             return this;
         }
 
+        /**
+         * The base value, inclusive. In {@linkplain #sequence() sequence mode} it is the number of the
+         * first child within each parent ({@code start = 1} yields {@code 1, 2, 3, ...}); in
+         * parent-component mode it is the {@code start} term of
+         * {@code start + ((parentIndex / repeat) % cycle)} and must match the corresponding parent
+         * {@link CompositeKeyComponentGenerator.Builder#start(int) start}. Defaults to {@code 1}.
+         *
+         * @param start the first value of the sequence or parent dimension, inclusive
+         * @return this builder, for chaining
+         */
         public Builder start(int start) {
             this.start = start;
             return this;
         }
 
         /**
-         * For a parent-component generator, the number of consecutive parents that share this
-         * dimension's value — i.e. the product of the sizes of all parent dimensions nested
-         * inside this one (mirrors {@link CompositeKeyComponentGenerator}).
+         * For a parent-component generator (i.e. when {@link #sequence()} is not used), the number of
+         * consecutive parents that share this dimension's value — i.e. the product of the sizes of all
+         * parent dimensions nested inside this one (mirrors {@link CompositeKeyComponentGenerator}, and
+         * must match the parent's own {@code repeat}). The {@code repeat} term in
+         * {@code start + ((parentIndex / repeat) % cycle)}. Ignored in sequence mode. Defaults to
+         * {@code 1}.
+         *
+         * @param repeat the number of consecutive parents per value (product of inner parent dimension sizes)
+         * @return this builder, for chaining
          */
         public Builder repeat(long repeat) {
             this.repeat = repeat;
@@ -177,13 +209,25 @@ public class ChildKeyComponentGenerator extends AbstractDataGenerator<Integer> i
         }
 
         /**
-         * For a parent-component generator, the size of this parent dimension.
+         * For a parent-component generator (i.e. when {@link #sequence()} is not used), the size
+         * (cardinality) of this parent dimension — the {@code cycle} term in
+         * {@code start + ((parentIndex / repeat) % cycle)}, which must match the parent's own
+         * {@code cycle}. Ignored in sequence mode. Defaults to {@code 1}.
+         *
+         * @param cycle the number of distinct values (size) of this parent dimension
+         * @return this builder, for chaining
          */
         public Builder cycle(int cycle) {
             this.cycle = cycle;
             return this;
         }
 
+        /**
+         * Builds the generator.
+         *
+         * @return a new {@link ChildKeyComponentGenerator}
+         * @throws IllegalStateException if no {@link #cardinality(ChildCardinality) cardinality} was set
+         */
         @Override
         public ChildKeyComponentGenerator build() {
             return new ChildKeyComponentGenerator(this);

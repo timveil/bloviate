@@ -59,20 +59,45 @@ public class ScaledBigDecimalGenerator extends AbstractDataGenerator<BigDecimal>
         private double endExclusive = 1;
         private int scale = 2;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the inclusive lower bound of the generated range. Defaults to {@code 0}.
+         *
+         * @param start the smallest value that may be generated (inclusive)
+         * @return this builder, for chaining
+         */
         public Builder start(double start) {
             this.startInclusive = start;
             return this;
         }
 
+        /**
+         * Sets the exclusive upper bound of the generated range. Defaults to {@code 1}; generated
+         * values are always strictly less than this bound.
+         *
+         * @param end the upper bound that may never be generated (exclusive)
+         * @return this builder, for chaining
+         */
         public Builder end(double end) {
             this.endExclusive = end;
             return this;
         }
 
+        /**
+         * Sets the number of decimal places (fractional digits) the value is rounded to, using
+         * {@code RoundingMode.HALF_UP}. Defaults to {@code 2}.
+         *
+         * @param scale the number of digits to the right of the decimal point
+         * @return this builder, for chaining
+         */
         public Builder scale(int scale) {
             this.scale = scale;
             return this;

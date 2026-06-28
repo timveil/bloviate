@@ -19,6 +19,15 @@ package io.bloviate.gen;
 import java.sql.*;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generator for SQL {@code BLOB} (binary large object) columns.
+ *
+ * <p>Generation is not yet implemented: {@link #generate()} and {@link #generateAsString()}
+ * currently return {@code null}, so nullable {@code BLOB} columns fill with {@code null} and a
+ * non-nullable one will fail at insert. {@link #set(Connection, PreparedStatement, int, Blob)}
+ * and {@link #get(ResultSet, int)} bind and read a {@link Blob} normally, so round-tripping an
+ * existing value works.
+ */
 public class SqlBlobGenerator extends AbstractDataGenerator<Blob> {
     //todo
 
@@ -44,6 +53,11 @@ public class SqlBlobGenerator extends AbstractDataGenerator<Blob> {
 
     public static class Builder extends AbstractBuilder<Blob> {
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

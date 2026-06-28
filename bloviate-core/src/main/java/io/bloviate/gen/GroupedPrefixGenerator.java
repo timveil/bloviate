@@ -103,25 +103,55 @@ public class GroupedPrefixGenerator<T> extends AbstractDataGenerator<T> implemen
             super(random);
         }
 
+        /**
+         * The size of each consecutive group of rows; the sparse-prefix pattern repeats every
+         * {@code groupSize} rows. A row's position within its group is {@code rowIndex % groupSize};
+         * positions below {@link #prefixSize(int) prefixSize} get a value, the rest are {@code null}.
+         * Must be {@code >= 1}, otherwise {@link #build()} throws. Defaults to {@code 1}.
+         *
+         * @param groupSize the number of rows per group; must be {@code >= 1}
+         * @return this builder, for chaining
+         */
         public Builder<T> groupSize(int groupSize) {
             this.groupSize = groupSize;
             return this;
         }
 
         /**
-         * How many rows at the start of each group receive a (non-null) value from the delegate;
-         * the remaining {@code groupSize - prefixSize} rows are NULL.
+         * How many rows at the start of each group receive a (non-null) value from the delegate; the
+         * remaining {@code groupSize - prefixSize} rows emit SQL {@code NULL}. So {@code prefixSize = 0}
+         * makes the whole column null and {@code prefixSize = groupSize} makes it fully populated. Must
+         * be in {@code [0, groupSize]}, otherwise {@link #build()} throws. Defaults to {@code 0}.
+         *
+         * @param prefixSize the number of leading non-null rows per group; must be in {@code [0, groupSize]}
+         * @return this builder, for chaining
          */
         public Builder<T> prefixSize(int prefixSize) {
             this.prefixSize = prefixSize;
             return this;
         }
 
+        /**
+         * The wrapped generator that supplies the value for each prefix (non-null) row; it is consulted
+         * only on prefix rows, never for the null tail, so a stateless delegate is recommended.
+         * Required — {@link #build()} throws if left unset.
+         *
+         * @param delegate the generator producing the non-null prefix values
+         * @return this builder, for chaining
+         */
         public Builder<T> delegate(DataGenerator<T> delegate) {
             this.delegate = delegate;
             return this;
         }
 
+        /**
+         * Builds the generator.
+         *
+         * @return a new {@link GroupedPrefixGenerator}
+         * @throws IllegalArgumentException if {@code groupSize < 1} or {@code prefixSize} is not in
+         *                                  {@code [0, groupSize]}
+         * @throws IllegalStateException    if no {@link #delegate(DataGenerator) delegate} was set
+         */
         @Override
         public GroupedPrefixGenerator<T> build() {
             return new GroupedPrefixGenerator<>(this);

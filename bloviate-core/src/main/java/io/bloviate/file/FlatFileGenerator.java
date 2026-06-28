@@ -170,26 +170,58 @@ public class FlatFileGenerator implements FileGenerator {
         }
 
 
+        /**
+         * Sets the output file format definition. Defaults to {@link CsvFile} (CSV output)
+         * when not specified.
+         *
+         * @param fileDefinition the file format definition controlling the delimiter and extension
+         * @return this builder, for chaining
+         */
         public Builder output(FileDefinition fileDefinition) {
             this.definition = fileDefinition;
             return this;
         }
 
+        /**
+         * Replaces the column definitions with the supplied list. The columns are written in the
+         * order given, one delimited field per column.
+         *
+         * @param columnDefinitions the column definitions to use
+         * @return this builder, for chaining
+         */
         public Builder addAll(List<ColumnDefinition> columnDefinitions) {
             this.columnDefinitions = columnDefinitions;
             return this;
         }
 
+        /**
+         * Appends a single column definition to the existing list of columns.
+         *
+         * @param columnDefinition the column definition to append
+         * @return this builder, for chaining
+         */
         public Builder add(ColumnDefinition columnDefinition) {
             this.columnDefinitions.add(columnDefinition);
             return this;
         }
 
+        /**
+         * Sets the number of data rows to generate, excluding the header row. Defaults to
+         * {@code 1000} when not specified.
+         *
+         * @param rows the number of data rows to write
+         * @return this builder, for chaining
+         */
         public Builder rows(long rows) {
             this.rows = rows;
             return this;
         }
 
+        /**
+         * Builds a new {@link FlatFileGenerator} from this builder's configuration.
+         *
+         * @return a configured {@link FlatFileGenerator}
+         */
         public FlatFileGenerator build() {
             return new FlatFileGenerator(this);
         }

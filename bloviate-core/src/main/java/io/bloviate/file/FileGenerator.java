@@ -16,9 +16,23 @@
 
 package io.bloviate.file;
 
+/**
+ * Generates output files from a set of column definitions.
+ *
+ * <p>Implementations write generated data to disk and can also export their own
+ * configuration as YAML.
+ */
 public interface FileGenerator {
 
+    /**
+     * Generates the output data file, writing one header row followed by the configured
+     * number of data rows.
+     */
     void generate();
 
+    /**
+     * Exports this generator's configuration to a YAML file (named after the generator's
+     * base file name with a {@code .yaml} extension).
+     */
     void yaml();
 }

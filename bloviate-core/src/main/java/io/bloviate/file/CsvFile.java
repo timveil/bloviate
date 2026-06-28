@@ -16,8 +16,15 @@
 
 package io.bloviate.file;
 
+/**
+ * {@link FileDefinition} for comma-delimited (CSV) output. Fields are separated by a
+ * comma ({@code ,}).
+ */
 public class CsvFile extends FileDefinition {
 
+    /**
+     * Constructs a new CSV file definition using the {@link FileType#CSV} format.
+     */
     public CsvFile() {
         super(FileType.CSV);
     }

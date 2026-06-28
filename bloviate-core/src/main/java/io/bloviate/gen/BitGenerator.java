@@ -20,6 +20,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates a single bit as an {@code Integer} that is either {@code 0} or {@code 1}, chosen
+ * uniformly using the seeded random source (so a given seed yields a reproducible sequence).
+ * Backed by an {@link IntegerGenerator} over the half-open range {@code [0, 2)}. Suitable for
+ * {@code BIT} columns.
+ */
 public class BitGenerator extends AbstractDataGenerator<Integer> {
 
     private final IntegerGenerator integerGenerator;
@@ -37,6 +43,11 @@ public class BitGenerator extends AbstractDataGenerator<Integer> {
 
     public static class Builder extends AbstractBuilder<Integer> {
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

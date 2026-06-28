@@ -37,14 +37,29 @@ public class StaticStringGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /**
+     * Builder for {@link StaticStringGenerator} instances.
+     */
     public static class Builder extends AbstractBuilder<String> {
 
         private String value = "";
 
+        /**
+         * Constructs a new builder. The random generator is required by the builder contract but
+         * is never consulted, since the generated value is constant.
+         *
+         * @param random the random generator (unused by this generator)
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the constant value returned by every call to the generator.
+         *
+         * @param value the fixed string to emit. Defaults to the empty string {@code ""}.
+         * @return this builder, for chaining
+         */
         public Builder value(String value) {
             this.value = value;
             return this;

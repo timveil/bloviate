@@ -20,6 +20,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates IPv4 host addresses as a dotted-quad {@link String}, e.g. {@code 12.198.4.251}.
+ *
+ * <p>Each of the four octets is drawn from {@code 1..255} (inclusive), so the value is a valid
+ * PostgreSQL {@code inet} host address. Output is seeded and therefore reproducible for a given
+ * random source.
+ */
 public class InetGenerator extends AbstractDataGenerator<String> {
 
     private final IntegerGenerator integerGenerator;
@@ -41,6 +48,11 @@ public class InetGenerator extends AbstractDataGenerator<String> {
 
     public static class Builder extends AbstractBuilder<String> {
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

@@ -61,6 +61,11 @@ public class SqlStructGenerator extends AbstractDataGenerator<Struct> {
 
     public static class Builder extends AbstractBuilder<Struct> {
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

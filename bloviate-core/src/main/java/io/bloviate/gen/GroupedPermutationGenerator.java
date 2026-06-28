@@ -121,27 +121,53 @@ public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> 
         }
 
         /**
-         * The size of each permutation group; each run of this many rows is a fresh permutation
-         * of {@code [start, start + groupSize)}. Must be in {@code [1, 2^30]}.
+         * The size of each permutation group: every consecutive run of this many rows is an
+         * independent shuffle (a within-group permutation) of {@code [start, start + groupSize)}, after
+         * which a fresh permutation begins. It is the {@code groupSize} divisor in
+         * {@code start + permute(rowIndex % groupSize)} keyed by {@code rowIndex / groupSize}. Must be
+         * in {@code [1, 2^30]}, otherwise {@link #build()} throws. Defaults to {@code 1}.
+         *
+         * @param groupSize the number of rows per permutation block; must be in {@code [1, 2^30]}
+         * @return this builder, for chaining
          */
         public Builder groupSize(int groupSize) {
             this.groupSize = groupSize;
             return this;
         }
 
+        /**
+         * The lowest value of the permuted range, inclusive: each group is a permutation of
+         * {@code [start, start + groupSize)} (the {@code start} offset added to each permuted index).
+         * Defaults to {@code 0}.
+         *
+         * @param start the lowest value of the permuted range, inclusive
+         * @return this builder, for chaining
+         */
         public Builder start(int start) {
             this.start = start;
             return this;
         }
 
         /**
-         * Salt for the per-group permutation key; fix it for reproducible datasets.
+         * Salt for the per-group permutation key. The key for each group is derived deterministically
+         * from this seed and the group index, so a fixed seed yields a fully reproducible shuffle for
+         * every group (independent of the injected random source). Change it to obtain a different but
+         * equally reproducible set of per-group orderings. Defaults to {@code 0}.
+         *
+         * @param seed the salt mixed with the group index to key each within-group permutation
+         * @return this builder, for chaining
          */
         public Builder seed(long seed) {
             this.seed = seed;
             return this;
         }
 
+        /**
+         * Builds the generator.
+         *
+         * @return a new {@link GroupedPermutationGenerator}
+         * @throws IllegalArgumentException if {@code groupSize} is not in {@code [1, 2^30]}
+         */
         @Override
         public GroupedPermutationGenerator build() {
             return new GroupedPermutationGenerator(this);

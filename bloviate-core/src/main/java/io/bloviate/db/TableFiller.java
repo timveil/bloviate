@@ -92,6 +92,21 @@ public class TableFiller implements Fillable {
         this.rangeEndExclusive = 0;
     }
 
+    /**
+     * Fills this single table with generated data, respecting its column types and foreign-key
+     * relationships.
+     *
+     * <p>Generators are resolved once per column (per-column override, then custom registry, then
+     * any applicable {@code CHECK}/enum constraint, then the {@link DatabaseSupport} default) and the
+     * engine seeds each one for reproducibility. Rows are then produced in batches of the configured
+     * size and inserted through a {@link PreparedStatement}. Unless the {@link CommitStrategy} leaves
+     * the connection on its default, the engine owns the transaction: autocommit is turned off for the
+     * fill, commits happen at the configured cadence, the work is rolled back on error, and the prior
+     * autocommit setting is restored on completion. When a row range is configured this fills only that
+     * one partition; otherwise it fills the whole table.
+     *
+     * @throws SQLException if any database access error occurs during the fill operation
+     */
     @Override
     public void fill() throws SQLException {
 
@@ -309,6 +324,15 @@ public class TableFiller implements Fillable {
     }
 
 
+    /**
+     * Builder for constructing {@link TableFiller} instances.
+     *
+     * <p>Follows the builder pattern to assemble a filler for one table: the connection, database
+     * metadata, and {@link DatabaseConfiguration} are required, while the target table, an optional
+     * {@link CommitStrategy} override, and an optional row range are set fluently before
+     * {@link #build()}. A {@code TableFiller} is typically created by {@link DatabaseFiller} once the
+     * fill order has been determined.
+     */
     public static class Builder {
 
         private final Connection connection;
@@ -321,17 +345,38 @@ public class TableFiller implements Fillable {
         private long rangeStartInclusive;
         private long rangeEndExclusive;
 
+        /**
+         * Creates a builder for a filler bound to the given connection, database metadata, and
+         * configuration.
+         *
+         * @param connection the database connection to fill on
+         * @param database the database metadata, used to resolve tables and foreign-key relationships
+         * @param databaseConfiguration the configuration controlling batch size, row counts, seed, and commit behavior
+         */
         public Builder(Connection connection, Database database, DatabaseConfiguration databaseConfiguration) {
             this.connection = connection;
             this.database = database;
             this.databaseConfiguration = databaseConfiguration;
         }
 
+        /**
+         * Sets the table to fill by resolving its name against the database metadata (case-insensitive).
+         *
+         * @param tableName the name of the table to fill
+         * @return this builder
+         * @throws IllegalArgumentException if no table with the given name exists
+         */
         public Builder table(String tableName) {
             this.table = database.getTable(tableName);
             return this;
         }
 
+        /**
+         * Sets the table to fill directly from its metadata.
+         *
+         * @param table the table to fill
+         * @return this builder
+         */
         public Builder table(Table table) {
             this.table = table;
             return this;
@@ -370,6 +415,11 @@ public class TableFiller implements Fillable {
             return this;
         }
 
+        /**
+         * Builds a {@link TableFiller} from the configured parameters.
+         *
+         * @return a new filler ready to fill the configured table
+         */
         public TableFiller build() {
             return new TableFiller(this);
         }

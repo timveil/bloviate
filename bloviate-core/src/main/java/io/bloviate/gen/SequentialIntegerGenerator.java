@@ -78,16 +78,38 @@ public class SequentialIntegerGenerator extends AbstractDataGenerator<Integer> i
             super(random);
         }
 
+        /**
+         * The first value of the sequence, <b>inclusive</b>. It is the value emitted for row 0 and the
+         * value the sequence wraps back to after {@code end} is emitted. Defaults to {@code 1}.
+         *
+         * @param start the lowest value of the cycle, inclusive
+         * @return this builder, for chaining
+         */
         public Builder start(int start) {
             this.startInclusive = start;
             return this;
         }
 
+        /**
+         * The last value of the sequence, <b>inclusive</b>. Once {@code end} is emitted the next call
+         * wraps back to {@code start}, so the generator cycles through {@code [start, end]} forever.
+         * Defaults to {@link Integer#MAX_VALUE}. Must be {@code >= start}, otherwise {@link #build()}
+         * throws.
+         *
+         * @param end the highest value of the cycle, inclusive
+         * @return this builder, for chaining
+         */
         public Builder end(int end) {
             this.endInclusive = end;
             return this;
         }
 
+        /**
+         * Builds the generator.
+         *
+         * @return a new {@link SequentialIntegerGenerator} over the inclusive range {@code [start, end]}
+         * @throws IllegalArgumentException if {@code end < start}
+         */
         @Override
         public SequentialIntegerGenerator build() {
             if (endInclusive < startInclusive) {

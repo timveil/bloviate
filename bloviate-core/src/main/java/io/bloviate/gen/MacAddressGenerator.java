@@ -57,10 +57,22 @@ public class MacAddressGenerator extends AbstractDataGenerator<String> {
 
         private int octets = 6;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the number of hex octets in the generated address. Defaults to {@code 6}
+         * (PostgreSQL {@code macaddr}); use {@code 8} for the EUI-64 {@code macaddr8} form.
+         *
+         * @param octets the number of colon-separated octets to emit
+         * @return this builder, for chaining
+         */
         public Builder octets(int octets) {
             this.octets = octets;
             return this;

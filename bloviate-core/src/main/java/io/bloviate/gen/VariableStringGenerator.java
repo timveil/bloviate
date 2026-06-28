@@ -43,6 +43,9 @@ public class VariableStringGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /**
+     * Builder for {@link VariableStringGenerator} instances.
+     */
     public static class Builder extends AbstractBuilder<String> {
 
         private int minLength = 1;
@@ -50,25 +53,55 @@ public class VariableStringGenerator extends AbstractDataGenerator<String> {
         private boolean letters = true;
         private boolean numbers = false;
 
+        /**
+         * Constructs a new builder.
+         *
+         * @param random the seeded random generator backing the produced generator
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the inclusive lower bound of the random length range.
+         *
+         * @param minLength the minimum string length; effectively clamped up to {@code 1} at
+         *                  generation time (lengths below 1 are treated as 1). Defaults to {@code 1}.
+         * @return this builder, for chaining
+         */
         public Builder minLength(int minLength) {
             this.minLength = minLength;
             return this;
         }
 
+        /**
+         * Sets the inclusive upper bound of the random length range.
+         *
+         * @param maxLength the maximum string length, inclusive. Defaults to {@code 10}.
+         * @return this builder, for chaining
+         */
         public Builder maxLength(int maxLength) {
             this.maxLength = maxLength;
             return this;
         }
 
+        /**
+         * Controls whether ASCII letters ({@code A-Za-z}) are included in the character set.
+         *
+         * @param letters {@code true} to include letters. Defaults to {@code true}.
+         * @return this builder, for chaining
+         */
         public Builder letters(boolean letters) {
             this.letters = letters;
             return this;
         }
 
+        /**
+         * Controls whether decimal digits ({@code 0-9}) are included in the character set.
+         *
+         * @param numbers {@code true} to include digits. Defaults to {@code false}.
+         * @return this builder, for chaining
+         */
         public Builder numbers(boolean numbers) {
             this.numbers = numbers;
             return this;

@@ -19,18 +19,21 @@ package io.bloviate.db;
 import java.sql.SQLException;
 
 /**
- * Interface for objects that can be filled with generated data.
- * Implementations of this interface can populate database tables
- * or other data structures with synthetic data.
+ * Contract for components that populate a target with generated data.
+ *
+ * <p>A {@code Fillable} drives a one-shot fill operation: invoking {@link #fill()} runs the work to
+ * completion (or fails), rather than returning a stream or builder. The two engine entry points
+ * implement it — {@link DatabaseFiller} fills an entire database in dependency order and
+ * {@link TableFiller} fills a single table — so callers can treat either uniformly.
  *
  * @since 1.0.0
  */
 public interface Fillable {
 
     /**
-     * Fills the target with generated data.
+     * Fills the target with generated data, running the operation to completion.
      *
-     * @throws SQLException if a database access error occurs during the fill operation
+     * @throws SQLException if any database access error occurs during the fill operation
      */
     void fill() throws SQLException;
 }

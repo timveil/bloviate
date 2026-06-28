@@ -21,6 +21,13 @@ import java.sql.*;
 import java.time.temporal.ChronoUnit;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates random {@link java.sql.Date} values for binding to JDBC {@code DATE} columns, drawn
+ * uniformly from a millisecond instant in the half-open range {@code [start, end)} (start inclusive,
+ * end exclusive). By default the range is centered on {@link AbstractBuilder#DEFAULT_REFERENCE},
+ * spanning from 100 days before it up to (but excluding) 100 days after it. Backed by the builder's
+ * seeded {@link java.util.random.RandomGenerator}, so the same seed yields identical output.
+ */
 public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
     private final LongGenerator longGenerator;
@@ -43,20 +50,42 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
         return resultSet.getDate(columnIndex);
     }
 
+    /**
+     * Builder for {@link SqlDateGenerator} instances.
+     */
     public static class Builder extends AbstractBuilder<Date> {
 
         private Date startInclusive = new Date(DEFAULT_REFERENCE.minus(100, ChronoUnit.DAYS).toEpochMilli());
         private Date endExclusive = new Date(DEFAULT_REFERENCE.plus(100, ChronoUnit.DAYS).toEpochMilli());
 
+        /**
+         * Constructs a new builder.
+         *
+         * @param random the seeded random generator backing the produced generator
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the inclusive lower bound of the generated range.
+         *
+         * @param start the earliest possible date, inclusive. Defaults to
+         *              {@link AbstractBuilder#DEFAULT_REFERENCE} minus 100 days.
+         * @return this builder, for chaining
+         */
         public Builder start(Date start) {
             this.startInclusive = start;
             return this;
         }
 
+        /**
+         * Sets the exclusive upper bound of the generated range.
+         *
+         * @param end the date one millisecond past the latest possible value, exclusive. Defaults
+         *            to {@link AbstractBuilder#DEFAULT_REFERENCE} plus 100 days.
+         * @return this builder, for chaining
+         */
         public Builder end(Date end) {
             this.endExclusive = end;
             return this;

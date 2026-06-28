@@ -17,9 +17,13 @@
 package io.bloviate.db;
 
 /**
- * Represents a key relationship between two database tables.
- * This record encapsulates the metadata about a foreign key constraint,
- * including the tables and columns involved in the relationship.
+ * One column-level link of a foreign-key relationship between two tables.
+ *
+ * <p>Each instance maps a single foreign-key column to the primary-key column it references, naming
+ * both tables and columns involved. For a composite foreign key the relationship is described by
+ * several {@code Key} rows that share a constraint {@code name} and are ordered by {@code sequence};
+ * a simple key is just one such row. This is the flat, JDBC-metadata-shaped view from which the
+ * richer {@link ForeignKey}/{@link KeyColumn} structures are assembled.
  *
  * @param primaryTableName the name of the table containing the primary key
  * @param primaryColumnName the name of the primary key column

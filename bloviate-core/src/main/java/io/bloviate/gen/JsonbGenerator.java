@@ -71,10 +71,22 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
 
         private int fields = 3;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the number of key/value pairs in the generated JSON object. Field values cycle
+         * through string, integer, double, and boolean types in order. Defaults to {@code 3}.
+         *
+         * @param fields the number of fields to emit
+         * @return this builder, for chaining
+         */
         public Builder fields(int fields) {
             this.fields = fields;
             return this;

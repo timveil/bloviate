@@ -21,6 +21,14 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates random {@link java.sql.Time} values for binding to JDBC {@code TIME} columns, drawn
+ * uniformly from a millisecond instant in the half-open range {@code [start, end)} (start inclusive,
+ * end exclusive). By default the range spans from the {@linkplain java.time.Instant#EPOCH epoch} up
+ * to (but excluding) {@link AbstractBuilder#DEFAULT_REFERENCE} plus 100 hours. Backed by the
+ * builder's seeded {@link java.util.random.RandomGenerator}, so the same seed yields identical
+ * output.
+ */
 public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
 
     private final LongGenerator longGenerator;
@@ -43,20 +51,42 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
         return resultSet.getTime(columnIndex);
     }
 
+    /**
+     * Builder for {@link SqlTimeGenerator} instances.
+     */
     public static class Builder extends AbstractBuilder<Time> {
 
         private Time startInclusive = new Time(Instant.EPOCH.toEpochMilli());
         private Time endExclusive = new Time(DEFAULT_REFERENCE.plus(100, ChronoUnit.HOURS).toEpochMilli());
 
+        /**
+         * Constructs a new builder.
+         *
+         * @param random the seeded random generator backing the produced generator
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the inclusive lower bound of the generated range.
+         *
+         * @param start the earliest possible time, inclusive. Defaults to the
+         *              {@linkplain java.time.Instant#EPOCH epoch}.
+         * @return this builder, for chaining
+         */
         public Builder start(Time start) {
             this.startInclusive = start;
             return this;
         }
 
+        /**
+         * Sets the exclusive upper bound of the generated range.
+         *
+         * @param end the time one millisecond past the latest possible value, exclusive. Defaults
+         *            to {@link AbstractBuilder#DEFAULT_REFERENCE} plus 100 hours.
+         * @return this builder, for chaining
+         */
         public Builder end(Time end) {
             this.endExclusive = end;
             return this;

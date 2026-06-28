@@ -77,11 +77,27 @@ public class ChildCountGenerator extends AbstractDataGenerator<Integer> implemen
             super(random);
         }
 
+        /**
+         * The {@link ChildCardinality} consulted for each parent row: row {@code k} emits
+         * {@link ChildCardinality#count(long) cardinality.count(k)}. To keep this column honest, it
+         * <b>must be the same {@link ChildCardinality} instance</b> shared with the child table's
+         * {@link ChildKeyComponentGenerator}s, so each parent's declared child count equals the number
+         * of child rows actually generated for it. Required — {@link #build()} throws if left unset.
+         *
+         * @param cardinality the shared per-parent child-count source
+         * @return this builder, for chaining
+         */
         public Builder cardinality(ChildCardinality cardinality) {
             this.cardinality = cardinality;
             return this;
         }
 
+        /**
+         * Builds the generator.
+         *
+         * @return a new {@link ChildCountGenerator}
+         * @throws IllegalStateException if no {@link #cardinality(ChildCardinality) cardinality} was set
+         */
         @Override
         public ChildCountGenerator build() {
             return new ChildCountGenerator(this);

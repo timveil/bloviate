@@ -16,8 +16,15 @@
 
 package io.bloviate.file;
 
+/**
+ * {@link FileDefinition} for pipe-delimited output. Fields are separated by a
+ * pipe character ({@code |}).
+ */
 public class PipeDelimitedFile extends FileDefinition {
 
+    /**
+     * Constructs a new pipe-delimited file definition using the {@link FileType#PIPE} format.
+     */
     public PipeDelimitedFile() {
         super(FileType.PIPE);
     }

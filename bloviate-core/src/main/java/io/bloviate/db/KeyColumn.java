@@ -17,8 +17,12 @@
 package io.bloviate.db;
 
 /**
- * Represents a column that is part of a key (primary or foreign) in a database table.
- * This record pairs a column with its position in a composite key.
+ * One column of a possibly-composite key, paired with its position within that key.
+ *
+ * <p>It joins a {@link Column} to its 1-based {@code sequence} in the enclosing primary or foreign
+ * key, so a multi-column key is described by several {@code KeyColumn}s in declared order. A simple
+ * key holds a single instance at sequence {@code 1}. Preserving the position matters because the
+ * columns of a foreign key must align with the primary-key columns they reference.
  *
  * @param sequence the ordinal position of this column in a composite key (1-based)
  * @param column the column that is part of the key
