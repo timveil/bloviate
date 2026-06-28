@@ -31,16 +31,41 @@ pnpm preview  # serve the production build locally
 Requires Node 22+ (see `.node-version`) and pnpm (pinned via the `packageManager` field
 in `package.json` — `corepack enable` will provision the right version).
 
-## API reference
+## API reference (Javadoc)
 
-There is no bundled API reference on the site (yet). Cloudflare's build image can't run Java, so a
-source-generated reference would have to be committed or built in CI. The lowest-friction path is to
-publish Bloviate to **Maven Central**, which makes [javadoc.io](https://javadoc.io) auto-host the
-Javadoc (and unlocks Context7 / sources-jar IDE hovers) with no build or CI. Once that's live, add a
-**Reference** group in `astro.config.mjs` linking to
-`https://javadoc.io/doc/io.bloviate/bloviate-core`.
+The full API reference is the project's **Javadoc**, generated from source and served from this
+site:
 
-In the meantime, the guides carry the API-level detail inline.
+- **Landing page:** `src/content/docs/reference/index.mdx` — an on-brand Starlight page (in the
+  sidebar and in site search) that introduces the API by package and links into the Javadoc.
+- **The Javadoc itself:** committed static HTML under `public/apidocs/`, served at **`/apidocs/`**.
+  It has its own per-class search and is themed to match the site (see below).
+
+### Why it's committed, not built in CI
+
+Cloudflare Pages' build image can't run Java, so the Javadoc is generated **locally** and the HTML
+is committed. `notimestamp` keeps regenerated output diff-clean, so commits show only real API
+changes. Regenerate after changing the public API and commit the result:
+
+```bash
+# from the repository root
+./mvnw -Pjavadoc-site javadoc:aggregate
+git add website/public/apidocs
+```
+
+The `javadoc-site` Maven profile (in the root `pom.xml`) runs `javadoc:aggregate` across the public
+modules (core, junit, testcontainers, datafaker — benchmarks is excluded) into `public/apidocs/`.
+
+### Theming
+
+`javadoc/bloviate-javadoc.css` is layered onto the JDK stylesheet via javadoc's `--add-stylesheet`.
+Modern javadoc is driven entirely by CSS custom properties, so the file just restates them in the
+brand palette (violet primary, coral accent, Space Grotesk headings) and adds a `prefers-color-scheme`
+dark block so the reference tracks the OS like the dark-first guides. The profile also injects a
+breadcrumb strip (`-top`) linking back to the docs. Keep it in sync with `src/styles/bloviate.css`.
+
+> Search isn't polluted: Starlight marks its own pages with `data-pagefind-body`, so Pagefind indexes
+> only the guides/landing pages — the Javadoc uses its own built-in search.
 
 ## Deploy — Cloudflare Pages (Git integration, no CI)
 

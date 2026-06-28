@@ -1,0 +1,134 @@
+/*
+ * Bloviate brand theme for the generated Javadoc (the /api/ reference section).
+ *
+ * Layered on top of the JDK's stylesheet via javadoc's `--add-stylesheet`, so it
+ * only needs to *override* — modern javadoc (JDK 17+) drives everything from the
+ * CSS custom properties in :root, which makes re-skinning a matter of restating
+ * those variables. Keep this in sync with ../src/styles/bloviate.css (the site's
+ * single source of brand truth): violet primary, coral accent, Space Grotesk
+ * headings, dark-first to match the Starlight guides.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
+
+/* ---- Light theme (branded) ----------------------------------------------- */
+:root {
+    /* Fonts: match the Starlight site — sans body, Space Grotesk headings. */
+    --body-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --block-font-family: var(--body-font-family);
+    --code-font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+    /* Brand palette (mirrors --blv-* tokens in the site stylesheet). */
+    --navbar-background-color: #1b1b1f;   /* ink — matches the site's dark header */
+    --navbar-text-color: #ffffff;
+
+    --subnav-background-color: #f0edff;    /* violet tint */
+    --subnav-link-color: #5b3fd1;          /* violet-deep, readable on white */
+    --member-heading-background-color: #f4f1ff;
+
+    --selected-background-color: #7c5cff;  /* violet (was javadoc orange) */
+    --selected-text-color: #ffffff;
+    --selected-link-color: #5b3fd1;
+
+    --title-color: #1b1b1f;
+    --link-color: #5b3fd1;                 /* violet-deep on white */
+    --link-color-active: #ff6b5c;          /* coral accent */
+
+    --toc-highlight-color: #ede9ff;
+    --toc-hover-color: #f3f0ff;
+    --table-header-color: #ede9ff;
+}
+
+/* Headings in the brand's display face, like the guides. */
+h1, h2, h3, h4,
+.title,
+.header h1.title,
+.block h2 {
+    font-family: var(--blv-font-display, 'Space Grotesk'), var(--body-font-family);
+    letter-spacing: -0.015em;
+}
+
+/* ---- Site strip injected via javadoc -top (breadcrumb back to the docs) --- */
+.blv-site-strip {
+    font-family: var(--body-font-family);
+    font-size: 13px;
+    padding: 8px 16px;
+    background-color: #1b1b1f;
+    color: #b8b8c0;
+    border-bottom: 2px solid #7c5cff;
+}
+.blv-site-strip a {
+    color: #cdbfff;
+    text-decoration: none;
+    font-weight: 600;
+}
+.blv-site-strip a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+.blv-site-strip span {
+    opacity: 0.5;
+    margin: 0 6px;
+}
+
+.blv-site-foot {
+    font-family: var(--body-font-family);
+    font-size: 12px;
+    color: #8a8a93;
+    text-align: center;
+    padding: 16px;
+}
+.blv-site-foot a {
+    color: #7c5cff;
+    text-decoration: none;
+}
+
+/* ---- Dark theme — track the OS, matching the dark-first Starlight site ---- */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --body-background-color: #17171c;
+        --body-text-color: #e6e6e9;
+        --block-text-color: #e6e6e9;
+        --detail-background-color: #17171c;
+        --section-background-color: #17171c;
+        --code-background-color: #25252c;
+        --mark-background-color: #25252c;
+        --detail-block-color: #1f1f26;
+
+        --navbar-background-color: #101014;
+        --navbar-text-color: #ffffff;
+
+        --subnav-background-color: #25252c;
+        --subnav-link-color: #b9a8ff;
+        --member-heading-background-color: #25252c;
+
+        --selected-background-color: #7c5cff;
+        --selected-text-color: #ffffff;
+        --selected-link-color: #cdbfff;
+
+        --title-color: #f0eeff;
+        --link-color: #b9a8ff;             /* bright violet, readable on dark */
+        --link-color-active: #ff8a7d;      /* warm coral on dark */
+
+        --table-header-color: #25252c;
+        --even-row-color: #1b1b22;
+        --odd-row-color: #202028;
+
+        --toc-background-color: #1b1b22;
+        --toc-highlight-color: #2a2342;
+        --toc-hover-color: #25252c;
+
+        --snippet-background-color: #25252c;
+        --pre-background-color: #25252c;
+        --pre-text-color: #e6e6e9;
+
+        --border-color: #2e2e38;
+        --table-border-color: #3a3a46;
+
+        --search-input-background-color: #25252c;
+        --search-input-text-color: #e6e6e9;
+        --search-input-placeholder-color: #8a8a93;
+    }
+
+    .blv-site-strip { background-color: #101014; }
+}

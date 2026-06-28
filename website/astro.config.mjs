@@ -43,9 +43,16 @@ export default defineConfig({
 						{ slug: 'guides/comparison' },
 					],
 				},
-				// API reference: deferred. Once Bloviate is on Maven Central,
-				// javadoc.io auto-hosts the Javadoc (no build/CI) — add a Reference
-				// group here linking to https://javadoc.io/doc/io.bloviate/bloviate-core.
+				{
+					label: 'Reference',
+					items: [
+						{ slug: 'reference' },
+						// Brand-themed Javadoc, generated locally and committed under
+						// public/apidocs (Cloudflare can't run Java). Regenerate with
+						// `./mvnw -Pjavadoc-site javadoc:aggregate`.
+						{ label: 'Full Javadoc', link: '/apidocs/index.html', attrs: { target: '_blank' } },
+					],
+				},
 			],
 		}),
 	],

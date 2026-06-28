@@ -1,0 +1,9 @@
+io.bloviate.datafaker
+io.bloviate.db
+io.bloviate.ext
+io.bloviate.file
+io.bloviate.gen
+io.bloviate.gen.tpcc
+io.bloviate.junit
+io.bloviate.testcontainers
+io.bloviate.util

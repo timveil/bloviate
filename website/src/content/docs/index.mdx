@@ -16,13 +16,17 @@ hero:
       link: /guides/comparison/
       icon: open-book
       variant: minimal
+    - text: API Reference
+      link: /reference/
+      icon: document
+      variant: minimal
     - text: View on GitHub
       link: https://github.com/timveil/bloviate
       icon: external
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 ## Why Bloviate
 
@@ -65,3 +69,21 @@ conformance are all supported — as opt-in features layered on the fast, type-d
 than replacing it.
 
 [Get started in five minutes →](/guides/quickstart/)
+
+## API reference
+
+The complete Javadoc for every public package is hosted right here — themed to match these docs,
+with its own per-class search.
+
+<CardGrid>
+	<LinkCard
+		title="API Reference overview"
+		href="/reference/"
+		description="Browse the API by package — core engine, database support, generators, file output, and the JUnit / Testcontainers / Datafaker integrations."
+	/>
+	<LinkCard
+		title="Full Javadoc"
+		href="/apidocs/index.html"
+		description="Jump straight into the generated Javadoc for the whole public API."
+	/>
+</CardGrid>
