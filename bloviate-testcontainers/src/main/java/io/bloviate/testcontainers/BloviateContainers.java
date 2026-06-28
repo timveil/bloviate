@@ -20,6 +20,8 @@ import io.bloviate.db.DatabaseConfiguration;
 import io.bloviate.db.DatabaseFiller;
 import io.bloviate.db.TableConfiguration;
 import io.bloviate.ext.DatabaseSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
 import java.sql.Connection;
@@ -46,6 +48,8 @@ import java.util.Set;
  * }</pre>
  */
 public final class BloviateContainers {
+
+    private static final Logger logger = LoggerFactory.getLogger(BloviateContainers.class);
 
     private BloviateContainers() {
     }
@@ -144,6 +148,9 @@ public final class BloviateContainers {
                 DatabaseSupport support = databaseSupport != null
                         ? databaseSupport
                         : DatabaseSupport.forConnection(connection);
+
+                logger.debug("filling container [{}] via {} (rows={}, batchSize={}, seed={})",
+                        container.getDockerImageName(), support.getClass().getSimpleName(), rows, batchSize, seed);
 
                 DatabaseConfiguration configuration =
                         new DatabaseConfiguration(batchSize, rows, support, tableConfigurations, seed);

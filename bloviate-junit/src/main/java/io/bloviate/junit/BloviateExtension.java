@@ -25,6 +25,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
 import org.junit.platform.commons.support.ReflectionSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
@@ -47,6 +49,8 @@ import java.util.List;
  * @see FillSource
  */
 public class BloviateExtension implements BeforeEachCallback {
+
+    private static final Logger logger = LoggerFactory.getLogger(BloviateExtension.class);
 
     /** Creates the extension; instantiated by JUnit via {@code @ExtendWith}. */
     public BloviateExtension() {
@@ -77,6 +81,8 @@ public class BloviateExtension implements BeforeEachCallback {
 
     private void fill(Connection connection, FillDatabase fill) throws SQLException {
         DatabaseSupport support = DatabaseSupport.forConnection(connection);
+        logger.debug("@FillDatabase filling via {} (rows={}, batchSize={}, seed={})",
+                support.getClass().getSimpleName(), fill.rows(), fill.batchSize(), fill.seed());
         DatabaseConfiguration configuration =
                 new DatabaseConfiguration(fill.batchSize(), fill.rows(), support, null, fill.seed());
         new DatabaseFiller.Builder(connection, configuration).build().fill();
