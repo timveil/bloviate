@@ -9,6 +9,12 @@ on:
   pull_request:
     branches: [ main ]
 
+# Least privilege: this workflow only builds and tests, so read-only access is
+# all it needs. Declared explicitly so it keeps working once the repository
+# default workflow token is set to read-only.
+permissions:
+  contents: read
+
 jobs:
   build:
 
