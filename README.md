@@ -70,6 +70,7 @@ See **[POSITIONING.md](POSITIONING.md)** for the full competitive landscape, wit
   - [Per-Table Row Counts](#per-table-row-counts)
   - [Per-Column Generation Overrides](#per-column-generation-overrides)
   - [Value Distributions](#value-distributions)
+  - [Constraint Conformance](#constraint-conformance)
   - [Custom Generator Registry](#custom-generator-registry)
   - [Semantic / Realistic Data (`bloviate-datafaker`)](#semantic--realistic-data-bloviate-datafaker)
   - [Correlated Columns (referential realism)](#correlated-columns-referential-realism)
@@ -345,6 +346,36 @@ Available shapes: `weighted(...)` (categorical), `normal(...)` / `normalInt(...)
 engine's column seed, so output stays **reproducible** and composes with foreign-key reseeding and
 parallel fills like any other generator. These are *specified* distributions, not distributions
 learned from real data.
+
+### Constraint Conformance
+
+On **PostgreSQL**, Bloviate reads each table's `CHECK` constraints and `ENUM` types and generates
+values that satisfy them — **automatically, no configuration**. So given:
+
+```sql
+CREATE TYPE order_status AS ENUM ('NEW', 'PAID', 'SHIPPED', 'CANCELLED');
+
+CREATE TABLE orders (
+    status   order_status NOT NULL,
+    rating   integer       CHECK (rating BETWEEN 1 AND 5),
+    priority integer       CHECK (priority IN (1, 2, 3)),
+    amount   numeric(8,2)  CHECK (amount >= 0 AND amount <= 9999.99)
+);
+```
+
+`status` only gets one of its enum labels, `rating` lands in `[1, 5]`, `priority` is one of `1/2/3`,
+and `amount` stays in range — instead of random values an insert would reject. The common forms are
+honored: `IN (...)`, `BETWEEN`, and `>=`/`<=`/`>`/`<` comparisons, for integer, numeric, floating, and
+text columns, plus enum/domain allowed values.
+
+Notes:
+
+- A `CHECK` form that can't be safely satisfied (negation, `OR`, `LIKE` patterns, a one-sided bound)
+  is **skipped with a warning**, and the column falls back to its type default.
+- A per-column override or a [registry](#custom-generator-registry) rule always wins, so you can still
+  take full control of a constrained column.
+- Open the connection with `stringtype=unspecified` (already required for PostgreSQL's extension
+  types) so enum/`IN` values bind. Constraint reading is PostgreSQL-only today.
 
 ### Custom Generator Registry
 

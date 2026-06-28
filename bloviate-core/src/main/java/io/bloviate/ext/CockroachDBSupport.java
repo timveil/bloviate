@@ -43,4 +43,16 @@ public class CockroachDBSupport extends PostgresSupport {
     public String batchRewriteUrlParameter() {
         return null;
     }
+
+    /**
+     * Constraint reading is PostgreSQL-specific (issue #479 first cut); CockroachDB's catalog differs,
+     * so it overrides {@link PostgresSupport}'s reader back to none.
+     *
+     * @return an empty map
+     * @since 2.14.0
+     */
+    @Override
+    public java.util.Map<String, io.bloviate.db.ColumnConstraint> readConstraints(java.sql.Connection connection, String schema, String table) {
+        return java.util.Map.of();
+    }
 }

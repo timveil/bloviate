@@ -316,6 +316,13 @@ falling back to `DefaultSupport`. (Note: CockroachDB reached via the PG driver r
 `PostgreSQL` and resolves to `PostgresSupport` — equivalent, since `CockroachDBSupport` adds no extra
 behavior.)
 
+`DatabaseSupport` also reads **value constraints** for a table — `DatabaseSupport.readConstraints(...)`.
+The default is none; `PostgresSupport` queries `pg_constraint`/`pg_enum`, parses the common `CHECK`
+forms (`IN`, `BETWEEN`, comparisons) and enum labels into a `ColumnConstraint`, and `TableFiller` then
+prefers a constraint-satisfying generator (categorical or bounded numeric) over the type default —
+so generated values conform instead of being rejected. Forms that can't be honored are logged and
+skipped.
+
 ## 6. Pluggable generators — Registry + ServiceLoader
 
 Sometimes the type-based default isn't what you want — you want every column named `email` to look
