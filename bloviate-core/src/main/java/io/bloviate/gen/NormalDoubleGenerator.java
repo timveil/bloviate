@@ -58,6 +58,7 @@ public class NormalDoubleGenerator extends AbstractDataGenerator<Double> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Builds a {@link NormalDoubleGenerator}, defaulting to a standard normal distribution (mean 0, standard deviation 1) with effectively unbounded {@code min}/{@code max}. */
     public static class Builder extends AbstractBuilder<Double> {
 
         private double mean = 0.0;
@@ -65,25 +66,54 @@ public class NormalDoubleGenerator extends AbstractDataGenerator<Double> {
         private double min = -Double.MAX_VALUE;
         private double max = Double.MAX_VALUE;
 
+        /**
+         * Creates a builder drawing from the given random source.
+         *
+         * @param random the random source backing the generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the distribution mean (center). Returns this builder for chaining.
+         *
+         * @param mean the mean of the normal distribution
+         * @return this builder
+         */
         public Builder mean(double mean) {
             this.mean = mean;
             return this;
         }
 
+        /**
+         * Sets the distribution standard deviation (spread); must be non-negative. Returns this builder for chaining.
+         *
+         * @param standardDeviation the standard deviation of the normal distribution
+         * @return this builder
+         */
         public Builder standardDeviation(double standardDeviation) {
             this.standardDeviation = standardDeviation;
             return this;
         }
 
+        /**
+         * Sets the inclusive lower bound that generated values are clamped to. Returns this builder for chaining.
+         *
+         * @param min the minimum value
+         * @return this builder
+         */
         public Builder min(double min) {
             this.min = min;
             return this;
         }
 
+        /**
+         * Sets the inclusive upper bound that generated values are clamped to. Returns this builder for chaining.
+         *
+         * @param max the maximum value
+         * @return this builder
+         */
         public Builder max(double max) {
             this.max = max;
             return this;

@@ -57,6 +57,7 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Fluent builder for {@link BitStringGenerator}. */
     public static class Builder extends AbstractBuilder<String> {
         private int size = 1;
 

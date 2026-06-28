@@ -45,6 +45,7 @@ public class StaticFloatGenerator extends AbstractDataGenerator<Float> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link StaticFloatGenerator}. */
     public static class Builder extends AbstractBuilder<Float> {
 
         private Float value = 0f;

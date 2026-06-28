@@ -45,6 +45,7 @@ public class StaticIntegerGenerator extends AbstractDataGenerator<Integer> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link StaticIntegerGenerator}. */
     public static class Builder extends AbstractBuilder<Integer> {
 
         private Integer value = 0;

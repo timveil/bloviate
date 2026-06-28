@@ -65,6 +65,7 @@ public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
         return result;
     }
 
+    /** Fluent builder for {@link IntegerArrayGenerator}. */
     public static class Builder extends AbstractBuilder<Integer[]> {
 
         private int length = 3;

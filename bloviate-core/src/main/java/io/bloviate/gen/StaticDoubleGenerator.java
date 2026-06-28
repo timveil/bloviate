@@ -45,6 +45,7 @@ public class StaticDoubleGenerator extends AbstractDataGenerator<Double> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link StaticDoubleGenerator}. */
     public static class Builder extends AbstractBuilder<Double> {
 
         private Double value = 0d;

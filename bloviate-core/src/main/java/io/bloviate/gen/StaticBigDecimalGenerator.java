@@ -45,6 +45,7 @@ public class StaticBigDecimalGenerator extends AbstractDataGenerator<BigDecimal>
         return resultSet.getBigDecimal(columnIndex);
     }
 
+    /** Fluent builder for {@link StaticBigDecimalGenerator}. */
     public static class Builder extends AbstractBuilder<BigDecimal> {
 
         private BigDecimal value = BigDecimal.ZERO;

@@ -50,6 +50,7 @@ public class IntegerGenerator extends AbstractDataGenerator<Integer> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link IntegerGenerator}. */
     public static class Builder extends AbstractBuilder<Integer> {
 
         private int startInclusive = 0;

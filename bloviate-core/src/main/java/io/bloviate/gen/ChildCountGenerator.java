@@ -69,10 +69,16 @@ public class ChildCountGenerator extends AbstractDataGenerator<Integer> implemen
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Builder for {@link ChildCountGenerator}. */
     public static class Builder extends AbstractBuilder<Integer> {
 
         private ChildCardinality cardinality;
 
+        /**
+         * Creates a builder.
+         *
+         * @param random the random source (unused by this generator, but required by the contract)
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

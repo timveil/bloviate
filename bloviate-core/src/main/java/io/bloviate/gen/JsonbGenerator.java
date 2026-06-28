@@ -67,6 +67,7 @@ public class JsonbGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Fluent builder for {@link JsonbGenerator}. */
     public static class Builder extends AbstractBuilder<String> {
 
         private int fields = 3;

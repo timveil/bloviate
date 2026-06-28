@@ -51,6 +51,7 @@ public class SqlBlobGenerator extends AbstractDataGenerator<Blob> {
         return resultSet.getBlob(columnIndex);
     }
 
+    /** Fluent builder for {@link SqlBlobGenerator}. */
     public static class Builder extends AbstractBuilder<Blob> {
 
         /**

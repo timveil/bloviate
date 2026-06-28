@@ -30,4 +30,8 @@ package io.bloviate.ext;
  */
 public class DefaultSupport extends AbstractDatabaseSupport {
 
+    /** Creates the fallback support with only the cross-database default generators. */
+    public DefaultSupport() {
+    }
+
 }

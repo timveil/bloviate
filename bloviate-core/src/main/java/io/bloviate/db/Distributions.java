@@ -68,6 +68,10 @@ public final class Distributions {
     /**
      * A normal (Gaussian) {@code double} distribution clamped to {@code [min, max]}.
      *
+     * @param mean              the center of the distribution
+     * @param standardDeviation the spread
+     * @param min               the inclusive lower clamp
+     * @param max               the inclusive upper clamp
      * @return a factory for a {@link NormalDoubleGenerator}
      */
     public static ColumnGeneratorFactory normal(double mean, double standardDeviation, double min, double max) {
@@ -78,6 +82,10 @@ public final class Distributions {
     /**
      * A normal (Gaussian) {@code int} distribution, rounded and clamped to {@code [min, max]}.
      *
+     * @param mean              the center of the distribution
+     * @param standardDeviation the spread
+     * @param min               the inclusive lower clamp
+     * @param max               the inclusive upper clamp
      * @return a factory for a {@link NormalIntegerGenerator}
      */
     public static ColumnGeneratorFactory normalInt(double mean, double standardDeviation, int min, int max) {
@@ -88,6 +96,7 @@ public final class Distributions {
     /**
      * A Zipfian (power-law) distribution over {@code [1, size]} with the classic exponent {@code 1.0}.
      *
+     * @param size the number of distinct values
      * @return a factory for a {@link ZipfianIntegerGenerator}
      */
     public static ColumnGeneratorFactory zipfian(int size) {
@@ -97,6 +106,9 @@ public final class Distributions {
     /**
      * A Zipfian (power-law) distribution over {@code [start, start + size)} with the given exponent.
      *
+     * @param start    the first (most frequent) value
+     * @param size     the number of distinct values
+     * @param exponent the skew exponent (larger ⇒ more skew)
      * @return a factory for a {@link ZipfianIntegerGenerator}
      */
     public static ColumnGeneratorFactory zipfian(int start, int size, double exponent) {
@@ -116,6 +128,9 @@ public final class Distributions {
     /**
      * Recency-skewed timestamps over {@code [start, end]} with the given skew ({@code 1.0} = uniform).
      *
+     * @param start the inclusive start of the window
+     * @param end   the inclusive end of the window
+     * @param skew  the recency skew ({@code 1.0} = uniform, larger ⇒ more weight toward {@code end})
      * @return a factory for a {@link SkewedTimestampGenerator}
      */
     public static ColumnGeneratorFactory recentTimestamps(Instant start, Instant end, double skew) {

@@ -29,7 +29,10 @@ import java.util.random.RandomGenerator;
  */
 public class CreditGenerator extends AbstractDataGenerator<String> {
 
+    /** The TPC-C good-credit marker, {@code "GC"}. */
     public static final String GOOD_CREDIT = "GC";
+
+    /** The TPC-C bad-credit marker, {@code "BC"}. */
     public static final String BAD_CREDIT = "BC";
 
     @Override
@@ -42,8 +45,14 @@ public class CreditGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Builds {@link CreditGenerator} instances. */
     public static class Builder extends AbstractBuilder<String> {
 
+        /**
+         * Creates a builder.
+         *
+         * @param random the random generator backing the produced generator
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

@@ -40,6 +40,8 @@ public final class ChildCardinality {
     private final long seed;
 
     /**
+     * Creates a cardinality over the inclusive range {@code [minChildren, maxChildren]}.
+     *
      * @param minChildren minimum children per parent (inclusive), {@code >= 0}
      * @param maxChildren maximum children per parent (inclusive), {@code >= minChildren}
      * @param seed        salt mixed into the hash, so different datasets can vary independently
@@ -92,10 +94,20 @@ public final class ChildCardinality {
         return sum;
     }
 
+    /**
+     * Returns the minimum children per parent (inclusive).
+     *
+     * @return the minimum child count
+     */
     public int minChildren() {
         return minChildren;
     }
 
+    /**
+     * Returns the maximum children per parent (inclusive).
+     *
+     * @return the maximum child count
+     */
     public int maxChildren() {
         return maxChildren;
     }

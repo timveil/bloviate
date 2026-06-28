@@ -68,29 +68,50 @@ public class ZipfianIntegerGenerator extends AbstractDataGenerator<Integer> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link ZipfianIntegerGenerator}. */
     public static class Builder extends AbstractBuilder<Integer> {
 
         private int start = 1;
         private int size = 0;
         private double exponent = 1.0;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
-        /** The first (most frequent) value; ranks run {@code [start, start + size)}. Default {@code 1}. */
+        /**
+         * The first (most frequent) value; ranks run {@code [start, start + size)}. Default {@code 1}.
+         *
+         * @param start the lowest rank value
+         * @return this builder, for chaining
+         */
         public Builder start(int start) {
             this.start = start;
             return this;
         }
 
-        /** The number of distinct values; required and must be {@code >= 1}. */
+        /**
+         * The number of distinct values; required and must be {@code >= 1}.
+         *
+         * @param size the count of distinct ranks
+         * @return this builder, for chaining
+         */
         public Builder size(int size) {
             this.size = size;
             return this;
         }
 
-        /** The skew exponent; {@code 1.0} is classic Zipf, higher concentrates more on the head. */
+        /**
+         * The skew exponent; {@code 1.0} is classic Zipf, higher concentrates more on the head.
+         *
+         * @param exponent the skew exponent
+         * @return this builder, for chaining
+         */
         public Builder exponent(double exponent) {
             this.exponent = exponent;
             return this;

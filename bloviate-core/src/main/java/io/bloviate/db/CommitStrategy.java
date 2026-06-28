@@ -52,6 +52,8 @@ public record CommitStrategy(Mode mode, int batches) {
     }
 
     /**
+     * Validates the mode/batches pairing.
+     *
      * @throws IllegalArgumentException if {@code mode} is null, or {@code batches < 1} for
      *                                  {@link Mode#EVERY_N_BATCHES}
      */
@@ -64,12 +66,20 @@ public record CommitStrategy(Mode mode, int batches) {
         }
     }
 
-    /** The back-compatible default: the engine never changes the connection's autocommit state. */
+    /**
+     * The back-compatible default: the engine never changes the connection's autocommit state.
+     *
+     * @return a {@link Mode#CONNECTION_DEFAULT} strategy
+     */
     public static CommitStrategy connectionDefault() {
         return new CommitStrategy(Mode.CONNECTION_DEFAULT, 0);
     }
 
-    /** Autocommit off, a single commit once the table is fully filled. */
+    /**
+     * Autocommit off, a single commit once the table is fully filled.
+     *
+     * @return a {@link Mode#PER_TABLE} strategy
+     */
     public static CommitStrategy perTable() {
         return new CommitStrategy(Mode.PER_TABLE, 0);
     }
@@ -84,7 +94,11 @@ public record CommitStrategy(Mode mode, int batches) {
         return new CommitStrategy(Mode.EVERY_N_BATCHES, n);
     }
 
-    /** Whether the engine manages the transaction (i.e. anything other than {@link Mode#CONNECTION_DEFAULT}). */
+    /**
+     * Whether the engine manages the transaction (i.e. anything other than {@link Mode#CONNECTION_DEFAULT}).
+     *
+     * @return whether the engine drives autocommit and commits/rolls back itself
+     */
     public boolean managesTransaction() {
         return mode != Mode.CONNECTION_DEFAULT;
     }

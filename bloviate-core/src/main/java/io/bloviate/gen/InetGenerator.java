@@ -46,6 +46,7 @@ public class InetGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Fluent builder for {@link InetGenerator}. */
     public static class Builder extends AbstractBuilder<String> {
 
         /**

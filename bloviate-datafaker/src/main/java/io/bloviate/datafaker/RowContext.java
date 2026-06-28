@@ -57,6 +57,8 @@ public final class RowContext<E> {
     private final ThreadLocal<Memo<E>> memo = ThreadLocal.withInitial(Memo::new);
 
     /**
+     * Creates a context that materializes one entity per row from the given factory.
+     *
      * @param entityFactory a pure mapping from row index to the row's entity; must depend only on the
      *                      row index (and a fixed seed it closes over) so output is order-independent
      */

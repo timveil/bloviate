@@ -67,6 +67,10 @@ import java.util.Map;
  */
 public class PostgresSupport extends AbstractDatabaseSupport {
 
+    /** Creates a PostgreSQL support instance. */
+    public PostgresSupport() {
+    }
+
     /**
      * Returns {@code reWriteBatchedInserts}, the PostgreSQL JDBC driver parameter that rewrites a
      * batch of single-row {@code INSERT}s into one multi-row statement. Enabling it (e.g.

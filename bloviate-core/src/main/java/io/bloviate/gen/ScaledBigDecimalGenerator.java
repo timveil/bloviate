@@ -53,6 +53,7 @@ public class ScaledBigDecimalGenerator extends AbstractDataGenerator<BigDecimal>
         return resultSet.getBigDecimal(columnIndex);
     }
 
+    /** Fluent builder for {@link ScaledBigDecimalGenerator}. */
     public static class Builder extends AbstractBuilder<BigDecimal> {
 
         private double startInclusive = 0;

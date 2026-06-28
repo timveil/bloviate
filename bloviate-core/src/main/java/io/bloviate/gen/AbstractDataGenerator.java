@@ -52,6 +52,7 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
+    /** The random source backing all value generation; swapped out by {@link #reseed(long)}. */
     protected RandomGenerator random;
 
     /**
@@ -62,6 +63,11 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
      */
     protected SeededRandomUtils randomUtils;
 
+    /**
+     * Initializes the generator with the given random source and a {@link SeededRandomUtils} view over it.
+     *
+     * @param random the random source backing all value generation
+     */
     public AbstractDataGenerator(RandomGenerator random) {
         this.random = random;
         this.randomUtils = new SeededRandomUtils(random);

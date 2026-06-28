@@ -54,6 +54,7 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Fluent builder for {@link IntervalGenerator}. */
     public static class Builder extends AbstractBuilder<String> {
 
         /**

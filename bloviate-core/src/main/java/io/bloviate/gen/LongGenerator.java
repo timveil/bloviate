@@ -49,6 +49,7 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
         return resultSet.wasNull() ? null : value;
     }
 
+    /** Fluent builder for {@link LongGenerator}. */
     public static class Builder extends AbstractBuilder<Long> {
 
         private long startInclusive = 0;

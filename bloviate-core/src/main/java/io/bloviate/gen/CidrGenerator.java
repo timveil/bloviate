@@ -45,6 +45,7 @@ public class CidrGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Fluent builder for {@link CidrGenerator}. */
     public static class Builder extends AbstractBuilder<String> {
 
         /**

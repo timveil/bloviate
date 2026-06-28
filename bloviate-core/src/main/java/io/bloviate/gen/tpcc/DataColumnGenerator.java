@@ -30,6 +30,7 @@ import java.util.random.RandomGenerator;
  */
 public class DataColumnGenerator extends AbstractDataGenerator<String> {
 
+    /** The TPC-C "original" data marker embedded in 10% of generated values. */
     public static final String ORIGINAL = "ORIGINAL";
 
     @Override
@@ -51,8 +52,14 @@ public class DataColumnGenerator extends AbstractDataGenerator<String> {
         return resultSet.getString(columnIndex);
     }
 
+    /** Builds {@link DataColumnGenerator} instances. */
     public static class Builder extends AbstractBuilder<String> {
 
+        /**
+         * Creates a builder.
+         *
+         * @param random the random generator backing the produced generator
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
