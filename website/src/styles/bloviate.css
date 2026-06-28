@@ -76,3 +76,77 @@
 .doc-icon--book {
 	color: var(--sl-color-text-accent);
 }
+
+/* Mermaid diagrams — rendered client-side (see rehype-mermaid.mjs and the loader
+   in astro.config.mjs). Strip Starlight's code-block chrome, center the SVG, and
+   hide the raw graph source until Mermaid has processed it (avoids a flash of
+   diagram text on load). */
+.sl-markdown-content pre.mermaid {
+	background: none;
+	border: none;
+	padding: 0;
+	text-align: center;
+	line-height: normal;
+}
+.sl-markdown-content pre.mermaid:not([data-processed]) {
+	visibility: hidden;
+}
+.sl-markdown-content pre.mermaid svg {
+	height: auto;
+	max-width: 100%;
+}
+
+/* Graphviz diagrams — the unstyled DOT that Bloviate emits, rendered client-side
+   (see rehype-graphviz.mjs + the loader in astro.config.mjs) and brand-colored
+   here via CSS so the on-page DOT stays identical to the dreampuf link. */
+.sl-markdown-content pre.graphviz {
+	background: none;
+	border: none;
+	padding: 0;
+	text-align: center;
+	line-height: normal;
+}
+.sl-markdown-content pre.graphviz:not([data-processed]) {
+	visibility: hidden;
+}
+.sl-markdown-content pre.graphviz svg {
+	max-width: 100%;
+	height: auto;
+}
+/* Graphviz emits a solid background polygon as the graph's first child — make it
+   transparent so the diagram sits on either theme. */
+.sl-markdown-content pre.graphviz svg > g.graph > polygon {
+	fill: transparent;
+}
+.sl-markdown-content pre.graphviz svg .node ellipse,
+.sl-markdown-content pre.graphviz svg .node polygon {
+	fill: #ede9ff;
+	stroke: #7c5cff;
+	stroke-width: 1.5px;
+}
+.sl-markdown-content pre.graphviz svg .node text {
+	fill: #1b1b1f;
+}
+.sl-markdown-content pre.graphviz svg .edge path {
+	stroke: #5b3fd1;
+}
+.sl-markdown-content pre.graphviz svg .edge polygon {
+	fill: #5b3fd1;
+	stroke: #5b3fd1;
+}
+/* Dark theme — match the dark-first site. */
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .node ellipse,
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .node polygon {
+	fill: #2a2342;
+	stroke: #8a6bff;
+}
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .node text {
+	fill: #e6e6e9;
+}
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .edge path,
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .edge polygon {
+	stroke: #b9a8ff;
+}
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .edge polygon {
+	fill: #b9a8ff;
+}

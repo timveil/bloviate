@@ -18,6 +18,11 @@ page) into a static site.
   truth (violet primary, coral accent). The favicon is `public/favicon.svg`.
 - **Emoji → icons:** `src/plugins/rehype-doc-icons.mjs` swaps a few emoji (✅ ❌ ⚠ 🚀 📖) for
   Starlight icon SVGs at build time.
+- **Diagrams:** ` ```mermaid ` and ` ```dot ` (Graphviz) code blocks render client-side. Two small
+  rehype plugins (`rehype-mermaid.mjs`, `rehype-graphviz.mjs`) tag the blocks, and lazy loaders in
+  `astro.config.mjs` import Mermaid / Graphviz-WASM from a CDN only on pages that have a diagram —
+  so the build stays dependency-free (Cloudflare never runs a headless browser) and the diagram
+  source stays plain, GitHub-readable Markdown. Both are brand-themed (and dark-mode aware).
 
 ## Develop
 

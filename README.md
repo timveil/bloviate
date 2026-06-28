@@ -21,21 +21,20 @@ by seed, and runs inside your JUnit/Testcontainers pipeline.
 - [Generators](https://bloviate.io/guides/generators/) — registry, realistic data, composite keys, TPC-C
 - [Testing Integrations](https://bloviate.io/guides/integrations/) — JUnit 5 and Testcontainers
 - [File Generation](https://bloviate.io/guides/file-generation/) — CSV, TSV, pipe-delimited
-- [Why Bloviate](https://bloviate.io/guides/comparison/) — how it compares
+- [Architecture](https://bloviate.io/guides/architecture/) — FK dependency DAG, topological fill, deterministic seeding, extension points
+- [Benchmarks](https://bloviate.io/guides/benchmarks/) — JMH micro-benchmarks and end-to-end fill throughput
+- [Why Bloviate](https://bloviate.io/guides/comparison/) — where it fits and how it compares
 
 ## 🚀 Features
 
-- **Automatic Schema Discovery**: Connects to existing databases and analyzes table structure, relationships, and constraints
-- **Smart Data Generation**: Generates appropriate data based on column types and database-specific features
-- **Foreign Key Support**: Handles complex table dependencies using topological sorting
-- **Per-Column Control**: Override generation for individual columns with custom, reproducible generators
-- **Composite Keys & Referential Fidelity**: Generate collision-free composite keys and variable parent/child cardinalities that keep foreign keys consistent
-- **Parallel & Partitioned Fills**: Fill independent tables concurrently, and split a single dominant table's rows across workers — reproducibly, with foreign-key validity preserved
-- **Benchmark-Ready**: Built-in TPC-C dataset configuration, with reusable building blocks for other benchmark schemas
-- **Multiple Database Support**: PostgreSQL, MySQL, CockroachDB with extensible architecture
-- **Flat File Generation**: Export data to CSV, TSV, and pipe-delimited formats
-- **Configurable Output**: Control batch sizes, record counts, commit cadence, and custom data generation rules
-- **Graph Visualization**: Generate DOT notation graphs of table relationships
+- **Automatic schema discovery** with **foreign-key-aware** fill ordering (topological sort)
+- **Deterministic by seed** — same seed + schema ⇒ byte-identical data, even under parallel fills
+- **Per-column control** and **pluggable generators**; realistic semantic values via Datafaker
+- **Parallel & partitioned fills** for large datasets, with referential integrity preserved
+- **PostgreSQL, MySQL, CockroachDB**, plus CSV/TSV/pipe **flat-file** output
+- First-class **JUnit 5** and **Testcontainers** integrations
+
+See the [full feature tour and guides on bloviate.io](https://bloviate.io).
 
 ## 📦 Installation
 
@@ -76,12 +75,15 @@ new DatabaseFiller.Builder(connection,
 More examples — per-column overrides, distributions, composite keys, parallel fills, flat files —
 are in the [documentation](https://bloviate.io).
 
-## 🏗️ Architecture
+## 🏗️ Architecture & benchmarks
 
 Curious how Bloviate works under the hood — the foreign-key dependency DAG and topological fill
-ordering, the schema-identity seeding that makes data reproducible, the Strategy/Registry/SPI
-extension points, and the design patterns throughout? See **[ARCHITECTURE.md](ARCHITECTURE.md)** for
-a technical deep-dive with diagrams.
+ordering, the schema-identity seeding that makes data reproducible, and the Strategy/Registry/SPI
+extension points? The technical deep-dive (with diagrams) and the performance numbers now live on
+the site:
+
+- **[Architecture](https://bloviate.io/guides/architecture/)** — design, diagrams, extension points
+- **[Benchmarks](https://bloviate.io/guides/benchmarks/)** — JMH and end-to-end fill throughput
 
 ## 🤝 Contributing
 
@@ -109,7 +111,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 - [ ] [Additional database support (Oracle, SQL Server)](https://github.com/timveil/bloviate/issues/445)
 - [x] [Custom data generation plugins](https://github.com/timveil/bloviate/issues/446)
-- [x] [Performance optimizations for large datasets](https://github.com/timveil/bloviate/issues/447) — _parallel table fill, intra-table partitioning, configurable commit strategy, batch-rewrite surfacing, and hot-loop dispatch ([benchmarks](BENCHMARKS.md))_
+- [x] [Performance optimizations for large datasets](https://github.com/timveil/bloviate/issues/447) — _parallel table fill, intra-table partitioning, configurable commit strategy, batch-rewrite surfacing, and hot-loop dispatch ([benchmarks](https://bloviate.io/guides/benchmarks/))_
 - [ ] GUI for configuration management
 - [x] [Integration with popular testing frameworks](https://github.com/timveil/bloviate/issues/448) — _JUnit 5 (`bloviate-junit`) and Testcontainers (`bloviate-testcontainers`)_
 
