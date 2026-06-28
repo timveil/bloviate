@@ -1,3 +1,9 @@
+## [2.15.5](https://github.com/timveil/bloviate/compare/v2.15.4...v2.15.5) (2026-06-28)
+
+### 🔧 Build System
+
+* **coverage:** enforce a per-package JaCoCo coverage floor ([#503](https://github.com/timveil/bloviate/issues/503)) ([ddfe71f](https://github.com/timveil/bloviate/commit/ddfe71fc9f3c9c375181acbce8fa78fe6a7e4273))
+
 ## [2.15.4](https://github.com/timveil/bloviate/compare/v2.15.3...v2.15.4) (2026-06-28)
 
 ### ♻️ Code Refactoring
