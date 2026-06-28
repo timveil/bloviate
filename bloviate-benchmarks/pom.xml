@@ -155,6 +155,9 @@
                                     <mainClass>org.openjdk.jmh.Main</mainClass>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- merge the duplicate legal files the dependencies ship instead of letting one silently win -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"/>
                             </transformers>
                             <filters>
                                 <filter>
@@ -165,6 +168,10 @@
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
                                         <exclude>module-info.class</exclude>
+                                        <!-- multi-release jars tuck a second copy here; the top-level exclude misses it -->
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                        <!-- ManifestResourceTransformer regenerates this, so drop the dependencies' copies -->
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

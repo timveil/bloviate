@@ -71,7 +71,7 @@ public class DatafakerGeneratorPlugin implements GeneratorPlugin {
         rule(builder, ".*email.*", f -> f.internet().safeEmailAddress());
         rule(builder, ".*first_?name.*", f -> f.name().firstName());
         rule(builder, ".*last_?name.*", f -> f.name().lastName());
-        rule(builder, ".*user_?name.*", f -> f.name().username());
+        rule(builder, ".*user_?name.*", f -> f.credentials().username());
         rule(builder, ".*full_?name.*|name", f -> f.name().fullName());
         rule(builder, ".*phone.*", f -> f.regexify("\\([0-9]{3}\\) 555-01[0-9]{2}"));
         rule(builder, ".*company.*", f -> f.company().name());
