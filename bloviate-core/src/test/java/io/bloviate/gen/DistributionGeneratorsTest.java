@@ -21,9 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -146,15 +144,11 @@ class DistributionGeneratorsTest {
         long startMs = start.toEpochMilli();
         long rangeMs = end.toEpochMilli() - startMs;
         double fractionSum = 0;
-        List<Timestamp> samples = new ArrayList<>();
         for (int i = 0; i < N; i++) {
             Timestamp ts = generator.generate();
             long ms = ts.getTime();
             assertTrue(ms >= startMs && ms <= end.toEpochMilli(), "timestamp out of window: " + ts);
             fractionSum += (ms - startMs) / (double) rangeMs;
-            if (i < 5) {
-                samples.add(ts);
-            }
         }
         // with skew 3.0 the average position should sit well past the midpoint (recent-weighted)
         double meanFraction = fractionSum / N;

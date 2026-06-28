@@ -32,7 +32,6 @@ import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * JUnit Jupiter extension that fills a test database before each test, driven by
@@ -84,12 +83,10 @@ public class BloviateExtension implements BeforeEachCallback {
     }
 
     private FillDatabase resolveAnnotation(ExtensionContext context) {
-        Optional<FillDatabase> fromMethod = context.getTestMethod()
-                .flatMap(method -> AnnotationSupport.findAnnotation(method, FillDatabase.class));
-        if (fromMethod.isPresent()) {
-            return fromMethod.get();
-        }
-        return AnnotationSupport.findAnnotation(context.getRequiredTestClass(), FillDatabase.class).orElse(null);
+        return context.getTestMethod()
+                .flatMap(method -> AnnotationSupport.findAnnotation(method, FillDatabase.class))
+                .orElseGet(() -> AnnotationSupport.findAnnotation(
+                        context.getRequiredTestClass(), FillDatabase.class).orElse(null));
     }
 
     private Object readSource(ExtensionContext context) {

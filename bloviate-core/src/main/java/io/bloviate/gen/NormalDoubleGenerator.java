@@ -44,7 +44,7 @@ public class NormalDoubleGenerator extends AbstractDataGenerator<Double> {
     @Override
     public Double generate() {
         double value = random.nextGaussian(mean, standardDeviation);
-        return Math.min(max, Math.max(min, value));
+        return Math.clamp(value, min, max);
     }
 
     @Override

@@ -68,7 +68,7 @@ public final class Places {
     public static RowContext<Geo> unitedStates(long seed) {
         List<Geo> tuples = UNITED_STATES;
         int size = tuples.size();
-        return new RowContext<>(rowIndex -> tuples.get((int) Math.floorMod(Mixers.splitmix64(seed + rowIndex), size)));
+        return new RowContext<>(rowIndex -> tuples.get(Math.floorMod(Mixers.splitmix64(seed + rowIndex), size)));
     }
 
     /** The loaded reference tuples (package-private; for tests). */

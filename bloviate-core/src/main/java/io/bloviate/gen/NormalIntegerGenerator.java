@@ -40,7 +40,7 @@ public class NormalIntegerGenerator extends AbstractDataGenerator<Integer> {
     @Override
     public Integer generate() {
         long rounded = Math.round(random.nextGaussian(mean, standardDeviation));
-        return (int) Math.min(max, Math.max(min, rounded));
+        return Math.clamp(rounded, min, max);
     }
 
     @Override

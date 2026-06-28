@@ -17,8 +17,6 @@
 package io.bloviate.util;
 
 import io.bloviate.db.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -55,8 +53,6 @@ public class DatabaseUtils {
     /** Static utility holder — not instantiable. */
     private DatabaseUtils() {
     }
-
-    private static final Logger logger = LoggerFactory.getLogger(DatabaseUtils.class);
 
     /**
      * Computes a stable, reproducible generation seed for a column.

@@ -16,6 +16,8 @@
 
 package io.bloviate.gen;
 
+import io.bloviate.util.Mixers;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -58,7 +60,7 @@ public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> 
         long n = counter.getAndIncrement();
         long group = n / groupSize;
         int position = (int) (n % groupSize);
-        long key = mix(seed + group);
+        long key = Mixers.splitmix64(seed + group);
         return start + permute(position, key);
     }
 
@@ -190,21 +192,13 @@ public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> 
         this.seed = builder.seed;
 
         // split point for a balanced Feistel whose domain (2^(2*halfBits)) covers groupSize
-        int bitsNeeded = groupSize <= 1 ? 0 : (32 - Integer.numberOfLeadingZeros(groupSize - 1));
+        int bitsNeeded = groupSize == 1 ? 0 : (32 - Integer.numberOfLeadingZeros(groupSize - 1));
         this.halfBits = (bitsNeeded + 1) / 2;
         this.halfMask = halfBits == 0 ? 0L : ((1L << halfBits) - 1);
     }
 
     private static long roundFunction(long right, int round, long key) {
         long z = right * 0x9E3779B97F4A7C15L + key + (round + 1L) * 0xBF58476D1CE4E5B9L;
-        z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
-        z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
-        return z ^ (z >>> 31);
-    }
-
-    // splitmix64 finalizer — a well-distributed, deterministic mix of a 64-bit input
-    private static long mix(long value) {
-        long z = value + 0x9E3779B97F4A7C15L;
         z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
         z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
         return z ^ (z >>> 31);

@@ -12,3 +12,4 @@ target/
 
 # maven-shade-plugin output
 dependency-reduced-pom.xml
+/output/

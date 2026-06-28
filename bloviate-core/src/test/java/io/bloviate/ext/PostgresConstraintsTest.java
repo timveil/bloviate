@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,8 +56,8 @@ class PostgresConstraintsTest {
         ColumnConstraint c = PostgresConstraints.parseCheck("CHECK ((x > 0) AND (x < 10))");
         assertEquals(0, new BigDecimal("0").compareTo(c.min()));
         assertEquals(0, new BigDecimal("10").compareTo(c.max()));
-        assertTrue(!c.minInclusive());
-        assertTrue(!c.maxInclusive());
+        assertFalse(c.minInclusive());
+        assertFalse(c.maxInclusive());
     }
 
     @Test

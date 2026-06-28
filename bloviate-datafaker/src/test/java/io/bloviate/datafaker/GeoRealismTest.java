@@ -22,6 +22,7 @@ import io.bloviate.util.RandomGenerators;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -41,7 +42,7 @@ class GeoRealismTest {
         var tuples = Places.unitedStatesTuples();
         assertTrue(tuples.size() >= 50, "expected a representative dataset but had " + tuples.size());
         for (Geo geo : tuples) {
-            assertTrue(!geo.city().isBlank(), "blank city");
+            assertFalse(geo.city().isBlank(), "blank city");
             assertEquals(2, geo.stateAbbreviation().length(), "state abbreviation must be 2 chars: " + geo);
             assertTrue(geo.zip().matches("\\d{5}"), "zip must be 5 digits: " + geo);
             assertTrue(geo.areaCode().matches("\\d{3}"), "area code must be 3 digits: " + geo);

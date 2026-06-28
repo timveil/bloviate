@@ -202,13 +202,14 @@ public class DatabaseFiller implements Fillable {
         int widest = levels.stream()
                 .mapToInt(level -> level.stream().mapToInt(this::partitionsFor).sum())
                 .max().orElse(1);
-        int poolSize = Math.max(1, Math.min(threads, widest));
+        int poolSize = Math.clamp(threads, 1, widest);
 
         logger.info("filling {} tables across {} topological level(s) with {} worker thread(s)",
                 reversedGraph.vertexSet().size(), levels.size(), poolSize);
 
-        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
-        try {
+        // try-with-resources: ExecutorService#close() shuts the pool down and awaits termination
+        // (and shutdownNow()s on interrupt), so the pool is always cleanly torn down
+        try (ExecutorService executor = Executors.newFixedThreadPool(poolSize)) {
             for (List<Table> level : levels) {
                 List<Callable<Void>> tasks = new ArrayList<>(level.size());
                 for (Table table : level) {
@@ -223,8 +224,6 @@ public class DatabaseFiller implements Fillable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new SQLException("parallel table fill was interrupted", e);
-        } finally {
-            executor.shutdownNow();
         }
     }
 
@@ -292,9 +291,8 @@ public class DatabaseFiller implements Fillable {
             long end = start + size;
             if (size > 0) {
                 long rangeStart = start;
-                long rangeEnd = end;
                 tasks.add(() -> {
-                    fillTablePartition(database, table, rangeStart, rangeEnd);
+                    fillTablePartition(database, table, rangeStart, end);
                     return null;
                 });
             }

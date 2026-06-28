@@ -16,6 +16,8 @@
 
 package io.bloviate.gen;
 
+import io.bloviate.util.Mixers;
+
 /**
  * Deterministic mapping from a parent row's global (row-major) index to the number
  * of child rows it owns, drawn from the inclusive range {@code [minChildren, maxChildren]}.
@@ -69,7 +71,7 @@ public final class ChildCardinality {
         if (range == 1) {
             return minChildren;
         }
-        return minChildren + (int) Math.floorMod(mix(parentIndex + seed), range);
+        return minChildren + Math.floorMod(Mixers.splitmix64(parentIndex + seed), range);
     }
 
     /**
@@ -110,13 +112,5 @@ public final class ChildCardinality {
      */
     public int maxChildren() {
         return maxChildren;
-    }
-
-    // splitmix64 finalizer — a well-distributed, deterministic mix of a 64-bit input
-    private static long mix(long value) {
-        long z = value + 0x9E3779B97F4A7C15L;
-        z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
-        z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
-        return z ^ (z >>> 31);
     }
 }

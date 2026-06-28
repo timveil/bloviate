@@ -61,18 +61,6 @@ public class TableFiller implements Fillable {
     private final long rangeEndExclusive;
 
     /**
-     * Constructs a new TableFiller using the configuration's {@link CommitStrategy}.
-     *
-     * @param connection the database connection to use for filling the table
-     * @param database the database metadata containing table relationships
-     * @param databaseConfiguration the configuration settings for the fill operation
-     * @param table the table to be filled with data
-     */
-    public TableFiller(Connection connection, Database database, DatabaseConfiguration databaseConfiguration, Table table) {
-        this(connection, database, databaseConfiguration, table, databaseConfiguration.commitStrategy());
-    }
-
-    /**
      * Constructs a new TableFiller with an explicit {@link CommitStrategy} override.
      *
      * @param connection the database connection to use for filling the table
@@ -136,7 +124,7 @@ public class TableFiller implements Fillable {
 
         // value constraints (CHECK / enum) for this table's columns, so generated values conform
         // (issue #479). Empty for databases without support; keyed by lower-cased column name.
-        String schema = filteredColumns.isEmpty() ? null : filteredColumns.get(0).schema();
+        String schema = filteredColumns.isEmpty() ? null : filteredColumns.getFirst().schema();
         Map<String, ColumnConstraint> constraints = databaseSupport.readConstraints(connection, schema, table.name());
 
         for (int idx = 0; idx < columnCount; idx++) {
@@ -357,18 +345,6 @@ public class TableFiller implements Fillable {
             this.connection = connection;
             this.database = database;
             this.databaseConfiguration = databaseConfiguration;
-        }
-
-        /**
-         * Sets the table to fill by resolving its name against the database metadata (case-insensitive).
-         *
-         * @param tableName the name of the table to fill
-         * @return this builder
-         * @throws IllegalArgumentException if no table with the given name exists
-         */
-        public Builder table(String tableName) {
-            this.table = database.getTable(tableName);
-            return this;
         }
 
         /**
