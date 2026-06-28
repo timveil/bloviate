@@ -38,11 +38,11 @@ which learn from real data and are non-deterministic, and from the **masking/sub
 recipe-authored, no schema introspection), synth (dormant since 2022), and DBeaver Mock Data (paid,
 GUI-bound) — Bloviate is the maintained, deterministic, auto-FK option.
 
-**Honest limitations.** Bloviate is *not* a statistical/ML synthesizer (it generates *specified*
-distributions, not ones learned from real data), *not* a masking/subsetting tool for existing data,
-JVM-only, and has no GUI. Its core is type-driven by default — an `email VARCHAR` gets random text —
-though the optional [`bloviate-datafaker`](#semantic--realistic-data-bloviate-datafaker) module adds
-realistic, name-correlated values when you want them.
+**Where the boundary is.** Bloviate is *not* a statistical/ML synthesizer (it generates *specified*
+distributions, not ones learned from real data) and *not* a masking/subsetting tool for existing
+data; it is JVM-only with no GUI. Realistic semantic values (emails, names, addresses), correlated
+columns, and CHECK/enum conformance are all supported — as opt-in features layered on the fast,
+type-driven default rather than replacing it.
 
 See **[POSITIONING.md](POSITIONING.md)** for the full competitive landscape, with sources.
 
