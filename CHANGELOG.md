@@ -1,3 +1,9 @@
+## [2.15.4](https://github.com/timveil/bloviate/compare/v2.15.3...v2.15.4) (2026-06-28)
+
+### ♻️ Code Refactoring
+
+* **logging:** consistent idiom, sane levels, and generator-resolution visibility ([#502](https://github.com/timveil/bloviate/issues/502)) ([065aaa7](https://github.com/timveil/bloviate/commit/065aaa7066c211c1545aeff3b226a380299656dc))
+
 ## [2.15.3](https://github.com/timveil/bloviate/compare/v2.15.2...v2.15.3) (2026-06-28)
 
 ### ♻️ Code Refactoring
