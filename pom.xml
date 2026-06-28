@@ -27,7 +27,7 @@
     <packaging>pom</packaging>
 
     <name>Bloviate Parent</name>
-    <description>Dummy data generator for Java</description>
+    <description>Reproducible, foreign-key-aware test-data generator for JDBC databases and flat files</description>
     <url>https://github.com/timveil/bloviate</url>
     <inceptionYear>2020</inceptionYear>
     <licenses>

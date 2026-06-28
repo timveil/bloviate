@@ -31,7 +31,7 @@
     <packaging>jar</packaging>
 
     <name>Bloviate Core</name>
-    <description>Dummy data generator for Java</description>
+    <description>Bloviate's dependency-free engine: auto-discovers a JDBC schema and fills it with reproducible, foreign-key-aware test data (and CSV/TSV files)</description>
 
     <dependencies>
 
