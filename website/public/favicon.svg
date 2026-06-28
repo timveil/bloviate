@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Bloviate">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a6bff"/>
+      <stop offset="1" stop-color="#6d4aff"/>
+    </linearGradient>
+  </defs>
+  <!-- speech bubble (talk × data) -->
+  <path fill="url(#b)" d="M7 3h18a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4h-9l-7 6v-6H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4Z"/>
+  <!-- stacked data rows inside the bubble -->
+  <rect x="8"  y="8"    width="16" height="2.6" rx="1.3" fill="#ff6b5c"/>
+  <rect x="8"  y="12.7" width="13" height="2.6" rx="1.3" fill="#ffffff" opacity="0.95"/>
+  <rect x="8"  y="17.4" width="9"  height="2.6" rx="1.3" fill="#ffffff" opacity="0.78"/>
+</svg>

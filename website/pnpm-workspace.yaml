@@ -1,0 +1,12 @@
+# Not a monorepo — this file only carries pnpm's global settings, which (as of
+# pnpm 10+) live here rather than in package.json's "pnpm" field.
+
+# Pin esbuild to a single version across the tree (Astro/Vite transitive dep).
+overrides:
+  esbuild: ^0.28.1
+
+# Dependencies allowed to run install/build scripts. pnpm blocks lifecycle
+# scripts by default (v10+); allowBuilds replaces the old onlyBuiltDependencies.
+allowBuilds:
+  esbuild: true
+  sharp: true
