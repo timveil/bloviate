@@ -1,0 +1,86 @@
+name: 🐛 Bug Report
+description: Report a problem or unexpected behavior in Bloviate
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report! Please search
+        [existing issues](https://github.com/timveil/bloviate/issues) first to
+        avoid duplicates.
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: |
+        How can we reproduce the issue? A minimal code snippet, schema, or
+        failing test is enormously helpful.
+      placeholder: |
+        1. Configure DatabaseFiller with '...'
+        2. Run against '...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include full stack traces or logs if available.
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: Affected module
+      options:
+        - bloviate-core
+        - bloviate-junit
+        - bloviate-testcontainers
+        - bloviate-datafaker
+        - Not sure
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Bloviate version
+      placeholder: e.g. 2.15.2
+    validations:
+      required: true
+  - type: input
+    id: database
+    attributes:
+      label: Database & version
+      description: Which database (and version) were you filling?
+      placeholder: e.g. PostgreSQL 17, MySQL 9, CockroachDB 24.x
+    validations:
+      required: false
+  - type: input
+    id: java
+    attributes:
+      label: Java version
+      placeholder: e.g. Temurin 25
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else that might help us understand the problem.
+    validations:
+      required: false

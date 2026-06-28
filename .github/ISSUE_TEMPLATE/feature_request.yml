@@ -1,0 +1,53 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement for Bloviate
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement! Please search
+        [existing issues](https://github.com/timveil/bloviate/issues) and
+        [discussions](https://github.com/timveil/bloviate/discussions) first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: |
+        What problem are you trying to solve? Is your feature request related to
+        a frustration or limitation? e.g. "I'm always frustrated when..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or workarounds you've considered.
+    validations:
+      required: false
+  - type: dropdown
+    id: module
+    attributes:
+      label: Relevant module
+      options:
+        - bloviate-core
+        - bloviate-junit
+        - bloviate-testcontainers
+        - bloviate-datafaker
+        - New module / not sure
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add any other context, examples, or screenshots about the request here.
+    validations:
+      required: false
