@@ -20,8 +20,27 @@ if (els.length) {
 			theme: 'base',
 			fontFamily: "'Space Grotesk', system-ui, sans-serif",
 			themeVariables: dark
-				? { primaryColor: '#2a2342', primaryBorderColor: '#8a6bff', primaryTextColor: '#e6e6e9', lineColor: '#b9a8ff', secondaryColor: '#25252c', tertiaryColor: '#1b1b22', fontSize: '15px' }
-				: { primaryColor: '#ede9ff', primaryBorderColor: '#7c5cff', primaryTextColor: '#1b1b1f', lineColor: '#5b3fd1', secondaryColor: '#f0edff', tertiaryColor: '#f7f5ff', fontSize: '15px' },
+				? {
+					primaryColor: '#2a2342', primaryBorderColor: '#8a6bff', primaryTextColor: '#e6e6e9', lineColor: '#b9a8ff', secondaryColor: '#25252c', tertiaryColor: '#1b1b22', fontSize: '15px',
+					// Bar/line charts (xychart-beta) are themed separately from flowcharts.
+					xyChart: {
+						backgroundColor: 'transparent',
+						titleColor: '#e6e6e9',
+						xAxisLabelColor: '#e6e6e9', xAxisTitleColor: '#e6e6e9', xAxisTickColor: '#54546a', xAxisLineColor: '#54546a',
+						yAxisLabelColor: '#c9c9d4', yAxisTitleColor: '#e6e6e9', yAxisTickColor: '#54546a', yAxisLineColor: '#54546a',
+						plotColorPalette: '#8a6bff',
+					},
+				}
+				: {
+					primaryColor: '#ede9ff', primaryBorderColor: '#7c5cff', primaryTextColor: '#1b1b1f', lineColor: '#5b3fd1', secondaryColor: '#f0edff', tertiaryColor: '#f7f5ff', fontSize: '15px',
+					xyChart: {
+						backgroundColor: 'transparent',
+						titleColor: '#1b1b1f',
+						xAxisLabelColor: '#1b1b1f', xAxisTitleColor: '#1b1b1f', xAxisTickColor: '#ccc2ff', xAxisLineColor: '#ccc2ff',
+						yAxisLabelColor: '#3a3a44', yAxisTitleColor: '#1b1b1f', yAxisTickColor: '#ccc2ff', yAxisLineColor: '#ccc2ff',
+						plotColorPalette: '#7c5cff',
+					},
+				},
 		});
 		// Render each diagram with an explicit, unique id. mermaid.run()'s
 		// auto-ids are timestamp-derived and collide when diagrams render in the
