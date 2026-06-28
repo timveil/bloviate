@@ -20,6 +20,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates time spans as a {@link String} in PostgreSQL {@code interval} input form,
+ * {@code years-months days hours:minutes:seconds}, e.g. {@code 3-7 14 21:45:09}.
+ *
+ * <p>Each component is drawn from a fixed range: years {@code 1..9}, months {@code 1..11},
+ * days {@code 1..29}, hours {@code 1..23}, minutes and seconds {@code 1..59} (all inclusive).
+ * Output is seeded and therefore reproducible for a given random source.
+ */
 public class IntervalGenerator extends AbstractDataGenerator<String> {
 
     private final IntegerGenerator yearGenerator;
@@ -48,6 +56,11 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
 
     public static class Builder extends AbstractBuilder<String> {
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

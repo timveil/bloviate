@@ -19,6 +19,13 @@ package io.bloviate.gen;
 import java.sql.*;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates a fixed-length {@code Integer[]} whose elements are unbounded random {@code int}
+ * values, bound to JDBC arrays of SQL type {@code INTEGER}.
+ *
+ * <p>The array {@link Builder#length(int) length} defaults to {@code 3}. Output is seeded and
+ * therefore reproducible for a given random source.
+ */
 public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
 
     private final int length;
@@ -62,10 +69,21 @@ public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
 
         private int length = 3;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the number of elements in the generated array. Defaults to {@code 3}.
+         *
+         * @param length the array length
+         * @return this builder, for chaining
+         */
         public Builder length(int length) {
             this.length = length;
             return this;

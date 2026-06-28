@@ -20,6 +20,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates a string of {@code '0'} and {@code '1'} characters for SQL {@code BIT} / {@code VARBIT}
+ * columns, e.g. {@code 10110}.
+ *
+ * <p>The number of bits is the configured {@link Builder#size(int) size} clamped to {@code [1, 25]}:
+ * {@code BIT}/{@code VARBIT} columns must hold at least one bit, and an unbounded {@code VARBIT}
+ * reports a max size of {@code 0} which would otherwise yield an empty (invalid) value. Size
+ * defaults to {@code 1}. Output is seeded and therefore reproducible for a given random source.
+ */
 public class BitStringGenerator extends AbstractDataGenerator<String> {
 
     private final int size;
@@ -51,10 +60,22 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
     public static class Builder extends AbstractBuilder<String> {
         private int size = 1;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the requested number of bits. The generated length is this value clamped to
+         * {@code [1, 25]}. Defaults to {@code 1}.
+         *
+         * @param size the requested bit-string length
+         * @return this builder, for chaining
+         */
         public Builder size(int size) {
             this.size = size;
             return this;

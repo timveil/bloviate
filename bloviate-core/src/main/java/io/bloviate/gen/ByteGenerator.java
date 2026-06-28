@@ -25,6 +25,12 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates an array of random {@code Byte}s using the seeded random source, so a given seed
+ * yields a reproducible sequence. The array length is the configured {@code size} capped at
+ * {@code 25} bytes; the default size is {@code 25}. Suitable for {@code BINARY}/{@code VARBINARY}
+ * style columns.
+ */
 public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
 
     private final int size;
@@ -59,10 +65,23 @@ public class ByteGenerator extends AbstractDataGenerator<Byte[]> {
 
         private int size = 25;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the requested number of bytes to generate. Defaults to {@code 25}. The effective
+         * length is capped at {@code 25} bytes at generation time, so larger values produce a
+         * 25-byte array.
+         *
+         * @param size the requested array length in bytes
+         * @return this builder, for chaining
+         */
         public Builder size(int size) {
             this.size = size;
             return this;

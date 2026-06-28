@@ -22,6 +22,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates {@code int} values drawn uniformly from the half-open range
+ * {@code [startInclusive, endExclusive)} using the seeded random source, so a given seed
+ * yields a reproducible sequence. The default range is {@code [0, Integer.MAX_VALUE)}.
+ * For non-uniform whole-number distributions see {@link NormalIntegerGenerator} (Gaussian)
+ * and {@link ZipfianIntegerGenerator} (skewed), or {@link StaticIntegerGenerator} for a fixed value.
+ */
 public class IntegerGenerator extends AbstractDataGenerator<Integer> {
 
     private final int startInclusive;
@@ -48,15 +55,33 @@ public class IntegerGenerator extends AbstractDataGenerator<Integer> {
         private int startInclusive = 0;
         private int endExclusive = Integer.MAX_VALUE;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the inclusive lower bound of the generated range. Defaults to {@code 0}.
+         *
+         * @param start the smallest value that may be generated (inclusive)
+         * @return this builder, for chaining
+         */
         public Builder start(int start) {
             this.startInclusive = start;
             return this;
         }
 
+        /**
+         * Sets the exclusive upper bound of the generated range. Defaults to {@code Integer.MAX_VALUE};
+         * generated values are always strictly less than this bound.
+         *
+         * @param end the upper bound that may never be generated (exclusive)
+         * @return this builder, for chaining
+         */
         public Builder end(int end) {
             this.endExclusive = end;
             return this;

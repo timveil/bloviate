@@ -16,8 +16,15 @@
 
 package io.bloviate.file;
 
+/**
+ * {@link FileDefinition} for tab-delimited (TSV) output. Fields are separated by a
+ * tab character ({@code \t}).
+ */
 public class TabDelimitedFile extends FileDefinition {
 
+    /**
+     * Constructs a new tab-delimited file definition using the {@link FileType#TDV} format.
+     */
     public TabDelimitedFile() {
         super(FileType.TDV);
     }

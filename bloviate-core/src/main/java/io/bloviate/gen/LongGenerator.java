@@ -22,6 +22,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates {@code long} values drawn uniformly from the half-open range
+ * {@code [startInclusive, endExclusive)} using the seeded random source, so a given seed
+ * yields a reproducible sequence. The default range is {@code [0, Long.MAX_VALUE)}. The
+ * 64-bit analogue of {@link IntegerGenerator}.
+ */
 public class LongGenerator extends AbstractDataGenerator<Long> {
 
     private final long startInclusive;
@@ -48,15 +54,33 @@ public class LongGenerator extends AbstractDataGenerator<Long> {
         private long startInclusive = 0;
         private long endExclusive = Long.MAX_VALUE;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the inclusive lower bound of the generated range. Defaults to {@code 0}.
+         *
+         * @param start the smallest value that may be generated (inclusive)
+         * @return this builder, for chaining
+         */
         public Builder start(long start) {
             this.startInclusive = start;
             return this;
         }
 
+        /**
+         * Sets the exclusive upper bound of the generated range. Defaults to {@code Long.MAX_VALUE};
+         * generated values are always strictly less than this bound.
+         *
+         * @param end the upper bound that may never be generated (exclusive)
+         * @return this builder, for chaining
+         */
         public Builder end(long end) {
             this.endExclusive = end;
             return this;

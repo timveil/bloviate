@@ -25,6 +25,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates {@link BigDecimal} values sized to a column's declared precision and scale using
+ * the seeded random source, so a given seed yields a reproducible sequence. When a precision
+ * is configured the value has up to {@code maxPrecision} total significant digits with
+ * {@code maxDigits} of them to the right of the decimal point; both bounds are capped at
+ * {@code 25} to keep test values manageable (some databases report enormous precision). When
+ * no precision is configured the value falls back to one produced by a {@link DoubleGenerator}.
+ * For a value constrained to an explicit numeric range and fixed scale see
+ * {@link ScaledBigDecimalGenerator}; for a fixed value see {@link StaticBigDecimalGenerator}.
+ */
 public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
 
     // this is the number of digits on both sides of the decimal point, can be null
@@ -89,15 +99,37 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
         private Integer maxPrecision;
         private Integer maxDigits;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the maximum total precision: the number of significant digits on both sides of the
+         * decimal point. May be {@code null} (the default), in which case the value falls back to a
+         * {@link DoubleGenerator} result. When set, the effective precision is capped at {@code 25}.
+         *
+         * @param maxPrecision the maximum total number of significant digits, or {@code null} for none
+         * @return this builder, for chaining
+         */
         public Builder precision(Integer maxPrecision) {
             this.maxPrecision = maxPrecision;
             return this;
         }
 
+        /**
+         * Sets the maximum scale: the number of fractional digits to the right of the decimal point.
+         * May be {@code null} (the default), which is treated as a scale of {@code 0}. The effective
+         * scale is capped at the effective precision, and must not exceed the configured precision or
+         * {@link #build()} will produce a generator that throws at generation time.
+         *
+         * @param maxDigits the maximum number of fractional digits, or {@code null} for none
+         * @return this builder, for chaining
+         */
         public Builder digits(Integer maxDigits) {
             this.maxDigits = maxDigits;
             return this;

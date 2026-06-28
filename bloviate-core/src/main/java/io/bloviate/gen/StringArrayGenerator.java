@@ -19,6 +19,14 @@ package io.bloviate.gen;
 import java.sql.*;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates a fixed-length {@code String[]} whose elements are random alphabetic strings, bound
+ * to JDBC arrays of SQL type {@code VARCHAR}.
+ *
+ * <p>The array {@link Builder#length(int) length} defaults to {@code 3} and each element's
+ * {@link Builder#elementLength(int) elementLength} defaults to {@code 10} characters. Output is
+ * seeded and therefore reproducible for a given random source.
+ */
 public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
 
     private final int length;
@@ -69,15 +77,32 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
         private int length = 3;
         private int elementLength = 10;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the number of elements in the generated array. Defaults to {@code 3}.
+         *
+         * @param length the array length
+         * @return this builder, for chaining
+         */
         public Builder length(int length) {
             this.length = length;
             return this;
         }
 
+        /**
+         * Sets the character length of each generated string element. Defaults to {@code 10}.
+         *
+         * @param elementLength the number of alphabetic characters per element
+         * @return this builder, for chaining
+         */
         public Builder elementLength(int elementLength) {
             this.elementLength = elementLength;
             return this;

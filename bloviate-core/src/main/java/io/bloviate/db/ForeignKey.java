@@ -19,9 +19,15 @@ package io.bloviate.db;
 import java.util.List;
 
 /**
- * Represents a foreign key constraint in a database table.
- * A foreign key establishes a link between data in two tables by referencing
- * the primary key of another table.
+ * A foreign-key relationship: the columns of one table that reference the {@link PrimaryKey} of
+ * another.
+ *
+ * <p>This is the edge that drives the fill engine's topological ordering — the referenced (parent)
+ * table must be populated before the table that depends on it, so {@link DatabaseFiller} builds its
+ * dependency graph from these relationships. It also lets {@link TableFiller} seed a foreign-key
+ * column from its associated primary-key column so the generated values line up. Like a primary key,
+ * a foreign key may span several columns, paired in order with the primary-key columns they
+ * reference.
  *
  * @param foreignKeyColumns the columns that make up the foreign key
  * @param primaryKey the primary key that this foreign key references

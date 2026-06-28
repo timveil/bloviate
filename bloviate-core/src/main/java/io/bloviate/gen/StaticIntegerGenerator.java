@@ -49,10 +49,22 @@ public class StaticIntegerGenerator extends AbstractDataGenerator<Integer> {
 
         private Integer value = 0;
 
+        /**
+         * Creates a builder backed by the given random source. The source is never used, since this
+         * generator always returns the configured value.
+         *
+         * @param random the (unused) random source
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the fixed value returned by every call to {@code generate()}. Defaults to {@code 0}.
+         *
+         * @param value the constant value to generate
+         * @return this builder, for chaining
+         */
         public Builder value(Integer value) {
             this.value = value;
             return this;

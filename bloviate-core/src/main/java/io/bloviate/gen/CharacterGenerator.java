@@ -20,6 +20,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates a single lowercase ASCII letter ({@code 'a'} through {@code 'z'}) chosen uniformly
+ * using the seeded random source, so a given seed yields a reproducible sequence. Backed by an
+ * {@link IntegerGenerator} over the half-open range {@code [0, 26)} offset from {@code 'a'}.
+ */
 public class CharacterGenerator extends AbstractDataGenerator<Character> {
 
     private final IntegerGenerator integerGenerator;
@@ -47,6 +52,11 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
     }
 
     public static class Builder extends AbstractBuilder<Character> {
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

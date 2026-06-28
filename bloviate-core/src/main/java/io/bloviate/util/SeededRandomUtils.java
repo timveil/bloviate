@@ -46,14 +46,40 @@ public record SeededRandomUtils(RandomGenerator random) {
     private static final char[] ALPHANUMERIC =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".toCharArray();
 
+    /**
+     * Generates a random string of ASCII digits ({@code 0-9}) whose length is chosen randomly
+     * from the range {@code [minLengthInclusive, maxLengthExclusive)}.
+     *
+     * @param minLengthInclusive the inclusive minimum length of the generated string
+     * @param maxLengthExclusive the exclusive maximum length of the generated string
+     * @return a random numeric string
+     */
     public String randomNumeric(int minLengthInclusive, int maxLengthExclusive) {
         return randomNumeric(nextInt(minLengthInclusive, maxLengthExclusive));
     }
 
+    /**
+     * Generates a random string of the given length composed only of ASCII digits ({@code 0-9}).
+     *
+     * @param count the length of the string to create
+     * @return a random numeric string of length {@code count}
+     */
     public String randomNumeric(final int count) {
         return random(count, false, true);
     }
 
+    /**
+     * Generates a random string of the requested length drawn from a fixed character pool selected
+     * by the {@code letters}/{@code numbers} flags: letters only ({@code A-Za-z}), digits only
+     * ({@code 0-9}), or alphanumeric ({@code A-Za-z0-9}). When both flags are {@code false} the
+     * general {@code [start, end)} code-point path is used, drawing from any code point.
+     *
+     * @param count   the length of the string to create
+     * @param letters whether ASCII letters are allowed
+     * @param numbers whether ASCII digits are allowed
+     * @return the generated random string
+     * @throws IllegalArgumentException if {@code count} is negative
+     */
     public String random(final int count, final boolean letters, final boolean numbers) {
         if (count < 0) {
             throw new IllegalArgumentException("Requested random string length " + count + " is less than 0.");
@@ -158,10 +184,27 @@ public record SeededRandomUtils(RandomGenerator random) {
         return builder.toString();
     }
 
+    /**
+     * Generates a random string of the given length composed only of ASCII letters
+     * ({@code A-Za-z}).
+     *
+     * @param count the length of the string to create
+     * @return a random alphabetic string of length {@code count}
+     */
     public String randomAlphabetic(final int count) {
         return random(count, true, false);
     }
 
+    /**
+     * Returns a random {@code int} within the range {@code [startInclusive, endExclusive)}. When
+     * the two bounds are equal, that value is returned.
+     *
+     * @param startInclusive the inclusive lower bound (must be non-negative)
+     * @param endExclusive   the exclusive upper bound (must be {@code >= startInclusive})
+     * @return a random {@code int} in the range
+     * @throws IllegalArgumentException if {@code endExclusive < startInclusive} or
+     *                                  {@code startInclusive} is negative
+     */
     public int nextInt(final int startInclusive, final int endExclusive) {
         Validate.isTrue(endExclusive >= startInclusive, "Start value must be smaller or equal to end value.");
         Validate.isTrue(startInclusive >= 0, "Both range values must be non-negative.");
@@ -173,6 +216,16 @@ public record SeededRandomUtils(RandomGenerator random) {
         return startInclusive + random.nextInt(endExclusive - startInclusive);
     }
 
+    /**
+     * Returns a random {@code double} within the range {@code [startInclusive, endExclusive)}. When
+     * the two bounds are equal, that value is returned.
+     *
+     * @param startInclusive the inclusive lower bound (must be non-negative)
+     * @param endExclusive   the exclusive upper bound (must be {@code >= startInclusive})
+     * @return a random {@code double} in the range
+     * @throws IllegalArgumentException if {@code endExclusive < startInclusive} or
+     *                                  {@code startInclusive} is negative
+     */
     public double nextDouble(final double startInclusive, final double endExclusive) {
         Validate.isTrue(endExclusive >= startInclusive, "Start value must be smaller or equal to end value.");
         Validate.isTrue(startInclusive >= 0, "Both range values must be non-negative.");
@@ -184,6 +237,16 @@ public record SeededRandomUtils(RandomGenerator random) {
         return startInclusive + ((endExclusive - startInclusive) * random.nextDouble());
     }
 
+    /**
+     * Returns a random {@code float} within the range {@code [startInclusive, endExclusive)}. When
+     * the two bounds are equal, that value is returned.
+     *
+     * @param startInclusive the inclusive lower bound (must be non-negative)
+     * @param endExclusive   the exclusive upper bound (must be {@code >= startInclusive})
+     * @return a random {@code float} in the range
+     * @throws IllegalArgumentException if {@code endExclusive < startInclusive} or
+     *                                  {@code startInclusive} is negative
+     */
     public float nextFloat(final float startInclusive, final float endExclusive) {
         Validate.isTrue(endExclusive >= startInclusive, "Start value must be smaller or equal to end value.");
         Validate.isTrue(startInclusive >= 0, "Both range values must be non-negative.");
@@ -195,6 +258,17 @@ public record SeededRandomUtils(RandomGenerator random) {
         return startInclusive + ((endExclusive - startInclusive) * random.nextFloat());
     }
 
+    /**
+     * Returns a random {@code long} within the range {@code [startInclusive, endExclusive)}. When
+     * the two bounds are equal, that value is returned. The value is generated directly as a
+     * {@code long} so the top of wide ranges (above {@code 2^53}) remains reachable.
+     *
+     * @param startInclusive the inclusive lower bound (must be non-negative)
+     * @param endExclusive   the exclusive upper bound (must be {@code >= startInclusive})
+     * @return a random {@code long} in the range
+     * @throws IllegalArgumentException if {@code endExclusive < startInclusive} or
+     *                                  {@code startInclusive} is negative
+     */
     public long nextLong(final long startInclusive, final long endExclusive) {
         Validate.isTrue(endExclusive >= startInclusive, "Start value must be smaller or equal to end value.");
         Validate.isTrue(startInclusive >= 0, "Both range values must be non-negative.");

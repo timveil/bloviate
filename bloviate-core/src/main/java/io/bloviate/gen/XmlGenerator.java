@@ -47,6 +47,11 @@ public class XmlGenerator extends AbstractDataGenerator<String> {
 
     public static class Builder extends AbstractBuilder<String> {
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }

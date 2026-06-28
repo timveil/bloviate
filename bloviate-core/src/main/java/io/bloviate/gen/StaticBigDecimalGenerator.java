@@ -49,15 +49,35 @@ public class StaticBigDecimalGenerator extends AbstractDataGenerator<BigDecimal>
 
         private BigDecimal value = BigDecimal.ZERO;
 
+        /**
+         * Creates a builder backed by the given random source. The source is never used, since this
+         * generator always returns the configured value.
+         *
+         * @param random the (unused) random source
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the fixed value returned by every call to {@code generate()}. Defaults to
+         * {@code BigDecimal.ZERO}.
+         *
+         * @param value the constant value to generate
+         * @return this builder, for chaining
+         */
         public Builder value(BigDecimal value) {
             this.value = value;
             return this;
         }
 
+        /**
+         * Sets the fixed value returned by every call to {@code generate()}, parsed from the given
+         * string via the {@link BigDecimal#BigDecimal(String)} constructor.
+         *
+         * @param value the constant value to generate, as a {@code BigDecimal} string representation
+         * @return this builder, for chaining
+         */
         public Builder value(String value) {
             this.value = new BigDecimal(value);
             return this;

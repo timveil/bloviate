@@ -41,6 +41,16 @@ import java.util.Map;
  */
 public class MySQLSupport extends AbstractDatabaseSupport {
 
+    /**
+     * Returns {@code rewriteBatchedStatements}, the MySQL Connector/J parameter that rewrites a batch
+     * of single-row {@code INSERT}s into one multi-row statement. Enabling it (e.g.
+     * {@code jdbc:mysql://host/db?rewriteBatchedStatements=true}) collapses many round trips into one
+     * and is often the single biggest fill speedup; Bloviate logs a one-time recommendation when a
+     * fill connection's URL does not set it.
+     *
+     * @return the {@code rewriteBatchedStatements} parameter name
+     * @since 2.10.0
+     */
     @Override
     public String batchRewriteUrlParameter() {
         return "rewriteBatchedStatements";

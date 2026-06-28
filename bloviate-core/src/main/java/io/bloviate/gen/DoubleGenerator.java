@@ -22,6 +22,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.random.RandomGenerator;
 
+/**
+ * Generates {@code double} values drawn uniformly from the half-open range
+ * {@code [startInclusive, endExclusive)} using the seeded random source, so a given seed
+ * yields a reproducible sequence. The default range is {@code [0, Double.MAX_VALUE)}.
+ * For a Gaussian distribution see {@link NormalDoubleGenerator}; for a fixed value see
+ * {@link StaticDoubleGenerator}.
+ */
 public class DoubleGenerator extends AbstractDataGenerator<Double> {
 
     private final double startInclusive;
@@ -48,15 +55,33 @@ public class DoubleGenerator extends AbstractDataGenerator<Double> {
         private double startInclusive = 0;
         private double endExclusive = Double.MAX_VALUE;
 
+        /**
+         * Creates a builder backed by the given seeded random source.
+         *
+         * @param random the random source used to draw generated values
+         */
         public Builder(RandomGenerator random) {
             super(random);
         }
 
+        /**
+         * Sets the inclusive lower bound of the generated range. Defaults to {@code 0}.
+         *
+         * @param start the smallest value that may be generated (inclusive)
+         * @return this builder, for chaining
+         */
         public Builder start(double start) {
             this.startInclusive = start;
             return this;
         }
 
+        /**
+         * Sets the exclusive upper bound of the generated range. Defaults to {@code Double.MAX_VALUE};
+         * generated values are always strictly less than this bound.
+         *
+         * @param end the upper bound that may never be generated (exclusive)
+         * @return this builder, for chaining
+         */
         public Builder end(double end) {
             this.endExclusive = end;
             return this;
