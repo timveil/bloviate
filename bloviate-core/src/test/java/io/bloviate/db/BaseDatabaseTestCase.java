@@ -19,8 +19,6 @@ package io.bloviate.db;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.bloviate.gen.tpcc.CustomerLastNameGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
 import javax.sql.DataSource;
@@ -32,8 +30,6 @@ import java.sql.Statement;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BaseDatabaseTestCase {
-
-    protected static final Logger logger = LoggerFactory.getLogger(BaseDatabaseTestCase.class);
 
     protected static DataSource getDataSource(JdbcDatabaseContainer<?> container) {
         HikariConfig hikariConfig = new HikariConfig();

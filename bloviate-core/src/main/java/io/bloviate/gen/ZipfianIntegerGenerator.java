@@ -44,17 +44,7 @@ public class ZipfianIntegerGenerator extends AbstractDataGenerator<Integer> {
     @Override
     public Integer generate() {
         double draw = randomUtils.nextDouble(0.0, totalWeight);
-        int low = 0;
-        int high = cumulativeWeights.length - 1;
-        while (low < high) {
-            int mid = (low + high) >>> 1;
-            if (draw < cumulativeWeights[mid]) {
-                high = mid;
-            } else {
-                low = mid + 1;
-            }
-        }
-        return start + low;
+        return start + Cdf.upperBound(cumulativeWeights, draw);
     }
 
     @Override

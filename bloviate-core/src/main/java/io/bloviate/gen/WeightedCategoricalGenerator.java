@@ -19,6 +19,7 @@ package io.bloviate.gen;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.random.RandomGenerator;
@@ -50,23 +51,7 @@ public class WeightedCategoricalGenerator<T> extends AbstractDataGenerator<T> {
     @SuppressWarnings("unchecked")
     public T generate() {
         double draw = randomUtils.nextDouble(0.0, totalWeight);
-        int index = indexFor(draw);
-        return (T) values[index];
-    }
-
-    /** Binary search for the first cumulative-weight bucket strictly greater than {@code draw}. */
-    private int indexFor(double draw) {
-        int low = 0;
-        int high = cumulativeWeights.length - 1;
-        while (low < high) {
-            int mid = (low + high) >>> 1;
-            if (draw < cumulativeWeights[mid]) {
-                high = mid;
-            } else {
-                low = mid + 1;
-            }
-        }
-        return low;
+        return (T) values[Cdf.upperBound(cumulativeWeights, draw)];
     }
 
     @Override
@@ -140,7 +125,7 @@ public class WeightedCategoricalGenerator<T> extends AbstractDataGenerator<T> {
         // stable canonical order (by string form) so the value for a given draw never depends on the
         // iteration order of the source map — the key to reproducibility across JVMs
         List<Builder.Entry<T>> sorted = new ArrayList<>(builder.entries);
-        sorted.sort((a, b) -> String.valueOf(a.value()).compareTo(String.valueOf(b.value())));
+        sorted.sort(Comparator.comparing(entry -> String.valueOf(entry.value())));
 
         this.values = new Object[sorted.size()];
         this.cumulativeWeights = new double[sorted.size()];

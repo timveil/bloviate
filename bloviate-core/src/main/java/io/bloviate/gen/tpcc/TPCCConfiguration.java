@@ -143,7 +143,7 @@ public final class TPCCConfiguration {
         final int d = districtsPerWarehouse;
         final int c = customersPerDistrict;
         final int o = customersPerDistrict; // one order per customer
-        final int no = Math.max(0, Math.min(newOrdersPerDistrict, o)); // new_order is a subset of orders
+        final int no = Math.clamp(newOrdersPerDistrict, 0, o); // new_order is a subset of orders
 
         // shared, deterministic per-order line counts so open_order.o_ol_cnt and order_line agree
         final ChildCardinality cardinality = new ChildCardinality(minLinesPerOrder, maxLinesPerOrder, LINE_COUNT_SEED);

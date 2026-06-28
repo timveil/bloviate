@@ -18,8 +18,6 @@ package io.bloviate.gen;
 
 import io.bloviate.util.RandomGenerators;
 import io.bloviate.util.SeededRandomUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -49,8 +47,6 @@ import java.util.random.RandomGenerator;
  * @see DataGenerator
  */
 public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
-
-    final Logger logger = LoggerFactory.getLogger(getClass());
 
     /** The random source backing all value generation; swapped out by {@link #reseed(long)}. */
     protected RandomGenerator random;

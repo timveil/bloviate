@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -82,7 +83,7 @@ class ReferentialRealismTest {
     void differentSeedsDiffer() {
         Person a = People.context(1L, Locale.ENGLISH).at(0);
         Person b = People.context(2L, Locale.ENGLISH).at(0);
-        assertTrue(!a.equals(b), "different seeds should generally yield different identities");
+        assertFalse(a.equals(b), "different seeds should generally yield different identities");
     }
 
     @Test
