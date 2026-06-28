@@ -89,8 +89,8 @@
         <!-- Per-package test-coverage floor enforced by jacoco:check (bound to verify). Set just
              below current coverage to lock in no-regression; ratchet upward over time. Modules that
              cannot yet meet the default override these properties in their own pom. -->
-        <jacoco.line.min>0.78</jacoco.line.min>
-        <jacoco.branch.min>0.55</jacoco.branch.min>
+        <jacoco.line.min>0.83</jacoco.line.min>
+        <jacoco.branch.min>0.68</jacoco.branch.min>
     </properties>
 
     <distributionManagement>
