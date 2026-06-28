@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JdbcUrlsTest {
@@ -66,5 +67,25 @@ class JdbcUrlsTest {
         // null/blank parameter name (database has no such parameter) leaves the URL untouched
         assertEquals("jdbc:foo://host/db", JdbcUrls.withBatchRewrite("jdbc:foo://host/db", null));
         assertEquals("jdbc:foo://host/db", JdbcUrls.withBatchRewrite("jdbc:foo://host/db", "  "));
+    }
+
+    @Test
+    void appendParameterRejectsBlankOrNullArguments() {
+        assertThrows(IllegalArgumentException.class, () -> JdbcUrls.appendParameter(null, "a", "b"));
+        assertThrows(IllegalArgumentException.class, () -> JdbcUrls.appendParameter("  ", "a", "b"));
+        assertThrows(IllegalArgumentException.class, () -> JdbcUrls.appendParameter("jdbc:x://h/d", null, "b"));
+        assertThrows(IllegalArgumentException.class, () -> JdbcUrls.appendParameter("jdbc:x://h/d", " ", "b"));
+        assertThrows(IllegalArgumentException.class, () -> JdbcUrls.appendParameter("jdbc:x://h/d", "a", null));
+    }
+
+    @Test
+    void parameterParsingHandlesQueryStringEdgeCases() {
+        // a trailing '?' with no query content is treated as having no parameters
+        assertFalse(JdbcUrls.hasParameter("jdbc:postgresql://host/db?", "a"));
+        // an empty pair (a stray '&') is skipped while later pairs still match
+        assertTrue(JdbcUrls.hasParameter("jdbc:postgresql://host/db?a=1&&b=2", "b"));
+        // a valueless key is present and resolves to an empty (but non-null) value
+        assertTrue(JdbcUrls.hasParameter("jdbc:postgresql://host/db?ssl&a=1", "ssl"));
+        assertTrue(JdbcUrls.parameterEquals("jdbc:postgresql://host/db?ssl&a=1", "ssl", ""));
     }
 }
