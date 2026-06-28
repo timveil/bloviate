@@ -27,12 +27,16 @@ public interface FileGenerator {
     /**
      * Generates the output data file, writing one header row followed by the configured
      * number of data rows.
+     *
+     * @throws java.io.UncheckedIOException if the file cannot be written
      */
     void generate();
 
     /**
      * Exports this generator's configuration to a YAML file (named after the generator's
      * base file name with a {@code .yaml} extension).
+     *
+     * @throws java.io.UncheckedIOException if the file cannot be written
      */
     void yaml();
 }

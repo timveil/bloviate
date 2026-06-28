@@ -45,7 +45,7 @@ import java.util.random.RandomGenerator;
  */
 public class TableFiller implements Fillable {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger logger = LoggerFactory.getLogger(TableFiller.class);
 
     private final Connection connection;
     private final Database database;
@@ -100,7 +100,7 @@ public class TableFiller implements Fillable {
 
         String sql = table.insertString();
 
-        logger.trace(sql);
+        logger.trace("{}", sql);
 
         // The fill loop is the hot path: it runs once per cell (rowCount * columnCount times).
         // To keep it allocation- and lookup-free, everything is resolved up front into arrays
@@ -162,12 +162,15 @@ public class TableFiller implements Fillable {
                     : null;
 
             DataGenerator<?> dataGenerator;
+            String source;
             if (columnConfiguration != null) {
                 dataGenerator = columnConfiguration.generatorFactory().create(random);
+                source = "column-config";
             } else {
                 DataGenerator<?> custom = registry != null ? registry.resolve(column, random) : null;
                 if (custom != null) {
                     dataGenerator = custom;
+                    source = "registry";
                 } else {
                     // honor a CHECK/enum constraint when one applies and the user hasn't overridden the column
                     ColumnConstraint constraint = constraints.get(column.name().toLowerCase(Locale.ROOT));
@@ -176,9 +179,20 @@ public class TableFiller implements Fillable {
                         logger.warn("constraint on column [{}.{}] could not be applied to its {} type; using the type default",
                                 table.name(), column.name(), column.jdbcType());
                     }
-                    dataGenerator = constrained != null ? constrained : databaseSupport.getDataGenerator(column, random);
+                    if (constrained != null) {
+                        dataGenerator = constrained;
+                        source = "constraint";
+                    } else {
+                        dataGenerator = databaseSupport.getDataGenerator(column, random);
+                        source = "support-default";
+                    }
                 }
             }
+
+            // per-column resolution is the most useful diagnostic for a data-gen library: it reveals
+            // which generator (incl. semantic/datafaker matches) each column got, and by which path
+            logger.debug("column [{}.{}] ({}) resolved to generator [{}] via {}",
+                    table.name(), column.name(), column.jdbcType(), dataGenerator.getClass().getSimpleName(), source);
 
             generators[idx] = dataGenerator;
             reseedSeeds[idx] = seed;
@@ -197,9 +211,9 @@ public class TableFiller implements Fillable {
         long endRow = partitioned ? Math.min(rangeEndExclusive, totalRowCount) : totalRowCount;
 
         if (partitioned) {
-            logger.info("filling table [{}] rows [{}, {}) of [{}]", table.name(), startRow, endRow, totalRowCount);
+            logger.debug("filling table [{}] rows [{}, {}) of [{}]", table.name(), startRow, endRow, totalRowCount);
         } else {
-            logger.info("filling table [{}] with [{}] rows", table.name(), totalRowCount);
+            logger.debug("filling table [{}] with [{}] rows", table.name(), totalRowCount);
         }
 
         StopWatch tableWatch = new StopWatch(String.format("filled table [%s] in", table.name()));
@@ -274,7 +288,7 @@ public class TableFiller implements Fillable {
 
         tableWatch.stop();
 
-        logger.info(tableWatch.toString());
+        logger.debug("{}", tableWatch);
 
     }
 

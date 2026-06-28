@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -71,7 +72,7 @@ import java.util.List;
  */
 public class FlatFileGenerator implements FileGenerator {
 
-    final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger logger = LoggerFactory.getLogger(FlatFileGenerator.class);
 
 
     private static final YAMLFactory yamlFactory = new YAMLFactory()
@@ -112,7 +113,7 @@ public class FlatFileGenerator implements FileGenerator {
 
             csvPrinter.flush();
         } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+            throw new UncheckedIOException("failed to write file [" + output + "]", e);
         }
 
     }
@@ -122,7 +123,7 @@ public class FlatFileGenerator implements FileGenerator {
         try {
             mapper.writeValue(new File(fileName + ".yaml"), this);
         } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+            throw new UncheckedIOException("failed to write YAML file [" + fileName + ".yaml]", e);
         }
     }
 

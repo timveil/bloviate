@@ -80,7 +80,7 @@ import java.util.concurrent.Future;
  */
 public class DatabaseFiller implements Fillable {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger logger = LoggerFactory.getLogger(DatabaseFiller.class);
 
     /** A caller-managed connection for the sequential path; null when filling from a {@link DataSource}. */
     private final Connection connection;
@@ -120,7 +120,7 @@ public class DatabaseFiller implements Fillable {
                 : DatabaseUtils.getMetadata(dataSource);
         metadataWatch.stop();
 
-        logger.info(metadataWatch.toString());
+        logger.debug("{}", metadataWatch);
 
         StopWatch databaseWatch = new StopWatch(String.format("filled database [%s] in", database.catalog()));
         databaseWatch.start();
@@ -155,7 +155,7 @@ public class DatabaseFiller implements Fillable {
 
         databaseWatch.stop();
 
-        logger.info(databaseWatch.toString());
+        logger.info("{}", databaseWatch);
 
     }
 
@@ -456,13 +456,20 @@ public class DatabaseFiller implements Fillable {
                     }
 
                     if (table.equals(referencedTable)) {
-                        logger.warn("this key is self referencing... will likely cause problems");
+                        // a self-referencing foreign key adds no inter-table ordering constraint; skip
+                        // the self-edge (a self-loop would also be rejected by the DAG) and warn so the
+                        // user knows intra-table parent/child ordering is their responsibility
+                        logger.warn("table [{}] has a self-referencing foreign key on column(s) {}; it imposes no "
+                                + "fill order and rows may reference not-yet-inserted parents",
+                                table.name(), key.foreignKeyColumns());
+                        continue;
                     }
 
                     try {
                         graph.addEdge(table, referencedTable);
                     } catch (IllegalArgumentException e) {
-                        logger.error("error adding edge between {} and {}: {}", table.name(), referencedTable.name(), e.getMessage(), e);
+                        logger.error("could not add dependency edge from [{}] to [{}]: {}",
+                                table.name(), referencedTable.name(), e.getMessage(), e);
                     }
                 }
             }
