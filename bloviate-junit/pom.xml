@@ -33,6 +33,13 @@
     <name>Bloviate JUnit</name>
     <description>JUnit Jupiter integration for Bloviate: declaratively fill a test database</description>
 
+    <properties>
+        <!-- thin SPI extension exercised only through Testcontainers; relaxed below the parent floor
+             to lock in no-regression. Ratchet up as coverage improves. -->
+        <jacoco.line.min>0.60</jacoco.line.min>
+        <jacoco.branch.min>0.25</jacoco.branch.min>
+    </properties>
+
     <dependencies>
 
         <dependency>
