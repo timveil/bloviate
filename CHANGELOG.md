@@ -1,3 +1,9 @@
+## [2.15.3](https://github.com/timveil/bloviate/compare/v2.15.2...v2.15.3) (2026-06-28)
+
+### ♻️ Code Refactoring
+
+* de-duplicate distribution generators and clear static-analysis findings ([#501](https://github.com/timveil/bloviate/issues/501)) ([e4deb98](https://github.com/timveil/bloviate/commit/e4deb98457e17a604d6e6d61d6c242ecead16101))
+
 ## [2.15.2](https://github.com/timveil/bloviate/compare/v2.15.1...v2.15.2) (2026-06-28)
 
 ### 🔧 Build System
