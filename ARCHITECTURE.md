@@ -356,7 +356,11 @@ Crucially, registry- and plugin-supplied generators are still constructed with t
 **[`bloviate-datafaker`](bloviate-datafaker/)** module is exactly this pattern in practice: one
 `GeneratorPlugin` that maps column names (`email`, `first_name`, `phone`, …) to realistic
 [Datafaker](https://www.datafaker.net/) values, seeded from the engine's column seed for
-reproducibility — keeping the core dependency-free.
+reproducibility — keeping the core dependency-free. It also offers **referential realism** via a
+`RowContext`: correlated columns project fields of one per-row entity — a `Person` whose email/username
+derive from its name, or a `Geo` tuple (city/state/zip/area-code that agree) drawn from a bundled
+reference dataset — computed as a pure function of `(seed, rowIndex)` so consistency survives parallel
+and partitioned fills.
 
 ## 7. The generator library — Builder pattern
 
