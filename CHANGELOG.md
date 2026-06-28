@@ -1,3 +1,9 @@
+## [2.15.2](https://github.com/timveil/bloviate/compare/v2.15.1...v2.15.2) (2026-06-28)
+
+### 🔧 Build System
+
+* silence datafaker deprecation and shade uber-jar overlap warnings ([#497](https://github.com/timveil/bloviate/issues/497)) ([4e5cdd1](https://github.com/timveil/bloviate/commit/4e5cdd1cc0edc1070f52ccae54c63ef6e2ebac48))
+
 ## [2.15.1](https://github.com/timveil/bloviate/compare/v2.15.0...v2.15.1) (2026-06-28)
 
 ### 🔧 Build System
