@@ -187,7 +187,8 @@ tables within each level concurrently, **one connection per worker**, barriering
 a child table is never filled before its parent. Each worker fills its table in a single
 transaction (commit once per table). The fill stays **fully reproducible**: a table's data depends
 only on its own seed and row order, never on which tables fill alongside it, so the same config and
-seed produce byte-for-byte the same data as a sequential fill.
+seed produce the same row content as a sequential fill across every deterministic column (physical
+row order and wall-clock columns aside).
 
 How much this helps depends on the schema. A wide schema of independent tables sees a large speedup
 (~3× with 8 workers on a 10-table, 1M-row fixture); a deep, narrow foreign-key chain (each table
@@ -282,7 +283,8 @@ new DatabaseFiller.Builder(dataSource, config).threads(8).build().fill();
 This is safe because Bloviate's data is **referentially consistent by construction**: a foreign-key
 column is seeded from its referenced primary-key column, so child and parent generate identical key
 values regardless of insert order. Disabling enforcement therefore changes nothing about
-correctness — the result is byte-for-byte identical to an ordered fill of the same seed — it only
+correctness — for the same seed the result has the same row content as an ordered fill across every
+deterministic column (physical row order aside) — it only
 removes the ordering constraint and the per-row foreign-key checks. The win is largest on deep
 chains (e.g. TPC-C's `warehouse → district → customer → open_order → order_line`); wide, FK-free
 schemas already saturate their workers in one level and see little change.

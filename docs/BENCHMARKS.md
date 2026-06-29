@@ -230,11 +230,11 @@ xychart-beta
   clearly in JMH but not end-to-end. The optimization is still worth keeping: it is free and removes
   allocation/lookup from the hottest loop.
 
-**Note on reproducibility:** the same config and seed produce identical data on every run, including
-date/time/timestamp columns. `PostgresParallelFillTest` asserts a parallel fill reproduces the
-sequential fill byte-for-byte across a TPC-C schema, comparing every column except the few that use
-wall-clock time *by design* (e.g. the order-line delivery date), which are intentionally
-non-deterministic. See [Reproducibility — deterministic seeds from schema identity](./ARCHITECTURE.md#reproducibility--deterministic-seeds-from-schema-identity).
+**Note on reproducibility:** the same config and seed produce identical data on every run for every
+deterministic column, including *seeded* date/time/timestamp columns. `PostgresParallelFillTest` asserts
+a parallel fill reproduces the sequential fill's row content across a TPC-C schema — comparing every
+column except the few that use wall-clock time *by design* (e.g. the order-line delivery date), which
+are intentionally non-deterministic — independent of physical insert order. See [Reproducibility — deterministic seeds from schema identity](./ARCHITECTURE.md#reproducibility--deterministic-seeds-from-schema-identity).
 
 ### Unordered bulk load (deep FK chains)
 

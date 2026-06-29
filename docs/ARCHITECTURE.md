@@ -186,7 +186,8 @@ Each table is filled by a worker that borrows its own `Connection` from the pool
 are not thread-safe) inside its own transaction, and a **barrier** between levels guarantees a child
 table never starts before its parents are committed. The fill stays **fully reproducible**: a table's
 data depends only on its own per-column seeds and row order, never on which tables fill alongside it,
-so a parallel fill is byte-for-byte identical to a sequential one
+so for the same seed a parallel fill yields the same row content as a sequential one across every
+deterministic column — physical row order and wall-clock columns aside
 ([reproducible seeds](#reproducibility--deterministic-seeds-from-schema-identity)). The win is largest for wide
 schemas of independent tables and small for deep, narrow FK chains (little fans out within a level).
 
@@ -278,8 +279,8 @@ no barrier — and disables foreign-key enforcement for the duration.
 This is only sound because of [foreign-key fidelity](#filling-a-table--generators-batching-and-fk-fidelity):
 an FK column is seeded from its referenced PK column, so the data is referentially consistent
 *regardless of insert order*. Disabling enforcement removes the per-row check and the ordering
-requirement without changing a single generated value — the result is byte-for-byte identical to an
-ordered fill of the same seed.
+requirement without changing a single generated value — so for the same seed the result has the same
+row content as an ordered fill across every deterministic column (physical row order aside).
 
 ```mermaid
 flowchart TD
@@ -351,7 +352,7 @@ so output stays reproducible and order-independent; only the algorithm and stati
 
 Because a value depends only on its column's seed and row index — never on timing or which tables fill
 alongside it — reproducibility survives concurrency. A **parallel table fill**
-([parallel fill](#parallel-fill--topological-levels)) is byte-for-byte identical to a sequential one. An
+([parallel fill](#parallel-fill--topological-levels)) yields the same row content as a sequential one across every deterministic column. An
 **intra-table partitioned fill** ([intra-table partitioning](#intra-table-partitioning--seeking-to-a-row-range)) is
 reproducible for a given configuration *including the partition count*: keys and foreign keys are
 byte-identical regardless of partitioning, and only plain non-key random columns vary with it.
