@@ -16,10 +16,14 @@
 
 package io.bloviate.ext;
 
+import io.bloviate.db.Database;
 import io.bloviate.gen.JsonbGenerator;
 import io.bloviate.gen.SimpleStringGenerator;
 
+import java.sql.Connection;
 import java.sql.JDBCType;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 
 /**
@@ -58,6 +62,54 @@ public class MySQLSupport extends AbstractDatabaseSupport {
     @Override
     public String batchRewriteUrlParameter() {
         return "rewriteBatchedStatements";
+    }
+
+    /**
+     * MySQL supports unordered bulk loading by disabling the session's foreign-key and unique checks.
+     *
+     * @return {@code true}
+     * @since 2.17.0
+     */
+    @Override
+    public boolean supportsBulkLoad() {
+        return true;
+    }
+
+    /**
+     * Disables {@code FOREIGN_KEY_CHECKS} and {@code UNIQUE_CHECKS} for the session. These are ordinary
+     * session variables that need no special privilege. MySQL does not re-validate existing rows when
+     * the checks are turned back on, which is acceptable because bulk-loaded data is referentially
+     * consistent by construction.
+     *
+     * @param connection an open connection whose session variables are changed
+     * @param database   the database metadata (unused by this mechanism)
+     * @return a handle recording the disabled checks
+     * @throws SQLException if a statement fails
+     */
+    @Override
+    public BulkLoadHandle disableConstraints(Connection connection, Database database) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("SET FOREIGN_KEY_CHECKS=0");
+            statement.execute("SET UNIQUE_CHECKS=0");
+        }
+        return BulkLoadHandle.of("FOREIGN_KEY_CHECKS=0, UNIQUE_CHECKS=0");
+    }
+
+    /**
+     * Restores {@code UNIQUE_CHECKS} and {@code FOREIGN_KEY_CHECKS} to {@code 1} for the session before
+     * the connection is returned to the pool.
+     *
+     * @param connection the same connection passed to {@link #disableConstraints}
+     * @param database   the database metadata (unused by this mechanism)
+     * @param handle     the handle returned by {@link #disableConstraints}
+     * @throws SQLException if a statement fails
+     */
+    @Override
+    public void enableConstraints(Connection connection, Database database, BulkLoadHandle handle) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("SET UNIQUE_CHECKS=1");
+            statement.execute("SET FOREIGN_KEY_CHECKS=1");
+        }
     }
 
     @Override
