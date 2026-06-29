@@ -100,6 +100,10 @@ export default defineConfig({
 			},
 			favicon: '/favicon.svg',
 			customCss: ['./src/styles/bloviate.css'],
+			// Append the per-page OpenGraph image (og:image / twitter:image) to each
+			// page's head. The images themselves are generated at build time by
+			// src/pages/og/[...slug].png.ts (Satori → PNG).
+			routeMiddleware: './src/og-route-middleware.ts',
 			head: [
 				// Lazy client-side diagram renderers (no-ops on pages without diagrams).
 				{ tag: 'script', attrs: { type: 'module' }, content: mermaidLoader },
