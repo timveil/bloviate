@@ -191,8 +191,8 @@ seed produce byte-for-byte the same data as a sequential fill.
 
 How much this helps depends on the schema. A wide schema of independent tables sees a large speedup
 (~3× with 8 workers on a 10-table, 1M-row fixture); a deep, narrow foreign-key chain (each table
-depending on the previous) has little to parallelize. See
-[BENCHMARKS.md](https://github.com/timveil/bloviate/blob/main/BENCHMARKS.md) for numbers.
+depending on the previous) has little to parallelize. See [the benchmarks](./BENCHMARKS.md) for
+numbers.
 
 The single-`Connection` constructor is unchanged and remains the default sequential path — `threads`
 only applies to the `DataSource` form.

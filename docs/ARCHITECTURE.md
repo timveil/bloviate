@@ -531,5 +531,4 @@ principles above are what let it stay simple to *use* while remaining genuinely 
 
 ---
 
-*See also: the [README](/guides/quickstart/) for usage, and [issue #455](https://github.com/timveil/bloviate/issues/455)
-for the docs-site effort this content feeds into.*
+*See also: [Quick Start](./QUICKSTART.md) to start filling databases.*

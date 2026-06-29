@@ -8,15 +8,14 @@ next: false
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-The complete **Javadoc** for every public package is hosted right here on the site.
-It's generated from source with the JDK's own `javadoc` tool, so signatures, type
-links, and inheritance are exactly what the compiler sees — then themed to match
-these docs.
+The complete **API reference** for every public package — full method signatures, type
+links, and class hierarchies. It's generated straight from the library source, so it
+always matches the released API.
 
 <Card title="Browse the full Javadoc" icon="open-book">
-	The complete API reference, with its own per-class search.
+	Every public class and method, with built-in search.
 
-	<a href="/apidocs/index.html" target="_blank" rel="noopener noreferrer">Open the API reference →</a>
+	<a href="/apidocs/" target="_blank" rel="noopener noreferrer">Open the API reference →</a>
 </Card>
 
 ## By package
@@ -88,9 +87,3 @@ The package links open the Javadoc in a new tab.
 		description="Datafaker-backed generators for realistic semantic values (names, emails, addresses)."
 	/>
 </CardGrid>
-
-:::note[Keeping it current]
-The reference is committed static HTML (Cloudflare Pages can't run Java). Regenerate it
-after public-API changes with `./mvnw -Pjavadoc-site javadoc:aggregate` and commit the
-updated `website/public/apidocs/` — see the [website README](https://github.com/timveil/bloviate/blob/main/website/README.md).
-:::

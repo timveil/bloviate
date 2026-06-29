@@ -19,8 +19,9 @@ The work being optimized spans two regimes, so there are two suites:
 | **CPU micro-benchmarks** | raw value generation and per-cell generator dispatch, no database | hot-loop micro-opts, generator-level changes | JMH |
 | **End-to-end fill** | `DatabaseFiller.fill()` throughput (rows/sec) against a real DB | parallel table fill, commit tuning, batch rewrite | plain JUnit runner |
 
-The `bloviate-benchmarks` module is never published (deploy, install, source, javadoc and
-JaCoCo are all skipped) and nothing in `bloviate-core` depends on it.
+The `bloviate-benchmarks` module isn't published to Maven Central and nothing in
+`bloviate-core` depends on it — running the benchmarks is entirely opt-in and adds no weight
+to the library.
 
 ## CPU micro-benchmarks (JMH)
 
