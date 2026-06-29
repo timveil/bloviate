@@ -1,3 +1,9 @@
+## [2.18.0](https://github.com/timveil/bloviate/compare/v2.17.0...v2.18.0) (2026-06-29)
+
+### ✨ Features
+
+* **ext:** add MariaDB, H2, and SQLite database support ([#519](https://github.com/timveil/bloviate/issues/519)) ([0bc0a04](https://github.com/timveil/bloviate/commit/0bc0a041c79b0387f38fd0ef638f79569e1cc66a)), closes [#450](https://github.com/timveil/bloviate/issues/450) [#452](https://github.com/timveil/bloviate/issues/452) [#453](https://github.com/timveil/bloviate/issues/453) [#450](https://github.com/timveil/bloviate/issues/450) [#452](https://github.com/timveil/bloviate/issues/452) [#453](https://github.com/timveil/bloviate/issues/453)
+
 ## [2.17.0](https://github.com/timveil/bloviate/compare/v2.16.0...v2.17.0) (2026-06-29)
 
 ### ✨ Features
