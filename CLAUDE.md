@@ -95,11 +95,8 @@ new FlatFileGenerator.Builder("output-file")
     .generate();
 ```
 
-## Docker Support
+## Databases for Testing
 
-Database containers available in `docker/` directory:
-- `postgres/`: PostgreSQL setup
-- `mysql/`: MySQL setup  
-- `crdb/`: CockroachDB setup
-
-Each includes `up.sh`, `down.sh`, and `prune.sh` scripts.
+Integration tests use Testcontainers, so a running Docker daemon is the only
+prerequisite — containers are started and torn down automatically. There are no
+manually-managed database instances.
