@@ -266,6 +266,52 @@ is unsupported: partitioning a *parent* whose primary key is a plain random gene
 foreign key (partition the child instead, or use the positional key generators). A custom generator
 with internal positional state must implement `IndexedDataGenerator` to stay aligned under partitioning.
 
+### Bulk load — unordered fill with constraints disabled
+
+[Parallel fill](#parallel-fill--topological-levels) barriers between topological levels, which costs
+the most on a **deep, narrow** foreign-key chain: each level holds few tables, so little fans out and
+the fill effectively serializes down the chain.
+[`BulkLoadStrategy.unorderedBulk()`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/db/BulkLoadStrategy.java)
+collapses every level into a single wave — one task per table (or partition), submitted at once with
+no barrier — and disables foreign-key enforcement for the duration.
+
+This is only sound because of [foreign-key fidelity](#filling-a-table--generators-batching-and-fk-fidelity):
+an FK column is seeded from its referenced PK column, so the data is referentially consistent
+*regardless of insert order*. Disabling enforcement removes the per-row check and the ordering
+requirement without changing a single generated value — the result is byte-for-byte identical to an
+ordered fill of the same seed.
+
+```mermaid
+flowchart TD
+    P["probe once: disable + re-enable on a borrowed connection"] -->|privilege ok| W
+    P -->|BulkLoadUnsupportedException| FB["fall back to ordered level-parallel fill"]
+    subgraph W["single wave — every table at once, no barrier"]
+        direction LR
+        T1["worker: disable → fill table → re-enable (finally)"]
+        T2["worker: disable → fill table → re-enable (finally)"]
+        T3["worker: disable → fill partition → re-enable (finally)"]
+    end
+```
+
+The mechanism is database-specific and lives behind two
+[`DatabaseSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/DatabaseSupport.java)
+SPI methods, `disableConstraints` / `enableConstraints`, guarded by `supportsBulkLoad()`:
+
+| Support | Mechanism (per session) | Notes |
+| --- | --- | --- |
+| PostgreSQL | `SET session_replication_role = replica` → `origin` | needs a superuser/`rds_superuser` role; privilege failure raises `BulkLoadUnsupportedException` |
+| MySQL | `SET FOREIGN_KEY_CHECKS=0`/`UNIQUE_CHECKS=0` → `1` | no special privilege |
+| CockroachDB | unsupported (`supportsBulkLoad()` is `false`) | no `session_replication_role`; falls back to ordered |
+
+Because these settings are **per connection** and each worker borrows its own from the pool, the
+disable/enable runs inside every worker task, wrapped in a `try/finally` that restores the session
+*before* the connection returns to the pool — so a constraint-disabled connection never leaks to
+other pool users, even if a fill throws. Privilege is probed **once** up front on a throwaway
+connection; if it fails, the engine logs a warning and runs the ordered level-parallel path instead
+of fanning out half-disabled. Bulk mode only applies to the `DataSource` + `threads > 1` path; it is
+ignored with a warning elsewhere. The default `BulkLoadStrategy.ordered()` keeps the dependency-ordered
+behavior with constraints always enforced.
+
 ## Reproducibility — deterministic seeds from schema identity
 
 Bloviate datasets are **reproducible across JVM runs, machines, and time** — run it twice against

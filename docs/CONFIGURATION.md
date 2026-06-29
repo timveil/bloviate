@@ -260,6 +260,49 @@ applies there too.
 > correctly-parameterized URL if you construct the `DataSource` yourself. CockroachDB ignores the
 > parameter, so no warning is emitted there.
 
+## Bulk load (unordered fill)
+
+The parallel path normally barriers between topological levels, so a **deep, narrow foreign-key
+chain** (each table depending on the previous) serializes — there is little within any one level to
+run concurrently. `BulkLoadStrategy.unorderedBulk()` removes that barrier: it disables foreign-key
+enforcement, fills **every** table at once, then re-enables enforcement.
+
+```java
+import io.bloviate.db.*;
+import io.bloviate.ext.PostgresSupport;
+
+DatabaseConfiguration config = new DatabaseConfiguration(
+    1000, 100_000, new PostgresSupport(), null, 42L,
+    null,                              // CommitStrategy (null = default)
+    BulkLoadStrategy.unorderedBulk()); // disable constraints, fill barrier-free, re-enable
+
+new DatabaseFiller.Builder(dataSource, config).threads(8).build().fill();
+```
+
+This is safe because Bloviate's data is **referentially consistent by construction**: a foreign-key
+column is seeded from its referenced primary-key column, so child and parent generate identical key
+values regardless of insert order. Disabling enforcement therefore changes nothing about
+correctness — the result is byte-for-byte identical to an ordered fill of the same seed — it only
+removes the ordering constraint and the per-row foreign-key checks. The win is largest on deep
+chains (e.g. TPC-C's `warehouse → district → customer → open_order → order_line`); wide, FK-free
+schemas already saturate their workers in one level and see little change.
+
+Requirements and fallback:
+
+- Only effective on the parallel path (a `DataSource` with `threads > 1`); it is ignored with a
+  warning on the single-`Connection` and single-thread paths, which fill in dependency order.
+- Supported on **PostgreSQL** (`SET session_replication_role = replica`, which needs a
+  superuser/`rds_superuser` role) and **MySQL** (`SET FOREIGN_KEY_CHECKS=0`/`UNIQUE_CHECKS=0`, no
+  special privilege). **CockroachDB** does not support it and transparently falls back to the
+  ordered level-parallel path.
+- Each worker disables enforcement on its own pooled connection and restores it in a `finally`
+  before returning the connection to the pool, so no connection ever leaks back with checks
+  suppressed. If enforcement cannot be disabled (e.g. the role lacks privilege), the engine logs a
+  warning and falls back to the ordered path rather than running half-disabled.
+
+The default, `BulkLoadStrategy.ordered()`, preserves today's behavior (dependency-ordered, constraints
+always enforced).
+
 ## Configuration options reference
 
 ### Database configuration options
@@ -275,6 +318,9 @@ applies there too.
   data (defaults to `0`)
 - **Commit Strategy**: How the engine commits — leave autocommit alone (default), commit once per
   table, or commit every N batches
+- **Bulk Load Strategy**: Fill in foreign-key dependency order (default), or `unorderedBulk()` to
+  disable constraint enforcement and fill every table at once with no topological barrier (parallel
+  path only; PostgreSQL/MySQL, with CockroachDB falling back)
 
 Parallelism (worker threads for concurrent table fill) is configured on the
 `DatabaseFiller.Builder` via `threads(n)` with the `DataSource` constructor.

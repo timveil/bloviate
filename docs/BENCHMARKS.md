@@ -102,6 +102,7 @@ Output lines look like:
 | `bench.batch` | 1000 | JDBC batch size (`DatabaseConfiguration.batchSize`) |
 | `bench.threads` | 1 | worker threads; `1` = sequential baseline, `>1` = parallel `DataSource` path |
 | `bench.partitions` | `max(2, threads)` | intra-table partitions for the **single** schema |
+| `bench.bulk` | `false` | unordered bulk load (disable constraints, fill barrier-free); needs `bench.threads > 1` |
 | `bench.rewriteBatched` | `true` | Postgres driver batch rewrite; set `false` for the naive baseline |
 | `bench.commit` | `none` | commit strategy for **single**: `none`, `perTable`, or `everyN:K` |
 | `bench.rows` | 50000 | default row count for the **wide**/**single** schema (per table) |
@@ -234,6 +235,27 @@ date/time/timestamp columns. `PostgresParallelFillTest` asserts a parallel fill 
 sequential fill byte-for-byte across a TPC-C schema, comparing every column except the few that use
 wall-clock time *by design* (e.g. the order-line delivery date), which are intentionally
 non-deterministic. See [Reproducibility — deterministic seeds from schema identity](./ARCHITECTURE.md#reproducibility--deterministic-seeds-from-schema-identity).
+
+### Unordered bulk load (deep FK chains)
+
+The modest TPC-C gains above come from the level barrier: a deep, narrow foreign-key chain leaves
+little to parallelize within any one level. [Unordered bulk load](./CONFIGURATION.md#bulk-load-unordered-fill)
+(`BulkLoadStrategy.unorderedBulk()`) targets exactly that case — it disables foreign-key enforcement,
+fills every table in a single barrier-free wave, and re-enables enforcement, producing data identical
+to the ordered fill. It is therefore the lever to reach for on TPC-C-shaped schemas; the FK-free
+`wide` and single-table fixtures are negative controls expected to stay roughly flat (one level
+already, nothing to disable). Measure it with `-Dbench.bulk=true` on the parallel path:
+
+```bash
+BASE="./mvnw -pl bloviate-benchmarks -am -Pbench test -Dbench.threads=8"
+$BASE -Dtest='PostgresFillBenchmark#tpcc'                      # ordered baseline (level barrier)
+$BASE -Dtest='PostgresFillBenchmark#tpcc' -Dbench.bulk=true    # unordered bulk load
+```
+
+> Figures depend heavily on schema shape (chain depth, table sizes) and on the database, so they are
+> not tabulated here — run the commands above on your target environment to see the effect. The win
+> grows with chain depth; PostgreSQL requires a superuser/`rds_superuser` role and CockroachDB falls
+> back to the ordered path.
 
 ## Switching the RNG
 
