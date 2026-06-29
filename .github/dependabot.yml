@@ -13,3 +13,13 @@ updates:
       interval: "daily"
     assignees:
       - "timveil"
+  # docs site (Astro/Starlight). The npm ecosystem reads the committed
+  # pnpm-lock.yaml. Patch/minor bumps here are auto-merged once the website
+  # build passes (see .github/workflows/dependabot-auto-merge.yml); majors open
+  # a PR for manual review.
+  - package-ecosystem: "npm"
+    directory: "/website"
+    schedule:
+      interval: "daily"
+    assignees:
+      - "timveil"
