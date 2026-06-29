@@ -1,3 +1,9 @@
+## [2.15.6](https://github.com/timveil/bloviate/compare/v2.15.5...v2.15.6) (2026-06-29)
+
+### 🐛 Bug Fixes
+
+* **website:** repair Cloudflare deploy + add dependabot auto-merge ([#506](https://github.com/timveil/bloviate/issues/506)) ([6caf377](https://github.com/timveil/bloviate/commit/6caf377404a14558921d377a929a4ee55b2560c1))
+
 ## [2.15.5](https://github.com/timveil/bloviate/compare/v2.15.4...v2.15.5) (2026-06-28)
 
 ### 🔧 Build System
