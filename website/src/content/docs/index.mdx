@@ -1,0 +1,91 @@
+---
+title: Bloviate
+description: Hands-free test data generator for JDBC databases — auto-discovers your schema, respects foreign keys, and fills tables or flat files with realistic, reproducible data.
+template: splash
+head:
+  - tag: title
+    content: 'Bloviate — hands-free test data for JDBC databases'
+hero:
+  tagline: Auto-discovers your schema, respects foreign keys, and fills tables (or CSV/TSV files) with realistic, reproducible data. It never touches production data, is deterministic by seed, and runs inside your JUnit / Testcontainers pipeline.
+  actions:
+    - text: Quick Start
+      link: /guides/quickstart/
+      icon: right-arrow
+      variant: primary
+    - text: Why Bloviate
+      link: /guides/comparison/
+      icon: open-book
+      variant: minimal
+    - text: API Reference
+      link: /reference/
+      icon: document
+      variant: minimal
+    - text: View on GitHub
+      link: https://github.com/timveil/bloviate
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## Why Bloviate
+
+<CardGrid>
+	<Card title="Zero-config foreign keys" icon="random">
+		Auto-introspects `DatabaseMetaData`, builds the FK dependency graph, and
+		topologically orders the fill — parents before children, no configuration.
+	</Card>
+	<Card title="Privacy-safe by construction" icon="approve-check">
+		Generated purely from schema and type. Production data is never read, so the
+		GDPR/CCPA exposure surface is structurally minimal.
+	</Card>
+	<Card title="Deterministic by seed" icon="seti:lock">
+		The same seed and schema produce byte-identical data on every run — even under
+		parallel and partitioned fills.
+	</Card>
+	<Card title="CI-native, dependency-free core" icon="rocket">
+		No cloud account, no Python/GPU runtime, no per-row pricing — just a library on
+		your classpath, with first-class JUnit 5 and Testcontainers integrations.
+	</Card>
+	<Card title="Multi-database" icon="seti:db">
+		PostgreSQL, MySQL, and CockroachDB today, with an extensible architecture for
+		more — actively maintained and released.
+	</Card>
+	<Card title="Flat files too" icon="document">
+		Export generated data to CSV, TSV, and pipe-delimited files with full control
+		over every column.
+	</Card>
+</CardGrid>
+
+## Generate *from your schema*, not from a copy of production
+
+Bloviate is an open-source, JDBC-native **filler** — it manufactures relational data from a schema.
+That's a different job from the ML/privacy synthesizers (which learn from real data and are
+non-deterministic) and from masking/subsetting tools (which operate on existing production data).
+Among its peers, Bloviate is the maintained, deterministic, auto-FK option.
+
+Realistic semantic values (emails, names, addresses), correlated columns, and `CHECK`/enum
+conformance are all supported — as opt-in features layered on the fast, type-driven default rather
+than replacing it.
+
+[Get started in five minutes →](/guides/quickstart/)
+
+## API reference
+
+The complete Javadoc for every public package is hosted right here — themed to match these docs,
+with its own per-class search.
+
+<CardGrid>
+	<LinkCard
+		title="API Reference overview"
+		href="/reference/"
+		description="Browse the API by package — core engine, database support, generators, file output, and the JUnit / Testcontainers / Datafaker integrations."
+	/>
+	<LinkCard
+		title="Full Javadoc"
+		href="/apidocs/index.html"
+		target="_blank"
+		rel="noopener noreferrer"
+		description="Jump straight into the generated Javadoc for the whole public API."
+	/>
+</CardGrid>

@@ -334,4 +334,44 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!--
+            Builds the brand-themed API reference that ships inside the docs site.
+            Cloudflare Pages cannot run Java, so the Javadoc is generated locally and
+            committed under website/public/api (served verbatim at /api/).
+
+            Regenerate after public-API changes and commit the result:
+
+                ./mvnw -Pjavadoc-site javadoc:aggregate
+
+            notimestamp keeps regenerated output diff-clean; the brand stylesheet and
+            breadcrumb strip are layered on so the reference matches the Starlight site.
+        -->
+        <profile>
+            <id>javadoc-site</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <!-- The aggregate goal hard-codes an "apidocs" subfolder under
+                                 outputDirectory, so the reference is served at /apidocs/. -->
+                            <outputDirectory>${project.basedir}/website/public</outputDirectory>
+                            <doctitle>Bloviate API Reference</doctitle>
+                            <windowtitle>Bloviate API</windowtitle>
+                            <notimestamp>true</notimestamp>
+                            <quiet>true</quiet>
+                            <additionalOptions>
+                                <additionalOption>--add-stylesheet ${project.basedir}/website/javadoc/bloviate-javadoc.css</additionalOption>
+                            </additionalOptions>
+                            <top><![CDATA[<nav class="blv-site-strip"><a href="/">Bloviate</a><span>/</span><a href="/reference/">Reference</a><span>/</span>API</nav>]]></top>
+                            <bottom><![CDATA[<div class="blv-site-foot">Bloviate API Reference &middot; <a href="/">bloviate.io</a></div>]]></bottom>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>

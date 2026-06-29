@@ -1,0 +1,152 @@
+/*
+ * Bloviate brand theme for Starlight.
+ *
+ * This file is the single source of brand truth — recolor or restyle here.
+ * Palette: violet primary (the talk × data speech-bubble mark) with a warm
+ * coral marketing accent. Dark-theme-first, matching Starlight's default.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+	/* --- Brand tokens --- */
+	--blv-violet: #7c5cff;
+	--blv-violet-bright: #8a6bff;
+	--blv-violet-deep: #5b3fd1;
+	--blv-coral: #ff6b5c;
+	--blv-ink: #1b1b1f;
+
+	--blv-font-display: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* Accent palette — dark theme (Starlight's default). Violet pops on dark. */
+:root,
+:root[data-theme='dark'] {
+	--sl-color-accent-low: #241a4d;
+	--sl-color-accent: #7c5cff;
+	--sl-color-accent-high: #d3c8ff;
+}
+
+/* Accent palette — light theme. Use the deeper violet so links/text on white
+   stay readable (the bright brand violet alone is a little light on white). */
+:root[data-theme='light'] {
+	--sl-color-accent-low: #e7e0ff;
+	--sl-color-accent: #5b3fd1;
+	--sl-color-accent-high: #2c1d6b;
+}
+
+/* Headings in the brand's display face; body stays in Starlight's stack. */
+:is(.sl-markdown-content, .content-panel, .hero, .sl-banner) :is(h1, h2, h3, h4, h5, h6),
+.hero .tagline,
+.site-title {
+	font-family: var(--blv-font-display);
+	letter-spacing: -0.015em;
+}
+
+/* Give the header wordmark a little room. */
+.site-title img {
+	height: 1.75rem;
+}
+
+/* Hero call-to-action: brand the primary action button. */
+.hero a.button[data-variant='primary'] {
+	background: linear-gradient(180deg, var(--blv-violet-bright), var(--blv-violet));
+	border-color: var(--blv-violet-deep);
+	color: #fff;
+}
+
+/* Inline icons that replace emoji in the docs (see rehype-doc-icons.mjs). */
+.doc-icon {
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	vertical-align: -0.125em;
+	flex-shrink: 0;
+}
+.doc-icon--ok {
+	color: #14b86a;
+}
+.doc-icon--no {
+	color: #d92d20;
+}
+.doc-icon--warn {
+	color: var(--blv-coral);
+}
+.doc-icon--rocket,
+.doc-icon--book {
+	color: var(--sl-color-text-accent);
+}
+
+/* Mermaid diagrams — rendered client-side (see rehype-mermaid.mjs and the loader
+   in astro.config.mjs). Strip Starlight's code-block chrome, center the SVG, and
+   hide the raw graph source until Mermaid has processed it (avoids a flash of
+   diagram text on load). */
+.sl-markdown-content pre.mermaid {
+	background: none;
+	border: none;
+	padding: 0;
+	text-align: center;
+	line-height: normal;
+}
+.sl-markdown-content pre.mermaid:not([data-processed]) {
+	visibility: hidden;
+}
+.sl-markdown-content pre.mermaid svg {
+	height: auto;
+	max-width: 100%;
+}
+
+/* Graphviz diagrams — the unstyled DOT that Bloviate emits, rendered client-side
+   (see rehype-graphviz.mjs + the loader in astro.config.mjs) and brand-colored
+   here via CSS so the on-page DOT stays identical to the dreampuf link. */
+.sl-markdown-content pre.graphviz {
+	background: none;
+	border: none;
+	padding: 0;
+	text-align: center;
+	line-height: normal;
+}
+.sl-markdown-content pre.graphviz:not([data-processed]) {
+	visibility: hidden;
+}
+.sl-markdown-content pre.graphviz svg {
+	max-width: 100%;
+	height: auto;
+}
+/* Graphviz emits a solid background polygon as the graph's first child — make it
+   transparent so the diagram sits on either theme. */
+.sl-markdown-content pre.graphviz svg > g.graph > polygon {
+	fill: transparent;
+}
+.sl-markdown-content pre.graphviz svg .node ellipse,
+.sl-markdown-content pre.graphviz svg .node polygon {
+	fill: #ede9ff;
+	stroke: #7c5cff;
+	stroke-width: 1.5px;
+}
+.sl-markdown-content pre.graphviz svg .node text {
+	fill: #1b1b1f;
+}
+.sl-markdown-content pre.graphviz svg .edge path {
+	stroke: #5b3fd1;
+}
+.sl-markdown-content pre.graphviz svg .edge polygon {
+	fill: #5b3fd1;
+	stroke: #5b3fd1;
+}
+/* Dark theme — match the dark-first site. */
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .node ellipse,
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .node polygon {
+	fill: #2a2342;
+	stroke: #8a6bff;
+}
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .node text {
+	fill: #e6e6e9;
+}
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .edge path,
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .edge polygon {
+	stroke: #b9a8ff;
+}
+:root[data-theme='dark'] .sl-markdown-content pre.graphviz svg .edge polygon {
+	fill: #b9a8ff;
+}

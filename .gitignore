@@ -13,3 +13,9 @@ target/
 # maven-shade-plugin output
 dependency-reduced-pom.xml
 /output/
+
+# docs website (Astro + Starlight) build artifacts
+website/node_modules/
+website/dist/
+website/.astro/
+website/src/content/docs/guides/
