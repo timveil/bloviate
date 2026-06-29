@@ -202,8 +202,10 @@ public class DatabaseFiller implements Fillable {
      * connection to the pool. JDBC connections are not thread-safe, so they are never shared.
      *
      * <p>Reproducibility is preserved: a table's generated data depends only on its own per-column
-     * seeds and its own sequential row counter, never on the order in which tables are filled, so a
-     * parallel fill yields byte-for-byte the same data as the sequential fill for the same seed.
+     * seeds and its own sequential row counter, never on the order in which tables are filled, so for
+     * the same seed a parallel fill yields the same row content as the sequential fill across every
+     * deterministic column (physical row order and non-deterministic columns aside; see
+     * {@link BulkLoadStrategy}).
      *
      * @param database     the database metadata
      * @param reversedGraph the reversed dependency graph (parents before children)
@@ -252,7 +254,9 @@ public class DatabaseFiller implements Fillable {
      *
      * <p>This is only correct because Bloviate's data is referentially consistent by construction (a
      * foreign-key column is seeded from its referenced primary-key column), so insert order does not
-     * affect validity and the result is byte-for-byte identical to an ordered fill of the same seed.
+     * affect validity and, for the same seed, the result has the same row content as an ordered fill
+     * across every deterministic column (physical row order and non-deterministic columns aside; see
+     * {@link BulkLoadStrategy}).
      *
      * <p>Privilege is probed once up front on a throwaway connection; if constraints cannot be disabled
      * (e.g. the role lacks privilege for {@code session_replication_role}), the engine logs a warning
@@ -376,7 +380,8 @@ public class DatabaseFiller implements Fillable {
 
     /**
      * Fills a whole table on its own pooled connection inside a single transaction (no row range, so
-     * generation is byte-for-byte identical to a sequential fill). The transaction is managed by
+     * each generator is driven through the same call sequence as a sequential fill, producing identical
+     * values for every deterministic column). The transaction is managed by
      * {@link TableFiller} via the effective commit strategy (see {@link #effectiveParallelCommitStrategy()}).
      * When {@code bulk} is true, foreign-key enforcement is disabled for the fill and restored before
      * the connection returns to the pool.

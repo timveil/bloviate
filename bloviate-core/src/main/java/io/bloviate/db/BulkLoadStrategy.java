@@ -32,8 +32,10 @@ import io.bloviate.ext.DatabaseSupport;
  * values regardless of insert order (see
  * {@link io.bloviate.util.DatabaseUtils#columnSeed(Column, long)}). That makes it safe to disable
  * foreign-key enforcement for the duration of the fill, insert <em>all</em> tables concurrently with
- * no topological barrier, then re-enable enforcement. The resulting data is byte-for-byte identical to
- * an ordered fill of the same seed.
+ * no topological barrier, then re-enable enforcement. For the same seed, the resulting row content is
+ * identical to an ordered fill across every deterministic column — physical (on-disk) row order may
+ * differ, and columns whose generator is non-deterministic (e.g. wall-clock temporal values, or a
+ * custom plugin that reads external state) are reproducible only to the extent that generator is.
  *
  * <p>Bulk mode only takes effect on the parallel path (a {@link javax.sql.DataSource} with
  * {@link DatabaseFiller.Builder#threads(int)} {@code > 1}) and only when the active

@@ -45,9 +45,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * topological barrier, and re-enables enforcement.
  *
  * <p>The central guarantee — and the reason bulk loading is safe here — is that it produces
- * <strong>byte-for-byte identical</strong> data to a traditional dependency-ordered fill of the same
- * seed, asserted both unpartitioned and partitioned. It also confirms foreign keys remain valid and
- * that no pooled connection is left with enforcement suppressed. A deep TPC-C chain
+ * <strong>identical row content</strong> to a traditional dependency-ordered fill of the same seed,
+ * asserted both unpartitioned and partitioned. The comparison is over a canonical row dump (rows
+ * sorted by every column, temporal columns excluded since they may use wall-clock time), so it asserts
+ * row-content equality independent of physical insert order — not on-disk byte equality. It also
+ * confirms foreign keys remain valid and that no pooled connection is left with enforcement
+ * suppressed. A deep TPC-C chain
  * ({@code warehouse → district → customer → open_order → order_line}) is used because it is exactly
  * the shape the barrier-free path is meant to accelerate.
  */

@@ -47,8 +47,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * once with no topological barrier, and restores the checks.
  *
  * <p>The load-bearing guarantee — and the reason bulk loading is safe — is that an unordered bulk fill
- * produces <strong>byte-for-byte identical</strong> data to a traditional dependency-ordered fill of
- * the same seed. This is asserted both unpartitioned and partitioned. The remaining cases cover the
+ * produces <strong>identical row content</strong> to a traditional dependency-ordered fill of the same
+ * seed. This is asserted both unpartitioned and partitioned over a canonical row dump (rows sorted by
+ * every column, temporal columns excluded), i.e. row-content equality independent of physical insert
+ * order rather than on-disk byte equality. The remaining cases cover the
  * fallback behaviors (unsupported support, privilege failure, and the single-connection path), each of
  * which must still produce a correct, fully-populated database.
  *
@@ -89,13 +91,13 @@ class MySqlBulkLoadFillTest extends BaseDatabaseTestCase {
                     tableNames = tableNames(connection);
                 }
 
-                // 1) headline: unpartitioned ordered vs bulk must be byte-identical
+                // 1) headline: unpartitioned ordered vs bulk must have identical row content
                 Map<String, List<String>> orderedDump = fillAndDump(dataSource, config(tables, BulkLoadStrategy.ordered()), tableNames);
                 Map<String, List<String>> bulkDump = fillAndDump(dataSource, config(tables, BulkLoadStrategy.unorderedBulk()), tableNames);
                 assertIdentical(orderedDump, bulkDump, tableNames, "unpartitioned ordered vs bulk");
                 assertForeignKeyChecksRestored(dataSource);
 
-                // 2) partitioned ordered vs partitioned bulk (same partition count) must be byte-identical
+                // 2) partitioned ordered vs partitioned bulk (same partition count) must have identical row content
                 Map<String, List<String>> pOrdered = fillAndDump(dataSource, config(partitioned, BulkLoadStrategy.ordered()), tableNames);
                 Map<String, List<String>> pBulk = fillAndDump(dataSource, config(partitioned, BulkLoadStrategy.unorderedBulk()), tableNames);
                 assertIdentical(pOrdered, pBulk, tableNames, "partitioned ordered vs bulk");
