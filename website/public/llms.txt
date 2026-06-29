@@ -1,0 +1,29 @@
+# Bloviate
+
+> Bloviate is a Java library that fills JDBC-compatible relational databases with realistic, reproducible dummy data. It auto-discovers your schema, infers a generator for every column from its JDBC type, respects foreign keys via topological ordering, and can also emit flat files (CSV, TSV, pipe-delimited). It never touches production data and is deterministic by seed.
+
+Key facts:
+
+- Java 25, multi-module Maven build: `bloviate-core` (dependency-free engine), `bloviate-junit` (JUnit 5 `@FillDatabase`/`@FillSource`), `bloviate-testcontainers` (fills a started `JdbcDatabaseContainer`).
+- First-class support for PostgreSQL, MySQL, and CockroachDB, plus a generic default for other JDBC drivers.
+- Deterministic output: per-column seeds derived from schema identity, backed by the JDK `L64X128MixRandom` generator.
+
+## Guides
+
+- [Quick Start](https://bloviate.io/guides/quickstart/): Install Bloviate and fill a database or flat file in a few lines.
+- [Database Support](https://bloviate.io/guides/database-support/): Per-database type handling and how vendor-specific types are resolved.
+- [Configuration](https://bloviate.io/guides/configuration/): Control row counts, batch size, and per-column generators.
+- [Generators](https://bloviate.io/guides/generators/): Built-in generators and how to apply custom ones across columns or whole types.
+- [Testing Integrations](https://bloviate.io/guides/integrations/): JUnit 5 and Testcontainers integrations for reproducible test data.
+- [File Generation](https://bloviate.io/guides/file-generation/): Generate CSV, TSV, or pipe-delimited files with no database involved.
+- [Why Bloviate](https://bloviate.io/guides/comparison/): Where Bloviate fits among test-data tools and when to use it.
+
+## Under the hood
+
+- [Architecture](https://bloviate.io/guides/architecture/): Schema discovery, foreign-key ordering, parallel fill, and deterministic seeding.
+- [Benchmarks](https://bloviate.io/guides/benchmarks/): CPU micro-benchmarks (JMH) and end-to-end fill throughput against real databases.
+
+## Reference
+
+- [API Reference](https://bloviate.io/reference/): Browse the Java API by package.
+- [Full Javadoc](https://bloviate.io/apidocs/index.html): Complete generated Javadoc for the core engine and integrations.

@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import sitemap from '@astrojs/sitemap';
 import rehypeDocIcons from './src/plugins/rehype-doc-icons.mjs';
 import rehypeMermaid from './src/plugins/rehype-mermaid.mjs';
 import rehypeGraphviz from './src/plugins/rehype-graphviz.mjs';
@@ -144,5 +145,8 @@ export default defineConfig({
 				},
 			],
 		}),
+		// Emits sitemap-index.xml + sitemap-0.xml at build (uses `site` above);
+		// referenced from public/robots.txt so crawlers discover every page.
+		sitemap(),
 	],
 });

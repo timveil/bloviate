@@ -53,9 +53,51 @@ function rewriteGuideLinks(md) {
 }
 
 /**
+ * Derive a meta description from the first prose paragraph of a doc.
+ *
+ * Starlight otherwise falls back to the site-wide description on every page,
+ * which SEO crawlers flag as duplicate meta descriptions. We take the first
+ * real paragraph (skipping headings, lists, tables, blockquotes, HTML and code
+ * fences), strip Markdown to plain text, and truncate at a word boundary.
+ */
+function deriveDescription(bodyLines) {
+	const para = [];
+	let inFence = false;
+	for (const raw of bodyLines) {
+		const line = raw.trim();
+		if (line.startsWith('```')) {
+			inFence = !inFence;
+			if (para.length) break;
+			continue;
+		}
+		if (inFence) continue;
+		if (line === '') {
+			if (para.length) break;
+			continue;
+		}
+		// Skip non-prose blocks (headings, tables, lists, quotes, raw HTML).
+		if (/^(#{1,6}\s|[|>]|[-*+]\s|\d+\.\s|<)/.test(line)) {
+			if (para.length) break;
+			continue;
+		}
+		para.push(line);
+	}
+	let text = para
+		.join(' ')
+		.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // [text](url) -> text
+		.replace(/[`*_]/g, '') // inline code / emphasis markers
+		.replace(/\s+/g, ' ')
+		.trim();
+	if (text.length > 160) {
+		text = `${text.slice(0, 157).replace(/\s+\S*$/, '')}…`;
+	}
+	return text;
+}
+
+/**
  * Build the Starlight page: strip a leading comment, pull the first H1 out to
- * use as the frontmatter title (avoiding a duplicate heading), prepend
- * frontmatter.
+ * use as the frontmatter title (avoiding a duplicate heading), derive a
+ * per-page meta description from the first paragraph, prepend frontmatter.
  */
 function toStarlightPage(md, fallbackTitle) {
 	const lines = stripLeadingComment(md).split('\n');
@@ -69,7 +111,12 @@ function toStarlightPage(md, fallbackTitle) {
 		}
 	}
 	const body = lines.join('\n').replace(/^\n+/, '');
-	return `---\ntitle: ${JSON.stringify(title)}\n---\n\n${body}`;
+	const description = deriveDescription(lines);
+	const frontmatter = [`title: ${JSON.stringify(title)}`];
+	if (description) {
+		frontmatter.push(`description: ${JSON.stringify(description)}`);
+	}
+	return `---\n${frontmatter.join('\n')}\n---\n\n${body}`;
 }
 
 function resetDir(dir) {
