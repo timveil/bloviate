@@ -1,0 +1,22 @@
+{
+	// Cloudflare Workers Static Assets config for the (fully static) Astro site.
+	// Its presence makes `wrangler deploy` upload ./dist directly instead of
+	// auto-provisioning the Astro SSR adapter (which is wrong for a static site
+	// and was failing the Cloudflare deploy). No Worker script — assets only.
+	"name": "bloviate",
+	"compatibility_date": "2026-06-28",
+	// Don't expose a *.workers.dev URL — the site is served from the custom
+	// domain (bloviate.io) configured on the Cloudflare project.
+	"workers_dev": false,
+	// Workers Logs.
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"directory": "./dist",
+		// Serve /foo/ from /foo/index.html (also makes /apidocs/ resolve).
+		"html_handling": "auto-trailing-slash",
+		// Serve the generated 404.html for unknown paths.
+		"not_found_handling": "404-page"
+	}
+}

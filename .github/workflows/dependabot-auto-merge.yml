@@ -32,6 +32,16 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Website (npm/pnpm) deps: auto-merge patch & minor only; majors are left
+      # for manual review. --auto waits for required checks, so the Build website
+      # check gates the merge.
+      - name: Auto-merge website (npm) patch & minor updates
+        if: steps.metadata.outputs.package-ecosystem == 'npm' && (steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor')
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Fallback: re-attempt auto-merge after the CI workflow completes successfully.
   # fetch-metadata can't run on workflow_run events (no pull_request payload), so
   # the allowlist is re-applied by matching the Dependabot branch name, which

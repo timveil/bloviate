@@ -1,0 +1,48 @@
+name: Build website
+
+# Verifies the docs site builds. Runs on PRs that touch the site or its content
+# so a dependency bump (or content change) can't merge — or auto-merge — if it
+# breaks the build. Cloudflare deploys the same `pnpm build` on push to main.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'website/**'
+      - 'docs/**'
+      - '.github/workflows/website-build.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'website/**'
+      - 'docs/**'
+      - '.github/workflows/website-build.yml'
+
+permissions:
+  contents: read
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: website/.node-version
+
+      # pnpm version comes from the `packageManager` pin in website/package.json.
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build site
+        run: pnpm build
