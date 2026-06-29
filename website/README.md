@@ -18,6 +18,12 @@ page) into a static site.
   truth (violet primary, coral accent). The favicon is `public/favicon.svg`.
 - **Emoji → icons:** `src/plugins/rehype-doc-icons.mjs` swaps a few emoji (✅ ❌ ⚠ 🚀 📖) for
   Starlight icon SVGs at build time.
+- **OpenGraph images:** every page gets a branded 1200×630 social-share card, generated at build
+  time. `src/pages/og/[...slug].png.ts` renders one PNG per docs page with [Satori](https://github.com/vercel/satori)
+  (HTML/CSS → SVG) and `sharp` (SVG → PNG); the card design lives in `src/og/og-template.ts` and the
+  brand font is vendored under `src/assets/og/`. `src/og-route-middleware.ts` then injects the
+  matching `og:image` / `twitter:image` tags into each page's head. No network fetch, no headless
+  browser — it stays within the Cloudflare static build.
 - **Diagrams:** ` ```mermaid ` and ` ```dot ` (Graphviz) code blocks render client-side. Two small
   rehype plugins (`rehype-mermaid.mjs`, `rehype-graphviz.mjs`) tag the blocks, and lazy loaders in
   `astro.config.mjs` import Mermaid / Graphviz-WASM from a CDN only on pages that have a diagram —
