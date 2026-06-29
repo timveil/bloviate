@@ -27,7 +27,7 @@ jobs:
 
       - name: Auto-merge Dependabot PRs
         if: contains(steps.metadata.outputs.dependency-names, 'com.zaxxer') || contains(steps.metadata.outputs.dependency-names, 'org.apache.commons') || contains(steps.metadata.outputs.dependency-names, 'com.fasterxml.jackson') || contains(steps.metadata.outputs.dependency-names, 'org.slf4j') || contains(steps.metadata.outputs.dependency-names, 'org.junit.jupiter') || contains(steps.metadata.outputs.dependency-names, 'org.testcontainers') || contains(steps.metadata.outputs.dependency-names, 'org.postgresql') || contains(steps.metadata.outputs.dependency-names, 'mysql') || contains(steps.metadata.outputs.dependency-names, 'org.jgrapht') || contains(steps.metadata.outputs.dependency-names, 'org.apache.maven.plugins') || contains(steps.metadata.outputs.dependency-names, 'org.codehaus.mojo')
-        run: gh pr merge --auto --merge "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -37,7 +37,7 @@ jobs:
       # check gates the merge.
       - name: Auto-merge website (npm) patch & minor updates
         if: steps.metadata.outputs.package-ecosystem == 'npm' && (steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor')
-        run: gh pr merge --auto --merge "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -78,4 +78,4 @@ jobs:
           # If checks are still pending the PR is "blocked" and --auto enables
           # auto-merge; if everything is already green the PR is "clean" and
           # --auto is rejected, so fall back to merging directly.
-          gh pr merge --auto --merge "$PR_URL" || gh pr merge --merge "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
