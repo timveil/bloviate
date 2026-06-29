@@ -1,3 +1,9 @@
+## [2.16.0](https://github.com/timveil/bloviate/compare/v2.15.7...v2.16.0) (2026-06-29)
+
+### ✨ Features
+
+* **website:** generate per-page OpenGraph images with Satori ([#517](https://github.com/timveil/bloviate/issues/517)) ([bfac882](https://github.com/timveil/bloviate/commit/bfac882b7807d070577cfcc50f2c54a3b77d6e5c))
+
 ## [2.15.7](https://github.com/timveil/bloviate/compare/v2.15.6...v2.15.7) (2026-06-29)
 
 ### 🐛 Bug Fixes
