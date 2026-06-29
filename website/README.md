@@ -72,27 +72,39 @@ breadcrumb strip (`-top`) linking back to the docs. Keep it in sync with `src/st
 > Search isn't polluted: Starlight marks its own pages with `data-pagefind-body`, so Pagefind indexes
 > only the guides/landing pages — the Javadoc uses its own built-in search.
 
-## Deploy — Cloudflare Pages (Git integration, no CI)
+## Deploy — Cloudflare Workers (Git-connected build, no GitHub CI)
 
-The site deploys via **Cloudflare Pages' native Git integration** — Cloudflare watches the repo and
-builds on push. There is deliberately **no GitHub Actions workflow, no `wrangler`, and no GitHub
-secrets**. One-time dashboard setup:
+The site deploys via **Cloudflare's Git-connected Workers build** — Cloudflare watches the repo,
+runs the build on push, and deploys with `wrangler deploy`. There is deliberately **no GitHub
+Actions workflow and no GitHub secrets**; the only Cloudflare-side config is committed here as
+[`wrangler.jsonc`](wrangler.jsonc).
 
-1. **Cloudflare Pages → Create → Connect to Git →** select the `timveil/bloviate` repo, production
-   branch `main`.
-2. **Build settings:**
-   - Framework preset: **Astro**
-   - **Root directory:** `website`
-   - **Build command:** `pnpm build`
-   - **Build output directory:** `dist`
+Because the site is **fully static**, `wrangler.jsonc` declares a [Workers Static
+Assets](https://developers.cloudflare.com/workers/static-assets/) deployment — `assets.directory`
+points at `dist`, with **no Worker script**. Committing that config is what keeps `wrangler deploy`
+from auto-detecting Astro and trying to provision the SSR adapter (which fails for a static site).
+It also sets:
 
-   Cloudflare auto-detects the package manager from the committed `pnpm-lock.yaml` and runs
-   `pnpm install` before the build.
-3. **Environment variables:** add `NODE_VERSION` = `22` (Astro 6 needs Node ≥ 18.20 / 20.3 / 22;
-   also pinned via `website/.node-version`).
-4. **Custom domain:** add `bloviate.io` (and a `www` → apex redirect) under the Pages project's
+- `workers_dev: false` — no `*.workers.dev` URL; the site is served only from the custom domain.
+- `observability.enabled: true` — Workers Logs on.
+- `assets.html_handling: auto-trailing-slash` — serves `/foo/` from `/foo/index.html` (so `/apidocs/`
+  resolves), and `assets.not_found_handling: 404-page` — serves the generated `404.html`.
+
+One-time Cloudflare dashboard setup:
+
+1. **Workers & Pages → Create → Connect to Git →** select `timveil/bloviate`, production branch
+   `main`, **root directory** `website`.
+2. **Build command:** `pnpm build` (Cloudflare auto-detects pnpm from `pnpm-lock.yaml`); **deploy
+   command:** `npx wrangler deploy`. `NODE_VERSION` is pinned via `website/.node-version`.
+3. **Custom domain:** add `bloviate.io` (and a `www` → apex redirect) under the Worker's
    *Custom domains*.
 
-On each push to `main`, Cloudflare checks out the repo, runs `pnpm build` inside `website/`
-(which first runs `sync-docs.mjs` against `../docs`), and publishes `website/dist`. Path filters
-aren't needed — a rebuild is cheap and always reflects the latest `docs/`, `website/`, and content.
+On each push to `main`, Cloudflare runs `pnpm build` inside `website/` (which first runs
+`sync-docs.mjs` against `../docs`) and `wrangler deploy` publishes `website/dist`.
+
+To validate the deploy config locally without deploying:
+
+```bash
+pnpm build
+npx wrangler deploy --dry-run   # reads wrangler.jsonc, bundles dist, exits
+```
