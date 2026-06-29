@@ -67,18 +67,30 @@ children that depend on them:
 flowchart TD
     subgraph build["1 - edges follow foreign keys (child to parent)"]
         direction LR
-        orders1[orders] --> customer1[customer]
-        order_line1[order_line] --> orders1
-        order_line1 --> stock1[stock]
+        stock1[stock] --> warehouse1[warehouse]
         stock1 --> item1[item]
-        customer1 --> district1[district]
-        district1 --> warehouse1[warehouse]
+        district1[district] --> warehouse1
+        customer1[customer] --> district1
+        history1[history] --> customer1
+        history1 --> district1
+        open_order1[open_order] --> customer1
+        new_order1[new_order] --> open_order1
+        order_line1[order_line] --> open_order1
+        order_line1 --> stock1
     end
 
     subgraph sort["2 - reverse + topological sort = safe fill order"]
         direction LR
-        warehouse2[warehouse] --> district2[district] --> customer2[customer] --> orders2[orders] --> order_line2[order_line]
-        item2[item] --> stock2[stock] --> order_line2
+        warehouse2[warehouse] --> stock2[stock]
+        item2[item] --> stock2
+        warehouse2 --> district2[district]
+        district2 --> customer2[customer]
+        district2 --> history2[history]
+        customer2 --> history2
+        customer2 --> open_order2[open_order]
+        open_order2 --> new_order2[new_order]
+        open_order2 --> order_line2[order_line]
+        stock2 --> order_line2
     end
 
     build --> sort
@@ -158,8 +170,16 @@ flowchart TD
     subgraph L2["level 2"]
         customer
     end
+    subgraph L3["level 3 — fill concurrently"]
+        history & open_order
+    end
+    subgraph L4["level 4 — fill concurrently"]
+        new_order & order_line
+    end
     L0 -->|barrier| L1
     L1 -->|barrier| L2
+    L2 -->|barrier| L3
+    L3 -->|barrier| L4
 ```
 
 Each table is filled by a worker that borrows its own `Connection` from the pool (JDBC connections
