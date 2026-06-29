@@ -263,8 +263,8 @@ Set<TableConfiguration> tpcc = TPCCConfiguration.build(
 );
 ```
 
-The corresponding DDL lives in
-`bloviate-core/src/test/resources/create_tpcc.{postgres,mysql,cockroachdb}.sql`. The reusable
+The matching `create_tpcc.{postgres,mysql,cockroachdb}.sql` DDL is available in the
+[Bloviate repository](https://github.com/timveil/bloviate). The reusable
 building blocks behind `TPCCConfiguration` — `CompositeKeyComponentGenerator`, `ChildCardinality`,
 `GroupedPermutationGenerator` (per-group shuffles), and `GroupedPrefixGenerator` (nullable/sparse
 columns) — live in `io.bloviate.gen` and can be composed for other benchmark schemas (TPC-H,
