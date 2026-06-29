@@ -116,27 +116,36 @@ data generation <em>without</em> subclassing <a href="DatabaseSupport.html" titl
 <div class="block">Base <a href="DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a> that maps columns to generators through a
 <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/JDBCType.html" title="class or interface in java.sql" class="external-link"><code>JDBCType</code></a>-keyed registry of <a href="GeneratorFactory.html" title="interface in io.bloviate.ext"><code>GeneratorFactory</code></a> entries.</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/DatabaseSupport.html#io.bloviate.ext">DatabaseSupport</a></div>
+<div class="col-first odd-row-color"><a href="class-use/BulkLoadHandle.html#io.bloviate.ext">BulkLoadHandle</a></div>
 <div class="col-last odd-row-color">
+<div class="block">An opaque token returned by <a href="DatabaseSupport.html#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>DatabaseSupport.disableConstraints(Connection, Database)</code></a> describing what was disabled,
+so <a href="DatabaseSupport.html#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)"><code>DatabaseSupport.enableConstraints(Connection, Database, BulkLoadHandle)</code></a> can restore it.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/DatabaseSupport.html#io.bloviate.ext">DatabaseSupport</a></div>
+<div class="col-last even-row-color">
 <div class="block">Database-specific support interface for data generation and SQL handling.</div>
 </div>
-<div class="col-first even-row-color"><a href="class-use/GeneratorFactory.html#io.bloviate.ext">GeneratorFactory</a></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><a href="class-use/GeneratorFactory.html#io.bloviate.ext">GeneratorFactory</a></div>
+<div class="col-last odd-row-color">
 <div class="block">Builds the <a href="../gen/DataGenerator.html" title="interface in io.bloviate.gen"><code>DataGenerator</code></a> used for a column of a particular JDBC type.</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/GeneratorPlugin.html#io.bloviate.ext">GeneratorPlugin</a></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><a href="class-use/GeneratorPlugin.html#io.bloviate.ext">GeneratorPlugin</a></div>
+<div class="col-last even-row-color">
 <div class="block">Service-provider interface that lets a jar contribute custom generator rules to a
 <a href="GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a> without subclassing <a href="DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a>.</div>
 </div>
-<div class="col-first even-row-color"><a href="class-use/GeneratorRegistry.html#io.bloviate.ext">GeneratorRegistry</a></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><a href="class-use/GeneratorRegistry.html#io.bloviate.ext">GeneratorRegistry</a></div>
+<div class="col-last odd-row-color">
 <div class="block">A user-facing registry of custom <a href="GeneratorFactory.html" title="interface in io.bloviate.ext"><code>GeneratorFactory</code></a> rules that lets callers override
 data generation <em>without</em> subclassing <a href="DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a>.</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/GeneratorRegistry.Builder.html#io.bloviate.ext">GeneratorRegistry.Builder</a></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><a href="class-use/GeneratorRegistry.Builder.html#io.bloviate.ext">GeneratorRegistry.Builder</a></div>
+<div class="col-last even-row-color">
 <div class="block">Builds an immutable <a href="GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a>.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/MySQLSupport.html#io.bloviate.ext">MySQLSupport</a></div>
+<div class="col-last odd-row-color">
+<div class="block">MySQL-specific <a href="DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a>.</div>
 </div>
 <div class="col-first even-row-color"><a href="class-use/PostgresSupport.html#io.bloviate.ext">PostgresSupport</a></div>
 <div class="col-last even-row-color">

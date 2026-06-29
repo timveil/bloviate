@@ -127,12 +127,18 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/AbstractDatabaseSupport.html" class="type-name-link" title="class in io.bloviate.ext">AbstractDatabaseSupport</a> (implements io.bloviate.ext.<a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a>)
 <ul>
 <li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/DefaultSupport.html" class="type-name-link" title="class in io.bloviate.ext">DefaultSupport</a></li>
-<li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/MySQLSupport.html" class="type-name-link" title="class in io.bloviate.ext">MySQLSupport</a></li>
+<li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/H2Support.html" class="type-name-link" title="class in io.bloviate.ext">H2Support</a></li>
+<li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/MySQLSupport.html" class="type-name-link" title="class in io.bloviate.ext">MySQLSupport</a>
+<ul>
+<li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/MariaDBSupport.html" class="type-name-link" title="class in io.bloviate.ext">MariaDBSupport</a></li>
+</ul>
+</li>
 <li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/PostgresSupport.html" class="type-name-link" title="class in io.bloviate.ext">PostgresSupport</a>
 <ul>
 <li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/CockroachDBSupport.html" class="type-name-link" title="class in io.bloviate.ext">CockroachDBSupport</a></li>
 </ul>
 </li>
+<li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/SQLiteSupport.html" class="type-name-link" title="class in io.bloviate.ext">SQLiteSupport</a></li>
 </ul>
 </li>
 <li class="circle">io.bloviate.gen.<a href="io/bloviate/gen/AbstractDataGenerator.html" class="type-name-link" title="class in io.bloviate.gen">AbstractDataGenerator</a>&lt;T&gt; (implements io.bloviate.gen.<a href="io/bloviate/gen/DataGenerator.html" title="interface in io.bloviate.gen">DataGenerator</a>&lt;T&gt;)
@@ -222,6 +228,19 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.bloviate.datafaker.<a href="io/bloviate/datafaker/RowContext.html" class="type-name-link" title="class in io.bloviate.datafaker">RowContext</a>&lt;E&gt;</li>
 <li class="circle">io.bloviate.db.<a href="io/bloviate/db/TableFiller.html" class="type-name-link" title="class in io.bloviate.db">TableFiller</a> (implements io.bloviate.db.<a href="io/bloviate/db/Fillable.html" title="interface in io.bloviate.db">Fillable</a>)</li>
 <li class="circle">io.bloviate.db.<a href="io/bloviate/db/TableFiller.Builder.html" class="type-name-link" title="class in io.bloviate.db">TableFiller.Builder</a></li>
+<li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Throwable.html" class="type-name-link external-link" title="class or interface in java.lang">Throwable</a> (implements java.io.<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a>)
+<ul>
+<li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Exception.html" class="type-name-link external-link" title="class or interface in java.lang">Exception</a>
+<ul>
+<li class="circle">java.sql.<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/SQLException.html" class="type-name-link external-link" title="class or interface in java.sql">SQLException</a> (implements java.lang.<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;T&gt;)
+<ul>
+<li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/BulkLoadUnsupportedException.html" class="type-name-link" title="class in io.bloviate.ext">BulkLoadUnsupportedException</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="circle">io.bloviate.gen.tpcc.<a href="io/bloviate/gen/tpcc/TPCCConfiguration.html" class="type-name-link" title="class in io.bloviate.gen.tpcc">TPCCConfiguration</a></li>
 <li class="circle">io.bloviate.gen.tpcc.<a href="io/bloviate/gen/tpcc/TPCCUtils.html" class="type-name-link" title="class in io.bloviate.gen.tpcc">TPCCUtils</a></li>
 </ul>
@@ -256,6 +275,7 @@ loadScripts(document, 'script');</script>
 <ul>
 <li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Enum.html" class="type-name-link external-link" title="class or interface in java.lang">Enum</a>&lt;E&gt; (implements java.lang.<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Comparable.html" title="class or interface in java.lang" class="external-link">Comparable</a>&lt;T&gt;, java.lang.constant.<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/constant/Constable.html" title="class or interface in java.lang.constant" class="external-link">Constable</a>, java.io.<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a>)
 <ul>
+<li class="circle">io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.Mode.html" class="type-name-link" title="enum class in io.bloviate.db">BulkLoadStrategy.Mode</a></li>
 <li class="circle">io.bloviate.db.<a href="io/bloviate/db/CommitStrategy.Mode.html" class="type-name-link" title="enum class in io.bloviate.db">CommitStrategy.Mode</a></li>
 <li class="circle">io.bloviate.file.<a href="io/bloviate/file/FileType.html" class="type-name-link" title="enum class in io.bloviate.file">FileType</a></li>
 </ul>
@@ -271,6 +291,8 @@ loadScripts(document, 'script');</script>
 <ul>
 <li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Record.html" class="type-name-link external-link" title="class or interface in java.lang">Record</a>
 <ul>
+<li class="circle">io.bloviate.ext.<a href="io/bloviate/ext/BulkLoadHandle.html" class="type-name-link" title="class in io.bloviate.ext">BulkLoadHandle</a></li>
+<li class="circle">io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.html" class="type-name-link" title="class in io.bloviate.db">BulkLoadStrategy</a></li>
 <li class="circle">io.bloviate.db.<a href="io/bloviate/db/Column.html" class="type-name-link" title="class in io.bloviate.db">Column</a></li>
 <li class="circle">io.bloviate.db.<a href="io/bloviate/db/ColumnConfiguration.html" class="type-name-link" title="class in io.bloviate.db">ColumnConfiguration</a></li>
 <li class="circle">io.bloviate.db.<a href="io/bloviate/db/ColumnConstraint.html" class="type-name-link" title="class in io.bloviate.db">ColumnConstraint</a></li>

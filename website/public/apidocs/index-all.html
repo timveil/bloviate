@@ -50,7 +50,7 @@ loadScripts(document, 'script');</script>
 <div class="header">
 <h1>Index</h1>
 </div>
-<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:X">X</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a href="#I:Z">Z</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="constant-values.html">Constant&nbsp;Field&nbsp;Values</a>
+<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:X">X</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a href="#I:Z">Z</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="constant-values.html">Constant&nbsp;Field&nbsp;Values</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a>
 <h2 class="title" id="I:A">A</h2>
 <dl class="index">
 <dt><a href="io/bloviate/gen/AbstractBuilder.html" class="type-name-link" title="class in io.bloviate.gen">AbstractBuilder&lt;T&gt;</a> - Class in <a href="io/bloviate/gen/package-summary.html">io.bloviate.gen</a></dt>
@@ -604,6 +604,41 @@ configuration.</div>
 <dd>
 <div class="block">Creates a builder that fills from a pooled <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/javax/sql/DataSource.html" title="class or interface in javax.sql" class="external-link"><code>DataSource</code></a>.</div>
 </dd>
+<dt><a href="io/bloviate/ext/BulkLoadHandle.html" class="type-name-link" title="class in io.bloviate.ext">BulkLoadHandle</a> - Record Class in <a href="io/bloviate/ext/package-summary.html">io.bloviate.ext</a></dt>
+<dd>
+<div class="block">An opaque token returned by <a href="io/bloviate/ext/DatabaseSupport.html#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>DatabaseSupport.disableConstraints(Connection, Database)</code></a> describing what was disabled,
+so <a href="io/bloviate/ext/DatabaseSupport.html#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)"><code>DatabaseSupport.enableConstraints(Connection, Database, BulkLoadHandle)</code></a> can restore it.</div>
+</dd>
+<dt><a href="io/bloviate/ext/BulkLoadHandle.html#%3Cinit%3E(java.lang.String)" class="member-name-link">BulkLoadHandle(String)</a> - Constructor for record class io.bloviate.ext.<a href="io/bloviate/ext/BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>BulkLoadHandle</code> record class.</div>
+</dd>
+<dt><a href="io/bloviate/db/DatabaseConfiguration.html#bulkLoadStrategy()" class="member-name-link">bulkLoadStrategy()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/DatabaseConfiguration.html" title="class in io.bloviate.db">DatabaseConfiguration</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./io/bloviate/db/DatabaseConfiguration.html#param-bulkLoadStrategy"><code>bulkLoadStrategy</code></a> record component.</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.html" class="type-name-link" title="class in io.bloviate.db">BulkLoadStrategy</a> - Record Class in <a href="io/bloviate/db/package-summary.html">io.bloviate.db</a></dt>
+<dd>
+<div class="block">How <a href="io/bloviate/db/DatabaseFiller.html" title="class in io.bloviate.db"><code>DatabaseFiller</code></a> orders table fills relative to foreign-key dependencies.</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.html#%3Cinit%3E(io.bloviate.db.BulkLoadStrategy.Mode,boolean)" class="member-name-link">BulkLoadStrategy(BulkLoadStrategy.Mode, boolean)</a> - Constructor for record class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></dt>
+<dd>
+<div class="block">Validates the mode.</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.Mode.html" class="type-name-link" title="enum class in io.bloviate.db">BulkLoadStrategy.Mode</a> - Enum Class in <a href="io/bloviate/db/package-summary.html">io.bloviate.db</a></dt>
+<dd>
+<div class="block">The available ordering modes.</div>
+</dd>
+<dt><a href="io/bloviate/ext/BulkLoadUnsupportedException.html" class="type-name-link" title="class in io.bloviate.ext">BulkLoadUnsupportedException</a> - Exception Class in <a href="io/bloviate/ext/package-summary.html">io.bloviate.ext</a></dt>
+<dd>
+<div class="block">Signals that a <a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a> could not disable constraint enforcement for an
+<code>UNORDERED_BULK</code> fill — for example, the connecting role lacks the privilege to set
+PostgreSQL's <code>session_replication_role</code>.</div>
+</dd>
+<dt><a href="io/bloviate/ext/BulkLoadUnsupportedException.html#%3Cinit%3E(java.lang.String,java.lang.Throwable)" class="member-name-link">BulkLoadUnsupportedException(String, Throwable)</a> - Constructor for exception class io.bloviate.ext.<a href="io/bloviate/ext/BulkLoadUnsupportedException.html" title="class in io.bloviate.ext">BulkLoadUnsupportedException</a></dt>
+<dd>
+<div class="block">Creates the exception with a message and underlying cause.</div>
+</dd>
 <dt><a href="io/bloviate/gen/ByteGenerator.html" class="type-name-link" title="class in io.bloviate.gen">ByteGenerator</a> - Class in <a href="io/bloviate/gen/package-summary.html">io.bloviate.gen</a></dt>
 <dd>
 <div class="block">Generates an array of random <code>Byte</code>s using the seeded random source, so a given seed
@@ -793,6 +828,8 @@ without collisions.</div>
 <dd>
 <div class="block">Hook for subclasses to add or replace generator factories for specific JDBC types.</div>
 </dd>
+<dt><a href="io/bloviate/ext/H2Support.html#configure(java.util.Map)" class="member-name-link">configure(Map)</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/H2Support.html" title="class in io.bloviate.ext">H2Support</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/bloviate/ext/MySQLSupport.html#configure(java.util.Map)" class="member-name-link">configure(Map)</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/MySQLSupport.html" title="class in io.bloviate.ext">MySQLSupport</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/bloviate/ext/PostgresSupport.html#configure(java.util.Map)" class="member-name-link">configure(Map)</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/PostgresSupport.html" title="class in io.bloviate.ext">PostgresSupport</a></dt>
@@ -915,6 +952,11 @@ of <code>0</code>.</div>
 <div class="block">Creates a configuration with the given base <code>seed</code> and <a href="io/bloviate/db/CommitStrategy.html" title="class in io.bloviate.db"><code>CommitStrategy</code></a>, and no
 custom <a href="io/bloviate/ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a>.</div>
 </dd>
+<dt><a href="io/bloviate/db/DatabaseConfiguration.html#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,long,io.bloviate.db.CommitStrategy,io.bloviate.db.BulkLoadStrategy)" class="member-name-link">DatabaseConfiguration(int, long, DatabaseSupport, Set, long, CommitStrategy, BulkLoadStrategy)</a> - Constructor for record class io.bloviate.db.<a href="io/bloviate/db/DatabaseConfiguration.html" title="class in io.bloviate.db">DatabaseConfiguration</a></dt>
+<dd>
+<div class="block">Creates a configuration with the given base <code>seed</code>, <a href="io/bloviate/db/CommitStrategy.html" title="class in io.bloviate.db"><code>CommitStrategy</code></a> and
+<a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db"><code>BulkLoadStrategy</code></a>, and no custom <a href="io/bloviate/ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a>.</div>
+</dd>
 <dt><a href="io/bloviate/db/DatabaseConfiguration.html#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry)" class="member-name-link">DatabaseConfiguration(int, long, DatabaseSupport, Set, GeneratorRegistry)</a> - Constructor for record class io.bloviate.db.<a href="io/bloviate/db/DatabaseConfiguration.html" title="class in io.bloviate.db">DatabaseConfiguration</a></dt>
 <dd>
 <div class="block">Creates a configuration with a custom <a href="io/bloviate/ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a> and a base <code>seed</code>
@@ -927,8 +969,15 @@ default <a href="io/bloviate/db/CommitStrategy.html" title="class in io.bloviate
 </dd>
 <dt><a href="io/bloviate/db/DatabaseConfiguration.html#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy)" class="member-name-link">DatabaseConfiguration(int, long, DatabaseSupport, Set, GeneratorRegistry, long, CommitStrategy)</a> - Constructor for record class io.bloviate.db.<a href="io/bloviate/db/DatabaseConfiguration.html" title="class in io.bloviate.db">DatabaseConfiguration</a></dt>
 <dd>
-<div class="block">Normalizes a null <code>commitStrategy</code> to <a href="io/bloviate/db/CommitStrategy.html#connectionDefault()"><code>CommitStrategy.connectionDefault()</code></a> so the
-back-compatible behavior applies whenever a caller does not specify one.</div>
+<div class="block">Creates a configuration with a custom <a href="io/bloviate/ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a>, base <code>seed</code> and
+<a href="io/bloviate/db/CommitStrategy.html" title="class in io.bloviate.db"><code>CommitStrategy</code></a>, and the default <a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db"><code>BulkLoadStrategy</code></a> (preserves the original
+seven-argument signature).</div>
+</dd>
+<dt><a href="io/bloviate/db/DatabaseConfiguration.html#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy,io.bloviate.db.BulkLoadStrategy)" class="member-name-link">DatabaseConfiguration(int, long, DatabaseSupport, Set, GeneratorRegistry, long, CommitStrategy, BulkLoadStrategy)</a> - Constructor for record class io.bloviate.db.<a href="io/bloviate/db/DatabaseConfiguration.html" title="class in io.bloviate.db">DatabaseConfiguration</a></dt>
+<dd>
+<div class="block">Normalizes a null <code>commitStrategy</code> to <a href="io/bloviate/db/CommitStrategy.html#connectionDefault()"><code>CommitStrategy.connectionDefault()</code></a> and a null
+<code>bulkLoadStrategy</code> to <a href="io/bloviate/db/BulkLoadStrategy.html#ordered()"><code>BulkLoadStrategy.ordered()</code></a> so the back-compatible behavior
+applies whenever a caller does not specify them.</div>
 </dd>
 <dt><a href="io/bloviate/db/DatabaseFiller.html" class="type-name-link" title="class in io.bloviate.db">DatabaseFiller</a> - Class in <a href="io/bloviate/db/package-summary.html">io.bloviate.db</a></dt>
 <dd>
@@ -1063,9 +1112,27 @@ only on prefix rows, never for the null tail, so a stateless delegate is recomme
 <div class="block">Orders with <code>o_id &lt;= deliveredThreshold</code> are delivered (timestamp); the rest are
 undelivered (NULL).</div>
 </dd>
+<dt><a href="io/bloviate/ext/BulkLoadHandle.html#description()" class="member-name-link">description()</a> - Method in record class io.bloviate.ext.<a href="io/bloviate/ext/BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./io/bloviate/ext/BulkLoadHandle.html#param-description"><code>description</code></a> record component.</div>
+</dd>
 <dt><a href="io/bloviate/gen/BigDecimalGenerator.Builder.html#digits(java.lang.Integer)" class="member-name-link">digits(Integer)</a> - Method in class io.bloviate.gen.<a href="io/bloviate/gen/BigDecimalGenerator.Builder.html" title="class in io.bloviate.gen">BigDecimalGenerator.Builder</a></dt>
 <dd>
 <div class="block">Sets the maximum scale: the number of fractional digits to the right of the decimal point.</div>
+</dd>
+<dt><a href="io/bloviate/ext/DatabaseSupport.html#disableConstraints(java.sql.Connection,io.bloviate.db.Database)" class="member-name-link">disableConstraints(Connection, Database)</a> - Method in interface io.bloviate.ext.<a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a></dt>
+<dd>
+<div class="block">Disables foreign-key (and, where applicable, unique) enforcement for the duration of a bulk load,
+on the <strong>given connection's session</strong>.</div>
+</dd>
+<dt><a href="io/bloviate/ext/MySQLSupport.html#disableConstraints(java.sql.Connection,io.bloviate.db.Database)" class="member-name-link">disableConstraints(Connection, Database)</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/MySQLSupport.html" title="class in io.bloviate.ext">MySQLSupport</a></dt>
+<dd>
+<div class="block">Disables <code>FOREIGN_KEY_CHECKS</code> and <code>UNIQUE_CHECKS</code> for the session.</div>
+</dd>
+<dt><a href="io/bloviate/ext/PostgresSupport.html#disableConstraints(java.sql.Connection,io.bloviate.db.Database)" class="member-name-link">disableConstraints(Connection, Database)</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/PostgresSupport.html" title="class in io.bloviate.ext">PostgresSupport</a></dt>
+<dd>
+<div class="block">Sets <code>session_replication_role = replica</code> on the connection, which stops user and
+foreign-key triggers (including referential-integrity checks) from firing for the session.</div>
 </dd>
 <dt><a href="io/bloviate/ext/GeneratorRegistry.Builder.html#discover()" class="member-name-link">discover()</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/GeneratorRegistry.Builder.html" title="class in io.bloviate.ext">GeneratorRegistry.Builder</a></dt>
 <dd>
@@ -1097,6 +1164,20 @@ yields a reproducible sequence.</div>
 <dt><a href="io/bloviate/datafaker/Person.html#email()" class="member-name-link">email()</a> - Method in record class io.bloviate.datafaker.<a href="io/bloviate/datafaker/Person.html" title="class in io.bloviate.datafaker">Person</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./io/bloviate/datafaker/Person.html#param-email"><code>email</code></a> record component.</div>
+</dd>
+<dt><a href="io/bloviate/ext/DatabaseSupport.html#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)" class="member-name-link">enableConstraints(Connection, Database, BulkLoadHandle)</a> - Method in interface io.bloviate.ext.<a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a></dt>
+<dd>
+<div class="block">Re-enables what <a href="io/bloviate/ext/DatabaseSupport.html#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>DatabaseSupport.disableConstraints(Connection, Database)</code></a> turned off, on the same connection.</div>
+</dd>
+<dt><a href="io/bloviate/ext/MySQLSupport.html#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)" class="member-name-link">enableConstraints(Connection, Database, BulkLoadHandle)</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/MySQLSupport.html" title="class in io.bloviate.ext">MySQLSupport</a></dt>
+<dd>
+<div class="block">Restores <code>UNIQUE_CHECKS</code> and <code>FOREIGN_KEY_CHECKS</code> to <code>1</code> for the session before
+the connection is returned to the pool.</div>
+</dd>
+<dt><a href="io/bloviate/ext/PostgresSupport.html#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)" class="member-name-link">enableConstraints(Connection, Database, BulkLoadHandle)</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/PostgresSupport.html" title="class in io.bloviate.ext">PostgresSupport</a></dt>
+<dd>
+<div class="block">Restores <code>session_replication_role = origin</code>, re-enabling trigger and foreign-key firing
+for the session before the connection is returned to the pool.</div>
 </dd>
 <dt><a href="io/bloviate/gen/DoubleGenerator.Builder.html#end(double)" class="member-name-link">end(double)</a> - Method in class io.bloviate.gen.<a href="io/bloviate/gen/DoubleGenerator.Builder.html" title="class in io.bloviate.gen">DoubleGenerator.Builder</a></dt>
 <dd>
@@ -1163,6 +1244,10 @@ deterministically (<code>0..enumeratedCount-1</code>); the rest use <code>NURand
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
 <dt><a href="io/bloviate/db/Column.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/Column.html" title="class in io.bloviate.db">Column</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
@@ -1208,6 +1293,10 @@ deterministically (<code>0..enumeratedCount-1</code>); the rest use <code>NURand
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
 <dt><a href="io/bloviate/db/TableConfiguration.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="io/bloviate/ext/BulkLoadHandle.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class io.bloviate.ext.<a href="io/bloviate/ext/BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
@@ -1758,6 +1847,14 @@ district when <a href="io/bloviate/gen/tpcc/CustomerLastNameGenerator.Builder.ht
 </dl>
 <h2 class="title" id="I:H">H</h2>
 <dl class="index">
+<dt><a href="io/bloviate/ext/H2Support.html" class="type-name-link" title="class in io.bloviate.ext">H2Support</a> - Class in <a href="io/bloviate/ext/package-summary.html">io.bloviate.ext</a></dt>
+<dd>
+<div class="block">H2-specific <a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a>.</div>
+</dd>
+<dt><a href="io/bloviate/ext/H2Support.html#%3Cinit%3E()" class="member-name-link">H2Support()</a> - Constructor for class io.bloviate.ext.<a href="io/bloviate/ext/H2Support.html" title="class in io.bloviate.ext">H2Support</a></dt>
+<dd>
+<div class="block">Creates the H2 support with its default configuration.</div>
+</dd>
 <dt><a href="io/bloviate/db/ColumnConstraint.html#hasAllowedValues()" class="member-name-link">hasAllowedValues()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/ColumnConstraint.html" title="class in io.bloviate.db">ColumnConstraint</a></dt>
 <dd>
 <div class="block">True if this is a set-of-allowed-values constraint.</div>
@@ -1771,6 +1868,10 @@ district when <a href="io/bloviate/gen/tpcc/CustomerLastNameGenerator.Builder.ht
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
 <dt><a href="io/bloviate/datafaker/Person.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class io.bloviate.datafaker.<a href="io/bloviate/datafaker/Person.html" title="class in io.bloviate.datafaker">Person</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
@@ -1819,6 +1920,10 @@ district when <a href="io/bloviate/gen/tpcc/CustomerLastNameGenerator.Builder.ht
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
 <dt><a href="io/bloviate/db/TableConfiguration.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="io/bloviate/ext/BulkLoadHandle.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class io.bloviate.ext.<a href="io/bloviate/ext/BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
@@ -1910,6 +2015,10 @@ yields a reproducible sequence.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/bloviate/util/package-summary.html">io.bloviate.util</a> - package io.bloviate.util</dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.html#isUnordered()" class="member-name-link">isUnordered()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></dt>
+<dd>
+<div class="block">Whether this strategy is <a href="io/bloviate/db/BulkLoadStrategy.Mode.html#UNORDERED_BULK"><code>BulkLoadStrategy.Mode.UNORDERED_BULK</code></a>.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:J">J</h2>
 <dl class="index">
@@ -2005,6 +2114,14 @@ yields a reproducible sequence.</div>
 <dd>
 <div class="block">Whether the engine manages the transaction (i.e. anything other than <a href="io/bloviate/db/CommitStrategy.Mode.html#CONNECTION_DEFAULT"><code>CommitStrategy.Mode.CONNECTION_DEFAULT</code></a>).</div>
 </dd>
+<dt><a href="io/bloviate/ext/MariaDBSupport.html" class="type-name-link" title="class in io.bloviate.ext">MariaDBSupport</a> - Class in <a href="io/bloviate/ext/package-summary.html">io.bloviate.ext</a></dt>
+<dd>
+<div class="block">MariaDB-specific <a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a>.</div>
+</dd>
+<dt><a href="io/bloviate/ext/MariaDBSupport.html#%3Cinit%3E()" class="member-name-link">MariaDBSupport()</a> - Constructor for class io.bloviate.ext.<a href="io/bloviate/ext/MariaDBSupport.html" title="class in io.bloviate.ext">MariaDBSupport</a></dt>
+<dd>
+<div class="block">Creates the MariaDB support with its default (MySQL-inherited) configuration.</div>
+</dd>
 <dt><a href="io/bloviate/db/ColumnConstraint.html#max()" class="member-name-link">max()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/ColumnConstraint.html" title="class in io.bloviate.db">ColumnConstraint</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./io/bloviate/db/ColumnConstraint.html#param-max"><code>max</code></a> record component.</div>
@@ -2076,6 +2193,10 @@ yields a reproducible sequence.</div>
 <dt><a href="io/bloviate/util/Mixers.html" class="type-name-link" title="class in io.bloviate.util">Mixers</a> - Class in <a href="io/bloviate/util/package-summary.html">io.bloviate.util</a></dt>
 <dd>
 <div class="block">Deterministic integer mixing functions shared across the engine.</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.html#mode()" class="member-name-link">mode()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./io/bloviate/db/BulkLoadStrategy.html#param-mode"><code>mode</code></a> record component.</div>
 </dd>
 <dt><a href="io/bloviate/db/CommitStrategy.html#mode()" class="member-name-link">mode()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a></dt>
 <dd>
@@ -2175,6 +2296,10 @@ mean and standard deviation, rounded to the nearest integer and clamped to the i
 <dd>
 <div class="block">Sets the number of hex octets in the generated address.</div>
 </dd>
+<dt><a href="io/bloviate/ext/BulkLoadHandle.html#of(java.lang.String)" class="member-name-link">of(String)</a> - Static method in record class io.bloviate.ext.<a href="io/bloviate/ext/BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></dt>
+<dd>
+<div class="block">Creates a handle with the given description.</div>
+</dd>
 <dt><a href="io/bloviate/db/ColumnConstraint.html#ofRange(java.math.BigDecimal,java.math.BigDecimal)" class="member-name-link">ofRange(BigDecimal, BigDecimal)</a> - Static method in record class io.bloviate.db.<a href="io/bloviate/db/ColumnConstraint.html" title="class in io.bloviate.db">ColumnConstraint</a></dt>
 <dd>
 <div class="block">A closed numeric range <code>[min, max]</code> (both inclusive).</div>
@@ -2182,6 +2307,14 @@ mean and standard deviation, rounded to the nearest integer and clamped to the i
 <dt><a href="io/bloviate/db/ColumnConstraint.html#ofValues(java.util.List)" class="member-name-link">ofValues(List)</a> - Static method in record class io.bloviate.db.<a href="io/bloviate/db/ColumnConstraint.html" title="class in io.bloviate.db">ColumnConstraint</a></dt>
 <dd>
 <div class="block">A set-of-allowed-values constraint (categorical / enum / <code>IN</code>).</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.html#ordered()" class="member-name-link">ordered()</a> - Static method in record class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></dt>
+<dd>
+<div class="block">The back-compatible default: fill in foreign-key dependency order, never disabling constraints.</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.Mode.html#ORDERED" class="member-name-link">ORDERED</a> - Enum constant in enum class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.Mode.html" title="enum class in io.bloviate.db">BulkLoadStrategy.Mode</a></dt>
+<dd>
+<div class="block">Respect the topological level barrier; never disable constraints (the default).</div>
 </dd>
 <dt><a href="io/bloviate/gen/tpcc/OrderLineDeliveryDateGenerator.html" class="type-name-link" title="class in io.bloviate.gen.tpcc">OrderLineDeliveryDateGenerator</a> - Class in <a href="io/bloviate/gen/tpcc/package-summary.html">io.bloviate.gen.tpcc</a></dt>
 <dd>
@@ -2432,6 +2565,10 @@ wraparound.</div>
 <dd>
 <div class="block">Resolves the custom generator for a column, honouring the documented precedence
 (name pattern &gt; vendor typeName &gt; JDBCType).</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.html#revalidate()" class="member-name-link">revalidate()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./io/bloviate/db/BulkLoadStrategy.html#param-revalidate"><code>revalidate</code></a> record component.</div>
 </dd>
 <dt><a href="io/bloviate/datafaker/RowContext.html" class="type-name-link" title="class in io.bloviate.datafaker">RowContext&lt;E&gt;</a> - Class in <a href="io/bloviate/datafaker/package-summary.html">io.bloviate.datafaker</a></dt>
 <dd>
@@ -2734,6 +2871,14 @@ end exclusive).</div>
 <dd>
 <div class="block">Builder for <a href="io/bloviate/gen/SqlDateGenerator.html" title="class in io.bloviate.gen"><code>SqlDateGenerator</code></a> instances.</div>
 </dd>
+<dt><a href="io/bloviate/ext/SQLiteSupport.html" class="type-name-link" title="class in io.bloviate.ext">SQLiteSupport</a> - Class in <a href="io/bloviate/ext/package-summary.html">io.bloviate.ext</a></dt>
+<dd>
+<div class="block">SQLite-specific <a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a>.</div>
+</dd>
+<dt><a href="io/bloviate/ext/SQLiteSupport.html#%3Cinit%3E()" class="member-name-link">SQLiteSupport()</a> - Constructor for class io.bloviate.ext.<a href="io/bloviate/ext/SQLiteSupport.html" title="class in io.bloviate.ext">SQLiteSupport</a></dt>
+<dd>
+<div class="block">Creates the SQLite support with its default configuration.</div>
+</dd>
 <dt><a href="io/bloviate/gen/SqlStructGenerator.html" class="type-name-link" title="class in io.bloviate.gen">SqlStructGenerator</a> - Class in <a href="io/bloviate/gen/package-summary.html">io.bloviate.gen</a></dt>
 <dd>
 <div class="block">Generator for SQL <code>STRUCT</code> (structured / user-defined type) columns.</div>
@@ -2897,6 +3042,24 @@ to JDBC arrays of SQL type <code>VARCHAR</code>.</div>
 <dd>
 <div class="block">Fluent builder for <a href="io/bloviate/gen/StringArrayGenerator.html" title="class in io.bloviate.gen"><code>StringArrayGenerator</code></a>.</div>
 </dd>
+<dt><a href="io/bloviate/ext/CockroachDBSupport.html#supportsBulkLoad()" class="member-name-link">supportsBulkLoad()</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/CockroachDBSupport.html" title="class in io.bloviate.ext">CockroachDBSupport</a></dt>
+<dd>
+<div class="block">CockroachDB does not support the unordered bulk-load path.</div>
+</dd>
+<dt><a href="io/bloviate/ext/DatabaseSupport.html#supportsBulkLoad()" class="member-name-link">supportsBulkLoad()</a> - Method in interface io.bloviate.ext.<a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a></dt>
+<dd>
+<div class="block">Whether this support can disable and re-enable foreign-key enforcement for an
+<code>UNORDERED_BULK</code> fill (see <a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db"><code>BulkLoadStrategy</code></a>).</div>
+</dd>
+<dt><a href="io/bloviate/ext/MySQLSupport.html#supportsBulkLoad()" class="member-name-link">supportsBulkLoad()</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/MySQLSupport.html" title="class in io.bloviate.ext">MySQLSupport</a></dt>
+<dd>
+<div class="block">MySQL supports unordered bulk loading by disabling the session's foreign-key and unique checks.</div>
+</dd>
+<dt><a href="io/bloviate/ext/PostgresSupport.html#supportsBulkLoad()" class="member-name-link">supportsBulkLoad()</a> - Method in class io.bloviate.ext.<a href="io/bloviate/ext/PostgresSupport.html" title="class in io.bloviate.ext">PostgresSupport</a></dt>
+<dd>
+<div class="block">PostgreSQL supports unordered bulk loading by suppressing foreign-key trigger firing for the
+session via <code>SET session_replication_role = replica</code>.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:T">T</h2>
 <dl class="index">
@@ -2997,6 +3160,10 @@ to JDBC arrays of SQL type <code>VARCHAR</code>.</div>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.html#toString()" class="member-name-link">toString()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
 <dt><a href="io/bloviate/db/Column.html#toString()" class="member-name-link">toString()</a> - Method in record class io.bloviate.db.<a href="io/bloviate/db/Column.html" title="class in io.bloviate.db">Column</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
@@ -3045,6 +3212,10 @@ to JDBC arrays of SQL type <code>VARCHAR</code>.</div>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
+<dt><a href="io/bloviate/ext/BulkLoadHandle.html#toString()" class="member-name-link">toString()</a> - Method in record class io.bloviate.ext.<a href="io/bloviate/ext/BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
 <dt><a href="io/bloviate/file/ColumnDefinition.html#toString()" class="member-name-link">toString()</a> - Method in record class io.bloviate.file.<a href="io/bloviate/file/ColumnDefinition.html" title="class in io.bloviate.file">ColumnDefinition</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
@@ -3078,6 +3249,15 @@ i.e.</div>
 <dt><a href="io/bloviate/datafaker/Places.html#unitedStates(long)" class="member-name-link">unitedStates(long)</a> - Static method in class io.bloviate.datafaker.<a href="io/bloviate/datafaker/Places.html" title="class in io.bloviate.datafaker">Places</a></dt>
 <dd>
 <div class="block">A context of consistent US <a href="io/bloviate/datafaker/Geo.html" title="class in io.bloviate.datafaker"><code>Geo</code></a> tuples.</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.Mode.html#UNORDERED_BULK" class="member-name-link">UNORDERED_BULK</a> - Enum constant in enum class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.Mode.html" title="enum class in io.bloviate.db">BulkLoadStrategy.Mode</a></dt>
+<dd>
+<div class="block">Disable foreign-key enforcement, fill all tables at once with no barrier, then re-enable.</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.html#unorderedBulk()" class="member-name-link">unorderedBulk()</a> - Static method in record class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></dt>
+<dd>
+<div class="block">Disable foreign-key enforcement, fill every table concurrently with no topological barrier, then
+re-enable enforcement without re-validating (safe because the data is consistent by construction).</div>
 </dd>
 <dt><a href="io/bloviate/datafaker/Person.html#username()" class="member-name-link">username()</a> - Method in record class io.bloviate.datafaker.<a href="io/bloviate/datafaker/Person.html" title="class in io.bloviate.datafaker">Person</a></dt>
 <dd>
@@ -3119,6 +3299,10 @@ string via the <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.
 <dd>
 <div class="block">Sets the fixed value returned by every call to <code>generate()</code>.</div>
 </dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.Mode.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.Mode.html" title="enum class in io.bloviate.db">BulkLoadStrategy.Mode</a></dt>
+<dd>
+<div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
 <dt><a href="io/bloviate/db/CommitStrategy.Mode.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.bloviate.db.<a href="io/bloviate/db/CommitStrategy.Mode.html" title="enum class in io.bloviate.db">CommitStrategy.Mode</a></dt>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
@@ -3126,6 +3310,11 @@ string via the <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.
 <dt><a href="io/bloviate/file/FileType.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.bloviate.file.<a href="io/bloviate/file/FileType.html" title="enum class in io.bloviate.file">FileType</a></dt>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
+<dt><a href="io/bloviate/db/BulkLoadStrategy.Mode.html#values()" class="member-name-link">values()</a> - Static method in enum class io.bloviate.db.<a href="io/bloviate/db/BulkLoadStrategy.Mode.html" title="enum class in io.bloviate.db">BulkLoadStrategy.Mode</a></dt>
+<dd>
+<div class="block">Returns an array containing the constants of this enum class, in
+the order they are declared.</div>
 </dd>
 <dt><a href="io/bloviate/db/CommitStrategy.Mode.html#values()" class="member-name-link">values()</a> - Static method in enum class io.bloviate.db.<a href="io/bloviate/db/CommitStrategy.Mode.html" title="enum class in io.bloviate.db">CommitStrategy.Mode</a></dt>
 <dd>
@@ -3229,7 +3418,7 @@ thin.</div>
 <div class="block">Fluent builder for <a href="io/bloviate/gen/ZipfianIntegerGenerator.html" title="class in io.bloviate.gen"><code>ZipfianIntegerGenerator</code></a>.</div>
 </dd>
 </dl>
-<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:X">X</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a href="#I:Z">Z</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="constant-values.html">Constant&nbsp;Field&nbsp;Values</a>
+<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:X">X</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a href="#I:Z">Z</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="constant-values.html">Constant&nbsp;Field&nbsp;Values</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a>
 <footer>
 <hr>
 <p class="legal-copy"><small><div class="blv-site-foot">Bloviate API Reference &middot; <a href="/">bloviate.io</a></div></small></p>

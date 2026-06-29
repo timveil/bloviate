@@ -59,12 +59,14 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-summary" tabindex="0">Method Summary</a></li>
 <li><a href="#constructor-detail" tabindex="0">Constructor Details</a>
 <ol class="toc-list">
-<li><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy)" tabindex="0">DatabaseConfiguration(int, long, DatabaseSupport, Set, GeneratorRegistry, long, CommitStrategy)</a></li>
+<li><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy,io.bloviate.db.BulkLoadStrategy)" tabindex="0">DatabaseConfiguration(int, long, DatabaseSupport, Set, GeneratorRegistry, long, CommitStrategy, BulkLoadStrategy)</a></li>
 <li><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set)" tabindex="0">DatabaseConfiguration(int, long, DatabaseSupport, Set)</a></li>
 <li><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry)" tabindex="0">DatabaseConfiguration(int, long, DatabaseSupport, Set, GeneratorRegistry)</a></li>
 <li><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,long)" tabindex="0">DatabaseConfiguration(int, long, DatabaseSupport, Set, long)</a></li>
 <li><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,long,io.bloviate.db.CommitStrategy)" tabindex="0">DatabaseConfiguration(int, long, DatabaseSupport, Set, long, CommitStrategy)</a></li>
+<li><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,long,io.bloviate.db.CommitStrategy,io.bloviate.db.BulkLoadStrategy)" tabindex="0">DatabaseConfiguration(int, long, DatabaseSupport, Set, long, CommitStrategy, BulkLoadStrategy)</a></li>
 <li><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long)" tabindex="0">DatabaseConfiguration(int, long, DatabaseSupport, Set, GeneratorRegistry, long)</a></li>
+<li><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy)" tabindex="0">DatabaseConfiguration(int, long, DatabaseSupport, Set, GeneratorRegistry, long, CommitStrategy)</a></li>
 </ol>
 </li>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
@@ -80,6 +82,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#generatorRegistry()" tabindex="0">generatorRegistry()</a></li>
 <li><a href="#seed()" tabindex="0">seed()</a></li>
 <li><a href="#commitStrategy()" tabindex="0">commitStrategy()</a></li>
+<li><a href="#bulkLoadStrategy()" tabindex="0">bulkLoadStrategy()</a></li>
 </ol>
 </li>
 </ol>
@@ -107,10 +110,12 @@ loadScripts(document, 'script');</script>
 <dd><code><span id="param-seed">seed</span></code> - the base seed for reproducible generation; vary it for a different dataset</dd>
 <dd><code><span id="param-commitStrategy">commitStrategy</span></code> - how the engine commits inserted rows; defaults to
        <a href="CommitStrategy.html#connectionDefault()"><code>CommitStrategy.connectionDefault()</code></a> (autocommit untouched) when null</dd>
+<dd><code><span id="param-bulkLoadStrategy">bulkLoadStrategy</span></code> - how the engine orders fills relative to foreign-key dependencies; defaults to
+       <a href="BulkLoadStrategy.html#ordered()"><code>BulkLoadStrategy.ordered()</code></a> (dependency-ordered) when null</dd>
 </dl>
 <hr>
 <div class="horizontal-scroll">
-<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">DatabaseConfiguration</span>(int&nbsp;batchSize, long&nbsp;defaultRowCount, <a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a>&nbsp;databaseSupport, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;&nbsp;tableConfigurations, <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">GeneratorRegistry</a>&nbsp;generatorRegistry, long&nbsp;seed, <a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a>&nbsp;commitStrategy)
+<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">DatabaseConfiguration</span>(int&nbsp;batchSize, long&nbsp;defaultRowCount, <a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a>&nbsp;databaseSupport, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;&nbsp;tableConfigurations, <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">GeneratorRegistry</a>&nbsp;generatorRegistry, long&nbsp;seed, <a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a>&nbsp;commitStrategy, <a href="BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a>&nbsp;bulkLoadStrategy)
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Record.html" title="class or interface in java.lang" class="external-link">Record</a></span></div>
 <div class="block">Configuration settings for database filling operations.
 
@@ -143,6 +148,7 @@ derived.</div>
 <li><a href="TableConfiguration.html" title="class in io.bloviate.db"><code>TableConfiguration</code></a></li>
 <li><a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a></li>
 <li><a href="CommitStrategy.html" title="class in io.bloviate.db"><code>CommitStrategy</code></a></li>
+<li><a href="BulkLoadStrategy.html" title="class in io.bloviate.db"><code>BulkLoadStrategy</code></a></li>
 <li><a href="DatabaseFiller.html" title="class in io.bloviate.db"><code>DatabaseFiller</code></a></li>
 </ul>
 </dd>
@@ -186,35 +192,60 @@ of <code>0</code>.</div>
 <div class="block">Creates a configuration with the given base <code>seed</code> and <a href="CommitStrategy.html" title="class in io.bloviate.db"><code>CommitStrategy</code></a>, and no
 custom <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a>.</div>
 </div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry)" class="member-name-link">DatabaseConfiguration</a><wbr>(int&nbsp;batchSize,
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,long,io.bloviate.db.CommitStrategy,io.bloviate.db.BulkLoadStrategy)" class="member-name-link">DatabaseConfiguration</a><wbr>(int&nbsp;batchSize,
+ long&nbsp;defaultRowCount,
+ <a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a>&nbsp;databaseSupport,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;&nbsp;tableConfigurations,
+ long&nbsp;seed,
+ <a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a>&nbsp;commitStrategy,
+ <a href="BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a>&nbsp;bulkLoadStrategy)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Creates a configuration with the given base <code>seed</code>, <a href="CommitStrategy.html" title="class in io.bloviate.db"><code>CommitStrategy</code></a> and
+<a href="BulkLoadStrategy.html" title="class in io.bloviate.db"><code>BulkLoadStrategy</code></a>, and no custom <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a>.</div>
+</div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry)" class="member-name-link">DatabaseConfiguration</a><wbr>(int&nbsp;batchSize,
  long&nbsp;defaultRowCount,
  <a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a>&nbsp;databaseSupport,
  <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;&nbsp;tableConfigurations,
  <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">GeneratorRegistry</a>&nbsp;generatorRegistry)</code></div>
-<div class="col-last odd-row-color">
+<div class="col-last even-row-color">
 <div class="block">Creates a configuration with a custom <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a> and a base <code>seed</code>
 of <code>0</code>.</div>
 </div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long)" class="member-name-link">DatabaseConfiguration</a><wbr>(int&nbsp;batchSize,
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long)" class="member-name-link">DatabaseConfiguration</a><wbr>(int&nbsp;batchSize,
  long&nbsp;defaultRowCount,
  <a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a>&nbsp;databaseSupport,
  <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;&nbsp;tableConfigurations,
  <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">GeneratorRegistry</a>&nbsp;generatorRegistry,
  long&nbsp;seed)</code></div>
-<div class="col-last even-row-color">
+<div class="col-last odd-row-color">
 <div class="block">Creates a configuration with a custom <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a> and base <code>seed</code>, and the
 default <a href="CommitStrategy.html" title="class in io.bloviate.db"><code>CommitStrategy</code></a> (preserves the original six-argument signature).</div>
 </div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy)" class="member-name-link">DatabaseConfiguration</a><wbr>(int&nbsp;batchSize,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy)" class="member-name-link">DatabaseConfiguration</a><wbr>(int&nbsp;batchSize,
  long&nbsp;defaultRowCount,
  <a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a>&nbsp;databaseSupport,
  <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;&nbsp;tableConfigurations,
  <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">GeneratorRegistry</a>&nbsp;generatorRegistry,
  long&nbsp;seed,
  <a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a>&nbsp;commitStrategy)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Creates a configuration with a custom <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a>, base <code>seed</code> and
+<a href="CommitStrategy.html" title="class in io.bloviate.db"><code>CommitStrategy</code></a>, and the default <a href="BulkLoadStrategy.html" title="class in io.bloviate.db"><code>BulkLoadStrategy</code></a> (preserves the original
+seven-argument signature).</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy,io.bloviate.db.BulkLoadStrategy)" class="member-name-link">DatabaseConfiguration</a><wbr>(int&nbsp;batchSize,
+ long&nbsp;defaultRowCount,
+ <a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a>&nbsp;databaseSupport,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;&nbsp;tableConfigurations,
+ <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">GeneratorRegistry</a>&nbsp;generatorRegistry,
+ long&nbsp;seed,
+ <a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a>&nbsp;commitStrategy,
+ <a href="BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a>&nbsp;bulkLoadStrategy)</code></div>
 <div class="col-last odd-row-color">
-<div class="block">Normalizes a null <code>commitStrategy</code> to <a href="CommitStrategy.html#connectionDefault()"><code>CommitStrategy.connectionDefault()</code></a> so the
-back-compatible behavior applies whenever a caller does not specify one.</div>
+<div class="block">Normalizes a null <code>commitStrategy</code> to <a href="CommitStrategy.html#connectionDefault()"><code>CommitStrategy.connectionDefault()</code></a> and a null
+<code>bulkLoadStrategy</code> to <a href="BulkLoadStrategy.html#ordered()"><code>BulkLoadStrategy.ordered()</code></a> so the back-compatible behavior
+applies whenever a caller does not specify them.</div>
 </div>
 </div>
 </section>
@@ -235,54 +266,59 @@ back-compatible behavior applies whenever a caller does not specify one.</div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-batchSize"><code>batchSize</code></a> record component.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#commitStrategy()" class="member-name-link">commitStrategy</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#bulkLoadStrategy()" class="member-name-link">bulkLoadStrategy</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of the <a href="#param-bulkLoadStrategy"><code>bulkLoadStrategy</code></a> record component.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#commitStrategy()" class="member-name-link">commitStrategy</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-commitStrategy"><code>commitStrategy</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#databaseSupport()" class="member-name-link">databaseSupport</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#databaseSupport()" class="member-name-link">databaseSupport</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-databaseSupport"><code>databaseSupport</code></a> record component.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#defaultRowCount()" class="member-name-link">defaultRowCount</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#defaultRowCount()" class="member-name-link">defaultRowCount</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-defaultRowCount"><code>defaultRowCount</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#equals(java.lang.Object)" class="member-name-link">equals</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;o)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#equals(java.lang.Object)" class="member-name-link">equals</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;o)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">GeneratorRegistry</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#generatorRegistry()" class="member-name-link">generatorRegistry</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">GeneratorRegistry</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#generatorRegistry()" class="member-name-link">generatorRegistry</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-generatorRegistry"><code>generatorRegistry</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a hash code value for this object.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#seed()" class="member-name-link">seed</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#seed()" class="member-name-link">seed</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-seed"><code>seed</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#tableConfiguration(java.lang.String)" class="member-name-link">tableConfiguration</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;tableName)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#tableConfiguration(java.lang.String)" class="member-name-link">tableConfiguration</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;tableName)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Retrieves the table-specific configuration for the given table name.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a><wbr>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#tableConfigurations()" class="member-name-link">tableConfigurations</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a><wbr>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#tableConfigurations()" class="member-name-link">tableConfigurations</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-tableConfigurations"><code>tableConfigurations</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a string representation of this record class.</div>
 </div>
 </div>
@@ -303,7 +339,7 @@ back-compatible behavior applies whenever a caller does not specify one.</div>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy)">
+<section class="detail" id="&lt;init&gt;(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy,io.bloviate.db.BulkLoadStrategy)">
 <h3>DatabaseConfiguration</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">DatabaseConfiguration</span><wbr><span class="parameters">(int&nbsp;batchSize,
@@ -312,9 +348,11 @@ back-compatible behavior applies whenever a caller does not specify one.</div>
  <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;&nbsp;tableConfigurations,
  <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">GeneratorRegistry</a>&nbsp;generatorRegistry,
  long&nbsp;seed,
- <a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a>&nbsp;commitStrategy)</span></div>
-<div class="block">Normalizes a null <code>commitStrategy</code> to <a href="CommitStrategy.html#connectionDefault()"><code>CommitStrategy.connectionDefault()</code></a> so the
-back-compatible behavior applies whenever a caller does not specify one.</div>
+ <a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a>&nbsp;commitStrategy,
+ <a href="BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a>&nbsp;bulkLoadStrategy)</span></div>
+<div class="block">Normalizes a null <code>commitStrategy</code> to <a href="CommitStrategy.html#connectionDefault()"><code>CommitStrategy.connectionDefault()</code></a> and a null
+<code>bulkLoadStrategy</code> to <a href="BulkLoadStrategy.html#ordered()"><code>BulkLoadStrategy.ordered()</code></a> so the back-compatible behavior
+applies whenever a caller does not specify them.</div>
 </div>
 </section>
 </li>
@@ -407,6 +445,32 @@ custom <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">
 </section>
 </li>
 <li>
+<section class="detail" id="&lt;init&gt;(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,long,io.bloviate.db.CommitStrategy,io.bloviate.db.BulkLoadStrategy)">
+<h3>DatabaseConfiguration</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">DatabaseConfiguration</span><wbr><span class="parameters">(int&nbsp;batchSize,
+ long&nbsp;defaultRowCount,
+ <a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a>&nbsp;databaseSupport,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;&nbsp;tableConfigurations,
+ long&nbsp;seed,
+ <a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a>&nbsp;commitStrategy,
+ <a href="BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a>&nbsp;bulkLoadStrategy)</span></div>
+<div class="block">Creates a configuration with the given base <code>seed</code>, <a href="CommitStrategy.html" title="class in io.bloviate.db"><code>CommitStrategy</code></a> and
+<a href="BulkLoadStrategy.html" title="class in io.bloviate.db"><code>BulkLoadStrategy</code></a>, and no custom <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>batchSize</code> - the number of rows to include in each batch INSERT operation</dd>
+<dd><code>defaultRowCount</code> - the default number of rows to generate for each table</dd>
+<dd><code>databaseSupport</code> - the database-specific support implementation</dd>
+<dd><code>tableConfigurations</code> - optional per-table configuration overrides</dd>
+<dd><code>seed</code> - the base seed for reproducible generation</dd>
+<dd><code>commitStrategy</code> - how the engine commits inserted rows; may be null for the default</dd>
+<dd><code>bulkLoadStrategy</code> - how the engine orders fills; may be null for the default</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
 <section class="detail" id="&lt;init&gt;(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long)">
 <h3>DatabaseConfiguration</h3>
 <div class="horizontal-scroll">
@@ -426,6 +490,33 @@ default <a href="CommitStrategy.html" title="class in io.bloviate.db"><code>Comm
 <dd><code>tableConfigurations</code> - optional per-table configuration overrides</dd>
 <dd><code>generatorRegistry</code> - optional registry of custom generator rules; may be null</dd>
 <dd><code>seed</code> - the base seed for reproducible generation</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(int,long,io.bloviate.ext.DatabaseSupport,java.util.Set,io.bloviate.ext.GeneratorRegistry,long,io.bloviate.db.CommitStrategy)">
+<h3>DatabaseConfiguration</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">DatabaseConfiguration</span><wbr><span class="parameters">(int&nbsp;batchSize,
+ long&nbsp;defaultRowCount,
+ <a href="../ext/DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a>&nbsp;databaseSupport,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a>&gt;&nbsp;tableConfigurations,
+ <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext">GeneratorRegistry</a>&nbsp;generatorRegistry,
+ long&nbsp;seed,
+ <a href="CommitStrategy.html" title="class in io.bloviate.db">CommitStrategy</a>&nbsp;commitStrategy)</span></div>
+<div class="block">Creates a configuration with a custom <a href="../ext/GeneratorRegistry.html" title="class in io.bloviate.ext"><code>GeneratorRegistry</code></a>, base <code>seed</code> and
+<a href="CommitStrategy.html" title="class in io.bloviate.db"><code>CommitStrategy</code></a>, and the default <a href="BulkLoadStrategy.html" title="class in io.bloviate.db"><code>BulkLoadStrategy</code></a> (preserves the original
+seven-argument signature).</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>batchSize</code> - the number of rows to include in each batch INSERT operation</dd>
+<dd><code>defaultRowCount</code> - the default number of rows to generate for each table</dd>
+<dd><code>databaseSupport</code> - the database-specific support implementation</dd>
+<dd><code>tableConfigurations</code> - optional per-table configuration overrides</dd>
+<dd><code>generatorRegistry</code> - optional registry of custom generator rules; may be null</dd>
+<dd><code>seed</code> - the base seed for reproducible generation</dd>
+<dd><code>commitStrategy</code> - how the engine commits inserted rows; may be null for the default</dd>
 </dl>
 </div>
 </section>
@@ -587,6 +678,19 @@ default <a href="CommitStrategy.html" title="class in io.bloviate.db"><code>Comm
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the value of the <a href="#param-commitStrategy"><code>commitStrategy</code></a> record component</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="bulkLoadStrategy()">
+<h3>bulkLoadStrategy</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></span>&nbsp;<span class="element-name">bulkLoadStrategy</span>()</div>
+<div class="block">Returns the value of the <a href="#param-bulkLoadStrategy"><code>bulkLoadStrategy</code></a> record component.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the value of the <a href="#param-bulkLoadStrategy"><code>bulkLoadStrategy</code></a> record component</dd>
 </dl>
 </div>
 </section>

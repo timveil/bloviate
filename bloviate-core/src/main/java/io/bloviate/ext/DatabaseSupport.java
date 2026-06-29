@@ -162,9 +162,11 @@ public interface DatabaseSupport {
      * to hardcode a specific implementation.
      *
      * <p>Matching is case-insensitive and substring-based: names containing
-     * {@code "cockroach"} map to {@link CockroachDBSupport}, {@code "mysql"} to
-     * {@link MySQLSupport}, and {@code "postgres"} to {@link PostgresSupport}. Anything
-     * else (including {@code null}) falls back to {@link DefaultSupport}.
+     * {@code "cockroach"} map to {@link CockroachDBSupport}, {@code "mariadb"} to
+     * {@link MariaDBSupport}, {@code "mysql"} to {@link MySQLSupport}, {@code "postgres"} to
+     * {@link PostgresSupport}, {@code "h2"} to {@link H2Support}, and {@code "sqlite"} to
+     * {@link SQLiteSupport}. Anything else (including {@code null}) falls back to
+     * {@link DefaultSupport}.
      *
      * <p><strong>CockroachDB note:</strong> CockroachDB is typically reached through the
      * PostgreSQL JDBC driver, which reports its product name as {@code "PostgreSQL"}, so such
@@ -172,6 +174,13 @@ public interface DatabaseSupport {
      * extends {@link PostgresSupport} and adds no extra behavior, this resolves the same
      * type handling (uuid, jsonb, inet, intervals, arrays, bit strings, ...); passing
      * {@code new CockroachDBSupport()} explicitly is equivalent.
+     *
+     * <p><strong>MariaDB note:</strong> the MariaDB Connector/J driver reports
+     * {@code "MariaDB"}, which resolves here to {@link MariaDBSupport}. The legacy MySQL
+     * Connector/J driver, however, reports {@code "MySQL"} even against a MariaDB server, in
+     * which case this resolves to {@link MySQLSupport}; that is acceptable because
+     * {@link MariaDBSupport} extends {@link MySQLSupport} and the inherited type handling
+     * works against MariaDB.
      *
      * @param productName the database product name, may be null
      * @return the matching support, or {@link DefaultSupport} if none matches
@@ -182,11 +191,20 @@ public interface DatabaseSupport {
             if (name.contains("cockroach")) {
                 return new CockroachDBSupport();
             }
+            if (name.contains("mariadb")) {
+                return new MariaDBSupport();
+            }
             if (name.contains("mysql")) {
                 return new MySQLSupport();
             }
             if (name.contains("postgres")) {
                 return new PostgresSupport();
+            }
+            if (name.contains("sqlite")) {
+                return new SQLiteSupport();
+            }
+            if (name.contains("h2")) {
+                return new H2Support();
             }
         }
         return new DefaultSupport();
