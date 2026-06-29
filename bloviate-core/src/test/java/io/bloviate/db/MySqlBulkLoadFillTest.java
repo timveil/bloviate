@@ -17,6 +17,8 @@
 package io.bloviate.db;
 
 import com.zaxxer.hikari.HikariDataSource;
+import io.bloviate.ext.BulkLoadHandle;
+import io.bloviate.ext.BulkLoadUnsupportedException;
 import io.bloviate.ext.MySQLSupport;
 import io.bloviate.gen.tpcc.TPCCConfiguration;
 import io.bloviate.util.DatabaseUtils;
@@ -30,6 +32,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,11 +46,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * ({@code FOREIGN_KEY_CHECKS=0}, {@code UNIQUE_CHECKS=0}) per worker session, fills every table at
  * once with no topological barrier, and restores the checks.
  *
- * <p>As on PostgreSQL, the load-bearing guarantee is that the unordered bulk fill produces
- * <strong>byte-for-byte identical</strong> data to a traditional dependency-ordered fill of the same
- * seed; this test asserts that table by table over a deep TPC-C chain. It also confirms no foreign-key
- * is left orphaned (an explicit anti-join) and that no pooled connection is left with
- * {@code FOREIGN_KEY_CHECKS} disabled.
+ * <p>The load-bearing guarantee — and the reason bulk loading is safe — is that an unordered bulk fill
+ * produces <strong>byte-for-byte identical</strong> data to a traditional dependency-ordered fill of
+ * the same seed. This is asserted both unpartitioned and partitioned. The remaining cases cover the
+ * fallback behaviors (unsupported support, privilege failure, and the single-connection path), each of
+ * which must still produce a correct, fully-populated database.
+ *
+ * <p>All cases share one container for speed, truncating between fills.
  */
 class MySqlBulkLoadFillTest extends BaseDatabaseTestCase {
 
@@ -59,15 +64,15 @@ class MySqlBulkLoadFillTest extends BaseDatabaseTestCase {
     private static final int MAX_LINES = 15;
     private static final int NEW_ORDERS = 5;
     private static final int THREADS = 4;
+    private static final int PARTITIONS = 3;
+    private static final Set<String> PARTITIONED = Set.of("customer", "order_line");
+
+    private static final long CUSTOMERS = (long) W * D * C;
 
     @Test
-    void bulkFillMatchesOrderedFillExactly() throws SQLException {
+    void bulkPathsMatchOrderedAndFallBackCorrectly() throws SQLException {
         Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
-
-        DatabaseConfiguration ordered = new DatabaseConfiguration(
-                256, 0, new MySQLSupport(), tables, 42L, null, BulkLoadStrategy.ordered());
-        DatabaseConfiguration bulk = new DatabaseConfiguration(
-                256, 0, new MySQLSupport(), tables, 42L, null, BulkLoadStrategy.unorderedBulk());
+        Set<TableConfiguration> partitioned = withPartitions(tables, PARTITIONS, PARTITIONED);
 
         try (MySQLContainer<?> database = new MySQLContainer<>("mysql:9.7")
                 .withConfigurationOverride("mysql-conf")
@@ -80,39 +85,96 @@ class MySqlBulkLoadFillTest extends BaseDatabaseTestCase {
             try (HikariDataSource dataSource = (HikariDataSource) getDataSource(database)) {
 
                 List<String> tableNames;
-                Map<String, List<String>> orderedDump;
-
-                // traditional dependency-ordered parallel fill — the reference result
-                new DatabaseFiller.Builder(dataSource, ordered).threads(THREADS).build().fill();
-
                 try (Connection connection = dataSource.getConnection()) {
                     tableNames = tableNames(connection);
-                    assertRowCount(connection, "customer", (long) W * D * C);
-                    orderedDump = dump(connection, tableNames);
-                    truncateAll(connection, tableNames);
                 }
 
-                // unordered bulk fill — checks disabled, no barrier
-                new DatabaseFiller.Builder(dataSource, bulk).threads(THREADS).build().fill();
+                // 1) headline: unpartitioned ordered vs bulk must be byte-identical
+                Map<String, List<String>> orderedDump = fillAndDump(dataSource, config(tables, BulkLoadStrategy.ordered()), tableNames);
+                Map<String, List<String>> bulkDump = fillAndDump(dataSource, config(tables, BulkLoadStrategy.unorderedBulk()), tableNames);
+                assertIdentical(orderedDump, bulkDump, tableNames, "unpartitioned ordered vs bulk");
+                assertForeignKeyChecksRestored(dataSource);
 
+                // 2) partitioned ordered vs partitioned bulk (same partition count) must be byte-identical
+                Map<String, List<String>> pOrdered = fillAndDump(dataSource, config(partitioned, BulkLoadStrategy.ordered()), tableNames);
+                Map<String, List<String>> pBulk = fillAndDump(dataSource, config(partitioned, BulkLoadStrategy.unorderedBulk()), tableNames);
+                assertIdentical(pOrdered, pBulk, tableNames, "partitioned ordered vs bulk");
+
+                // 3) bulk requested but the support reports no bulk capability -> ordered fallback, still correct
+                DatabaseConfiguration unsupported = new DatabaseConfiguration(
+                        256, 0, new NoBulkSupport(), tables, 42L, null, BulkLoadStrategy.unorderedBulk());
+                fill(dataSource, unsupported);
+                assertCustomerCount(dataSource);
+
+                // 4) bulk supported but disabling constraints fails -> probe catches, ordered fallback, still correct
+                DatabaseConfiguration privilegeDenied = new DatabaseConfiguration(
+                        256, 0, new DenyDisableSupport(), tables, 42L, null, BulkLoadStrategy.unorderedBulk());
+                fill(dataSource, privilegeDenied);
+                assertCustomerCount(dataSource);
+
+                // 5) single-connection path ignores bulk with a warning and fills in dependency order
+                truncate(dataSource, tableNames);
                 try (Connection connection = dataSource.getConnection()) {
-                    assertRowCount(connection, "customer", (long) W * D * C);
-
-                    Map<String, List<String>> bulkDump = dump(connection, tableNames);
-                    for (String table : tableNames) {
-                        assertEquals(orderedDump.get(table), bulkDump.get(table),
-                                "table [" + table + "] must be identical between the ordered and bulk fills");
-                    }
-
-                    // no order_line row references a missing order (would be impossible if data is valid)
-                    assertCount(connection, "select count(*) from order_line l left join open_order o "
-                            + "on l.ol_w_id = o.o_w_id and l.ol_d_id = o.o_d_id and l.ol_o_id = o.o_id "
-                            + "where o.o_id is null", 0);
-
-                    // the bulk path restored each worker's session
-                    assertForeignKeyChecksRestored(dataSource);
+                    new DatabaseFiller.Builder(connection, config(tables, BulkLoadStrategy.unorderedBulk())).build().fill();
                 }
+                assertCustomerCount(dataSource);
             }
+        }
+    }
+
+    private static DatabaseConfiguration config(Set<TableConfiguration> tables, BulkLoadStrategy bulk) {
+        return new DatabaseConfiguration(256, 0, new MySQLSupport(), tables, 42L, null, bulk);
+    }
+
+    /** A MySQL support that declares no bulk-load capability, exercising the unsupported fallback. */
+    private static final class NoBulkSupport extends MySQLSupport {
+        @Override
+        public boolean supportsBulkLoad() {
+            return false;
+        }
+    }
+
+    /** A MySQL support whose constraint disabling always fails, exercising the privilege-failure fallback. */
+    private static final class DenyDisableSupport extends MySQLSupport {
+        @Override
+        public BulkLoadHandle disableConstraints(Connection connection, Database database) throws SQLException {
+            throw new BulkLoadUnsupportedException("simulated privilege failure", new SQLException("denied"));
+        }
+    }
+
+    /** Runs a parallel fill, then dumps every table; truncates first so each fill starts clean. */
+    private static Map<String, List<String>> fillAndDump(HikariDataSource dataSource, DatabaseConfiguration configuration, List<String> tableNames) throws SQLException {
+        truncate(dataSource, tableNames);
+        new DatabaseFiller.Builder(dataSource, configuration).threads(THREADS).build().fill();
+        try (Connection connection = dataSource.getConnection()) {
+            return dump(connection, tableNames);
+        }
+    }
+
+    private static void fill(HikariDataSource dataSource, DatabaseConfiguration configuration) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            tableNamesTruncate(connection);
+        }
+        new DatabaseFiller.Builder(dataSource, configuration).threads(THREADS).build().fill();
+    }
+
+    private static void tableNamesTruncate(Connection connection) throws SQLException {
+        truncate(connection, tableNames(connection));
+    }
+
+    private static void assertIdentical(Map<String, List<String>> a, Map<String, List<String>> b, List<String> tableNames, String label) {
+        for (String table : tableNames) {
+            assertEquals(a.get(table), b.get(table), "table [" + table + "] must be identical (" + label + ")");
+        }
+    }
+
+    private static void assertCustomerCount(HikariDataSource dataSource) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            assertRowCount(connection, "customer", CUSTOMERS);
+            // no order_line row references a missing order — proves referential validity after the fill
+            assertCount(connection, "select count(*) from order_line l left join open_order o "
+                    + "on l.ol_w_id = o.o_w_id and l.ol_d_id = o.o_d_id and l.ol_o_id = o.o_id "
+                    + "where o.o_id is null", 0);
         }
     }
 
@@ -127,6 +189,19 @@ class MySqlBulkLoadFillTest extends BaseDatabaseTestCase {
                         "a pooled connection must not be left with foreign-key checks disabled");
             }
         }
+    }
+
+    /** Returns a copy of the table set with {@code partitions} applied to the named tables. */
+    private static Set<TableConfiguration> withPartitions(Set<TableConfiguration> tables, int partitions, Set<String> names) {
+        Set<TableConfiguration> result = new HashSet<>();
+        for (TableConfiguration table : tables) {
+            if (names.contains(table.tableName().toLowerCase())) {
+                result.add(new TableConfiguration(table.tableName(), table.rowCount(), table.columnConfigurations(), partitions));
+            } else {
+                result.add(table);
+            }
+        }
+        return result;
     }
 
     private static List<String> tableNames(Connection connection) throws SQLException {
@@ -194,7 +269,13 @@ class MySqlBulkLoadFillTest extends BaseDatabaseTestCase {
                 || sqlType == Types.TIMESTAMP_WITH_TIMEZONE;
     }
 
-    private static void truncateAll(Connection connection, List<String> tables) throws SQLException {
+    private static void truncate(HikariDataSource dataSource, List<String> tables) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            truncate(connection, tables);
+        }
+    }
+
+    private static void truncate(Connection connection, List<String> tables) throws SQLException {
         if (tables.isEmpty()) {
             return;
         }

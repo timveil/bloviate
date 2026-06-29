@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,13 +44,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * enforcement ({@code session_replication_role = replica}), fills every table at once with no
  * topological barrier, and re-enables enforcement.
  *
- * <p>The central guarantee — and the reason bulk loading is safe here — is that it must produce
+ * <p>The central guarantee — and the reason bulk loading is safe here — is that it produces
  * <strong>byte-for-byte identical</strong> data to a traditional dependency-ordered fill of the same
- * seed. This test asserts exactly that by running an ordered parallel fill and an unordered bulk fill
- * with the same configuration and comparing every table. A deep TPC-C chain
- * ({@code warehouse → district → customer → open_order → order_line}) is used because it is precisely
- * the shape the barrier-free path is meant to accelerate, and its foreign keys make an orphaned row
- * impossible to miss.
+ * seed, asserted both unpartitioned and partitioned. It also confirms foreign keys remain valid and
+ * that no pooled connection is left with enforcement suppressed. A deep TPC-C chain
+ * ({@code warehouse → district → customer → open_order → order_line}) is used because it is exactly
+ * the shape the barrier-free path is meant to accelerate.
  */
 class PostgresBulkLoadFillTest extends BaseDatabaseTestCase {
 
@@ -61,15 +61,13 @@ class PostgresBulkLoadFillTest extends BaseDatabaseTestCase {
     private static final int MAX_LINES = 15;
     private static final int NEW_ORDERS = 5;
     private static final int THREADS = 4;
+    private static final int PARTITIONS = 3;
+    private static final Set<String> PARTITIONED = Set.of("customer", "order_line");
 
     @Test
     void bulkFillMatchesOrderedFillExactly() throws SQLException {
         Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
-
-        DatabaseConfiguration ordered = new DatabaseConfiguration(
-                256, 0, new PostgresSupport(), tables, 42L, null, BulkLoadStrategy.ordered());
-        DatabaseConfiguration bulk = new DatabaseConfiguration(
-                256, 0, new PostgresSupport(), tables, 42L, null, BulkLoadStrategy.unorderedBulk());
+        Set<TableConfiguration> partitioned = withPartitions(tables, PARTITIONS, PARTITIONED);
 
         try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:18-alpine")
                 .withDatabaseName("bloviate")
@@ -82,48 +80,58 @@ class PostgresBulkLoadFillTest extends BaseDatabaseTestCase {
             try (HikariDataSource dataSource = (HikariDataSource) getDataSource(database)) {
 
                 List<String> tableNames;
-                Map<String, List<String>> orderedDump;
-
-                // traditional, dependency-ordered parallel fill — the reference result (every FK is
-                // enforced at insert time, so completing proves the data is referentially valid)
-                new DatabaseFiller.Builder(dataSource, ordered).threads(THREADS).build().fill();
-
                 try (Connection connection = dataSource.getConnection()) {
                     tableNames = tableNames(connection);
-                    assertRowCount(connection, "customer", (long) W * D * C);
-                    assertRowCount(connection, "open_order", (long) W * D * C);
-                    orderedDump = dump(connection, tableNames);
-                    truncateAll(connection, tableNames);
                 }
 
-                // unordered bulk fill — constraints disabled, no barrier
-                new DatabaseFiller.Builder(dataSource, bulk).threads(THREADS).build().fill();
+                // headline: unpartitioned ordered (FK-enforced) vs bulk (FK-disabled) must be identical
+                Map<String, List<String>> orderedDump = fillAndDump(dataSource, config(tables, BulkLoadStrategy.ordered()), tableNames);
+                assertRowCount(dataSource, "customer", (long) W * D * C);
+                Map<String, List<String>> bulkDump = fillAndDump(dataSource, config(tables, BulkLoadStrategy.unorderedBulk()), tableNames);
+                assertIdentical(orderedDump, bulkDump, tableNames, "unpartitioned ordered vs bulk");
 
-                try (Connection connection = dataSource.getConnection()) {
-                    // identical row counts and identical data, table by table
-                    assertRowCount(connection, "customer", (long) W * D * C);
-                    assertRowCount(connection, "open_order", (long) W * D * C);
+                // every foreign-key constraint is still present and validated after the bulk fill, and
+                // no pooled connection is left with enforcement suppressed
+                assertNoInvalidForeignKeys(dataSource);
+                assertSessionReplicationRoleRestored(dataSource);
 
-                    Map<String, List<String>> bulkDump = dump(connection, tableNames);
-                    for (String table : tableNames) {
-                        assertEquals(orderedDump.get(table), bulkDump.get(table),
-                                "table [" + table + "] must be identical between the ordered and bulk fills");
-                    }
-
-                    // every foreign-key constraint is still present and validated after the bulk fill
-                    assertNoInvalidForeignKeys(connection);
-
-                    // the bulk path restored each worker's session; nothing borrowed from the pool is
-                    // left with foreign-key enforcement suppressed
-                    assertSessionReplicationRoleRestored(dataSource);
-                }
+                // partitioned ordered vs partitioned bulk (same partition count) must also be identical
+                Map<String, List<String>> pOrdered = fillAndDump(dataSource, config(partitioned, BulkLoadStrategy.ordered()), tableNames);
+                Map<String, List<String>> pBulk = fillAndDump(dataSource, config(partitioned, BulkLoadStrategy.unorderedBulk()), tableNames);
+                assertIdentical(pOrdered, pBulk, tableNames, "partitioned ordered vs bulk");
+                assertNoInvalidForeignKeys(dataSource);
             }
         }
     }
 
+    private static DatabaseConfiguration config(Set<TableConfiguration> tables, BulkLoadStrategy bulk) {
+        return new DatabaseConfiguration(256, 0, new PostgresSupport(), tables, 42L, null, bulk);
+    }
+
+    private static Map<String, List<String>> fillAndDump(HikariDataSource dataSource, DatabaseConfiguration configuration, List<String> tableNames) throws SQLException {
+        truncate(dataSource, tableNames);
+        new DatabaseFiller.Builder(dataSource, configuration).threads(THREADS).build().fill();
+        try (Connection connection = dataSource.getConnection()) {
+            return dump(connection, tableNames);
+        }
+    }
+
+    private static void assertIdentical(Map<String, List<String>> a, Map<String, List<String>> b, List<String> tableNames, String label) {
+        for (String table : tableNames) {
+            assertEquals(a.get(table), b.get(table), "table [" + table + "] must be identical (" + label + ")");
+        }
+    }
+
+    private static void assertRowCount(HikariDataSource dataSource, String table, long expected) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            assertRowCount(connection, table, expected);
+        }
+    }
+
     /** Fails if any foreign-key constraint is left un-validated (NOT VALID) after the fill. */
-    private static void assertNoInvalidForeignKeys(Connection connection) throws SQLException {
-        try (Statement statement = connection.createStatement();
+    private static void assertNoInvalidForeignKeys(HikariDataSource dataSource) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(
                      "select count(*) from pg_constraint where contype = 'f' and not convalidated")) {
             resultSet.next();
@@ -142,6 +150,19 @@ class PostgresBulkLoadFillTest extends BaseDatabaseTestCase {
                         "a pooled connection must not be left with constraints disabled");
             }
         }
+    }
+
+    /** Returns a copy of the table set with {@code partitions} applied to the named tables. */
+    private static Set<TableConfiguration> withPartitions(Set<TableConfiguration> tables, int partitions, Set<String> names) {
+        Set<TableConfiguration> result = new HashSet<>();
+        for (TableConfiguration table : tables) {
+            if (names.contains(table.tableName().toLowerCase())) {
+                result.add(new TableConfiguration(table.tableName(), table.rowCount(), table.columnConfigurations(), partitions));
+            } else {
+                result.add(table);
+            }
+        }
+        return result;
     }
 
     private static List<String> tableNames(Connection connection) throws SQLException {
@@ -210,11 +231,12 @@ class PostgresBulkLoadFillTest extends BaseDatabaseTestCase {
                 || sqlType == Types.TIMESTAMP_WITH_TIMEZONE;
     }
 
-    private static void truncateAll(Connection connection, List<String> tables) throws SQLException {
+    private static void truncate(HikariDataSource dataSource, List<String> tables) throws SQLException {
         if (tables.isEmpty()) {
             return;
         }
-        try (Statement statement = connection.createStatement()) {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
             statement.execute("TRUNCATE " + String.join(", ", tables) + " CASCADE");
         }
     }
