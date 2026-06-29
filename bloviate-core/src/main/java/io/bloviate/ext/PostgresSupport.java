@@ -17,6 +17,7 @@
 package io.bloviate.ext;
 
 import io.bloviate.db.Column;
+import io.bloviate.db.Database;
 import io.bloviate.gen.BitStringGenerator;
 import io.bloviate.gen.BooleanGenerator;
 import io.bloviate.gen.CidrGenerator;
@@ -29,7 +30,10 @@ import io.bloviate.gen.StringArrayGenerator;
 import io.bloviate.gen.UUIDGenerator;
 import io.bloviate.gen.XmlGenerator;
 
+import java.sql.Connection;
 import java.sql.JDBCType;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 
 /**
@@ -89,6 +93,59 @@ public class PostgresSupport extends AbstractDatabaseSupport {
     @Override
     public java.util.Map<String, io.bloviate.db.ColumnConstraint> readConstraints(java.sql.Connection connection, String schema, String table) {
         return PostgresConstraints.read(connection, schema, table);
+    }
+
+    /**
+     * PostgreSQL supports unordered bulk loading by suppressing foreign-key trigger firing for the
+     * session via {@code SET session_replication_role = replica}.
+     *
+     * @return {@code true}
+     * @since 2.17.0
+     */
+    @Override
+    public boolean supportsBulkLoad() {
+        return true;
+    }
+
+    /**
+     * Sets {@code session_replication_role = replica} on the connection, which stops user and
+     * foreign-key triggers (including referential-integrity checks) from firing for the session. This
+     * is the cheapest bulk-load mechanism — no catalog churn and nothing to rebuild — but it requires a
+     * superuser (or {@code rds_superuser}) role. A privilege failure is reported as a
+     * {@link BulkLoadUnsupportedException} so the engine can fall back to the ordered path.
+     *
+     * @param connection an open connection whose session role is changed
+     * @param database   the database metadata (unused by this mechanism)
+     * @return a handle recording that {@code session_replication_role} was changed
+     * @throws BulkLoadUnsupportedException if the role lacks privilege to change the setting
+     * @throws SQLException                 if the statement otherwise fails
+     */
+    @Override
+    public BulkLoadHandle disableConstraints(Connection connection, Database database) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("SET session_replication_role = replica");
+        } catch (SQLException e) {
+            throw new BulkLoadUnsupportedException(
+                    "could not set session_replication_role=replica (a superuser/rds_superuser role is required): "
+                            + e.getMessage(), e);
+        }
+        return BulkLoadHandle.of("session_replication_role=replica");
+    }
+
+    /**
+     * Restores {@code session_replication_role = origin}, re-enabling trigger and foreign-key firing
+     * for the session before the connection is returned to the pool.
+     *
+     * @param connection the same connection passed to {@link #disableConstraints}
+     * @param database   the database metadata (unused by this mechanism)
+     * @param handle     the handle returned by {@link #disableConstraints}
+     * @throws SQLException if the statement fails
+     */
+    @Override
+    public void enableConstraints(Connection connection, Database database, BulkLoadHandle handle) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("SET session_replication_role = origin");
+        }
     }
 
     @Override

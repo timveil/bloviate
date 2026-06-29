@@ -54,23 +54,30 @@ import java.util.Set;
  * @param seed the base seed for reproducible generation; vary it for a different dataset
  * @param commitStrategy how the engine commits inserted rows; defaults to
  *        {@link CommitStrategy#connectionDefault()} (autocommit untouched) when null
+ * @param bulkLoadStrategy how the engine orders fills relative to foreign-key dependencies; defaults to
+ *        {@link BulkLoadStrategy#ordered()} (dependency-ordered) when null
  *
  * @author Tim Veil
  * @see DatabaseSupport
  * @see TableConfiguration
  * @see GeneratorRegistry
  * @see CommitStrategy
+ * @see BulkLoadStrategy
  * @see DatabaseFiller
  */
-public record DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, GeneratorRegistry generatorRegistry, long seed, CommitStrategy commitStrategy) {
+public record DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, GeneratorRegistry generatorRegistry, long seed, CommitStrategy commitStrategy, BulkLoadStrategy bulkLoadStrategy) {
 
     /**
-     * Normalizes a null {@code commitStrategy} to {@link CommitStrategy#connectionDefault()} so the
-     * back-compatible behavior applies whenever a caller does not specify one.
+     * Normalizes a null {@code commitStrategy} to {@link CommitStrategy#connectionDefault()} and a null
+     * {@code bulkLoadStrategy} to {@link BulkLoadStrategy#ordered()} so the back-compatible behavior
+     * applies whenever a caller does not specify them.
      */
     public DatabaseConfiguration {
         if (commitStrategy == null) {
             commitStrategy = CommitStrategy.connectionDefault();
+        }
+        if (bulkLoadStrategy == null) {
+            bulkLoadStrategy = BulkLoadStrategy.ordered();
         }
     }
 
@@ -84,7 +91,7 @@ public record DatabaseConfiguration(int batchSize, long defaultRowCount, Databas
      * @param tableConfigurations optional per-table configuration overrides
      */
     public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations) {
-        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null, 0L, null);
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null, 0L, null, null);
     }
 
     /**
@@ -98,7 +105,7 @@ public record DatabaseConfiguration(int batchSize, long defaultRowCount, Databas
      * @param generatorRegistry optional registry of custom generator rules; may be null
      */
     public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, GeneratorRegistry generatorRegistry) {
-        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, generatorRegistry, 0L, null);
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, generatorRegistry, 0L, null, null);
     }
 
     /**
@@ -112,7 +119,7 @@ public record DatabaseConfiguration(int batchSize, long defaultRowCount, Databas
      * @param seed the base seed for reproducible generation
      */
     public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, long seed) {
-        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null, seed, null);
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null, seed, null, null);
     }
 
     /**
@@ -127,7 +134,23 @@ public record DatabaseConfiguration(int batchSize, long defaultRowCount, Databas
      * @param commitStrategy how the engine commits inserted rows; may be null for the default
      */
     public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, long seed, CommitStrategy commitStrategy) {
-        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null, seed, commitStrategy);
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null, seed, commitStrategy, null);
+    }
+
+    /**
+     * Creates a configuration with the given base {@code seed}, {@link CommitStrategy} and
+     * {@link BulkLoadStrategy}, and no custom {@link GeneratorRegistry}.
+     *
+     * @param batchSize the number of rows to include in each batch INSERT operation
+     * @param defaultRowCount the default number of rows to generate for each table
+     * @param databaseSupport the database-specific support implementation
+     * @param tableConfigurations optional per-table configuration overrides
+     * @param seed the base seed for reproducible generation
+     * @param commitStrategy how the engine commits inserted rows; may be null for the default
+     * @param bulkLoadStrategy how the engine orders fills; may be null for the default
+     */
+    public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, long seed, CommitStrategy commitStrategy, BulkLoadStrategy bulkLoadStrategy) {
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, null, seed, commitStrategy, bulkLoadStrategy);
     }
 
     /**
@@ -142,7 +165,24 @@ public record DatabaseConfiguration(int batchSize, long defaultRowCount, Databas
      * @param seed the base seed for reproducible generation
      */
     public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, GeneratorRegistry generatorRegistry, long seed) {
-        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, generatorRegistry, seed, null);
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, generatorRegistry, seed, null, null);
+    }
+
+    /**
+     * Creates a configuration with a custom {@link GeneratorRegistry}, base {@code seed} and
+     * {@link CommitStrategy}, and the default {@link BulkLoadStrategy} (preserves the original
+     * seven-argument signature).
+     *
+     * @param batchSize the number of rows to include in each batch INSERT operation
+     * @param defaultRowCount the default number of rows to generate for each table
+     * @param databaseSupport the database-specific support implementation
+     * @param tableConfigurations optional per-table configuration overrides
+     * @param generatorRegistry optional registry of custom generator rules; may be null
+     * @param seed the base seed for reproducible generation
+     * @param commitStrategy how the engine commits inserted rows; may be null for the default
+     */
+    public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, GeneratorRegistry generatorRegistry, long seed, CommitStrategy commitStrategy) {
+        this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, generatorRegistry, seed, commitStrategy, null);
     }
 
     /**

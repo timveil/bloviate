@@ -59,4 +59,20 @@ public class CockroachDBSupport extends PostgresSupport {
     public java.util.Map<String, io.bloviate.db.ColumnConstraint> readConstraints(java.sql.Connection connection, String schema, String table) {
         return java.util.Map.of();
     }
+
+    /**
+     * CockroachDB does not support the unordered bulk-load path. It has no
+     * {@code session_replication_role} switch, and its foreign keys and secondary indexes are
+     * maintained transactionally across a distributed cluster, so there is no cheap session-level way
+     * to disable enforcement. An {@code UNORDERED_BULK} request therefore falls back to the ordered
+     * level-parallel fill path. Overrides {@link PostgresSupport#supportsBulkLoad()} back to
+     * {@code false}.
+     *
+     * @return {@code false}
+     * @since 2.17.0
+     */
+    @Override
+    public boolean supportsBulkLoad() {
+        return false;
+    }
 }

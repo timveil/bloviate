@@ -18,6 +18,7 @@ package io.bloviate.bench;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import io.bloviate.db.BulkLoadStrategy;
 import io.bloviate.db.Database;
 import io.bloviate.db.DatabaseConfiguration;
 import io.bloviate.db.DatabaseFiller;
@@ -48,7 +49,8 @@ import java.util.Set;
  *
  * <p>Tunable via system properties: {@code bench.warmup} (default 1), {@code bench.iterations}
  * (3), {@code bench.rows} (default-row-count for the wide schema, 50,000), {@code bench.warehouses}
- * (TPC-C scale factor, 1), {@code bench.batch} (JDBC batch size, 1000).
+ * (TPC-C scale factor, 1), {@code bench.batch} (JDBC batch size, 1000), {@code bench.threads}
+ * (parallel workers, 1), {@code bench.bulk} (unordered bulk load, false).
  */
 abstract class AbstractFillBenchmark {
 
@@ -66,6 +68,15 @@ abstract class AbstractFillBenchmark {
      * tables concurrently from the pool, one connection per worker. Set with {@code -Dbench.threads}.
      */
     protected static final int THREADS = Integer.getInteger("bench.threads", 1);
+
+    /**
+     * Whether to use the unordered bulk-load path (disable foreign-key enforcement, fill every table
+     * at once with no topological barrier, re-enable). Only effective with {@code bench.threads > 1}
+     * on a database whose support reports {@code supportsBulkLoad()} (PostgreSQL, MySQL). Set with
+     * {@code -Dbench.bulk=true}. The win is largest on deep/narrow FK chains (TPC-C); the FK-free wide
+     * and single-table fixtures are negative controls expected to stay roughly flat.
+     */
+    protected static final boolean BULK = Boolean.getBoolean("bench.bulk");
 
     // TPC-C cardinalities; modest defaults (~60k rows) keep a casual run quick, scale up via -D
     protected static final int WAREHOUSES = Integer.getInteger("bench.warehouses", 1);
@@ -103,6 +114,7 @@ abstract class AbstractFillBenchmark {
      * best/mean throughput. The container must already be started with its schema applied.
      */
     protected void runBenchmark(String label, JdbcDatabaseContainer<?> container, DatabaseConfiguration configuration) throws SQLException {
+        configuration = applyBulk(configuration);
         try (HikariDataSource dataSource = dataSource(container);
              Connection connection = dataSource.getConnection()) {
 
@@ -139,6 +151,21 @@ abstract class AbstractFillBenchmark {
      * single-connection path; with more threads it is the {@link javax.sql.DataSource}-based
      * parallel path, filling independent tables concurrently — the issue #447 headline optimization.
      */
+    /**
+     * Returns a copy of {@code configuration} with {@link BulkLoadStrategy#unorderedBulk()} applied when
+     * {@code -Dbench.bulk=true}, otherwise the configuration unchanged. Rebuilds the record so the bulk
+     * flag is honored by every benchmark fixture without per-test wiring.
+     */
+    private static DatabaseConfiguration applyBulk(DatabaseConfiguration configuration) {
+        if (!BULK) {
+            return configuration;
+        }
+        return new DatabaseConfiguration(
+                configuration.batchSize(), configuration.defaultRowCount(), configuration.databaseSupport(),
+                configuration.tableConfigurations(), configuration.generatorRegistry(), configuration.seed(),
+                configuration.commitStrategy(), BulkLoadStrategy.unorderedBulk());
+    }
+
     private static void fill(HikariDataSource dataSource, Connection connection, DatabaseConfiguration configuration) throws SQLException {
         if (THREADS > 1) {
             new DatabaseFiller.Builder(dataSource, configuration).threads(THREADS).build().fill();

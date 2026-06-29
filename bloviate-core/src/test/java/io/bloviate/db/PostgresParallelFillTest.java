@@ -41,8 +41,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Verifies the issue #447 reproducibility-under-parallelism guarantee: a parallel fill
  * ({@link DatabaseFiller.Builder#Builder(javax.sql.DataSource, DatabaseConfiguration)} with
- * {@link DatabaseFiller.Builder#threads(int)}) produces byte-for-byte the same data as the
- * sequential single-connection fill for the same seed.
+ * {@link DatabaseFiller.Builder#threads(int)}) produces the same row content as the sequential
+ * single-connection fill for the same seed. Equality is asserted over a canonical row dump (rows
+ * sorted by every column, temporal columns excluded), i.e. row-content equality independent of
+ * physical insert order rather than on-disk byte equality.
  *
  * <p>A TPC-C schema is used deliberately: its foreign keys span several topological levels, so the
  * parallel walk genuinely fans out and barriers between levels, exercising the path that must stay

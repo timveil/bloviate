@@ -16,6 +16,9 @@
 
 package io.bloviate.db;
 
+import io.bloviate.ext.BulkLoadHandle;
+import io.bloviate.ext.BulkLoadUnsupportedException;
+import io.bloviate.ext.DatabaseSupport;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.JdbcUrls;
 import org.apache.commons.lang3.time.StopWatch;
@@ -141,13 +144,25 @@ public class DatabaseFiller implements Fillable {
         if (connection != null) {
             // back-compat path: fill sequentially on the caller's single connection (unchanged)
             warnIfPartitionsIgnored();
+            warnIfBulkIgnored();
             fillSequential(connection, database, reversedGraph);
         } else if (threads > 1) {
-            // parallel path: fill independent tables within each topological level concurrently
-            fillParallel(database, reversedGraph);
+            // parallel path: either the ordered level-by-level walk, or the unordered bulk path that
+            // disables constraints and fills every table at once (when configured and supported)
+            BulkLoadStrategy bulkLoadStrategy = configuration.bulkLoadStrategy();
+            if (bulkLoadStrategy.isUnordered() && configuration.databaseSupport().supportsBulkLoad()) {
+                fillUnordered(database, reversedGraph);
+            } else {
+                if (bulkLoadStrategy.isUnordered()) {
+                    logger.warn("UNORDERED_BULK requested but {} does not support bulk load; using the ordered level-parallel path",
+                            configuration.databaseSupport().getClass().getSimpleName());
+                }
+                fillParallel(database, reversedGraph);
+            }
         } else {
             // DataSource supplied but no parallelism requested: borrow one connection, fill in order
             warnIfPartitionsIgnored();
+            warnIfBulkIgnored();
             try (Connection conn = dataSource.getConnection()) {
                 fillSequential(conn, database, reversedGraph);
             }
@@ -187,8 +202,10 @@ public class DatabaseFiller implements Fillable {
      * connection to the pool. JDBC connections are not thread-safe, so they are never shared.
      *
      * <p>Reproducibility is preserved: a table's generated data depends only on its own per-column
-     * seeds and its own sequential row counter, never on the order in which tables are filled, so a
-     * parallel fill yields byte-for-byte the same data as the sequential fill for the same seed.
+     * seeds and its own sequential row counter, never on the order in which tables are filled, so for
+     * the same seed a parallel fill yields the same row content as the sequential fill across every
+     * deterministic column (physical row order and non-deterministic columns aside; see
+     * {@link BulkLoadStrategy}).
      *
      * @param database     the database metadata
      * @param reversedGraph the reversed dependency graph (parents before children)
@@ -213,7 +230,7 @@ public class DatabaseFiller implements Fillable {
             for (List<Table> level : levels) {
                 List<Callable<Void>> tasks = new ArrayList<>(level.size());
                 for (Table table : level) {
-                    addTableTasks(tasks, database, table);
+                    addTableTasks(tasks, database, table, false);
                 }
 
                 // barrier: every table in this level must finish before the next level may start
@@ -224,6 +241,65 @@ public class DatabaseFiller implements Fillable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new SQLException("parallel table fill was interrupted", e);
+        }
+    }
+
+    /**
+     * Fills every table concurrently with foreign-key enforcement disabled and <strong>no</strong>
+     * topological barrier — the {@link BulkLoadStrategy#unorderedBulk()} path. Each worker borrows its
+     * own connection, disables constraints on that session (see
+     * {@link DatabaseSupport#disableConstraints}), fills its table/partition, and restores enforcement
+     * in a {@code finally} before the connection returns to the pool. Collapsing all topological levels
+     * into a single wave removes the serialization cost of deep, narrow dependency chains.
+     *
+     * <p>This is only correct because Bloviate's data is referentially consistent by construction (a
+     * foreign-key column is seeded from its referenced primary-key column), so insert order does not
+     * affect validity and, for the same seed, the result has the same row content as an ordered fill
+     * across every deterministic column (physical row order and non-deterministic columns aside; see
+     * {@link BulkLoadStrategy}).
+     *
+     * <p>Privilege is probed once up front on a throwaway connection; if constraints cannot be disabled
+     * (e.g. the role lacks privilege for {@code session_replication_role}), the engine logs a warning
+     * and falls back to {@link #fillParallel} rather than risk a half-disabled run.
+     *
+     * @param database the database metadata
+     * @param graph    the reversed dependency graph (used only for its vertex set here)
+     * @throws SQLException if any table fill fails or the run is interrupted
+     */
+    private void fillUnordered(Database database, Graph<Table, DefaultEdge> graph) throws SQLException {
+        DatabaseSupport support = configuration.databaseSupport();
+
+        // probe once: if we can't disable+re-enable constraints on a borrowed connection, fall back to
+        // the ordered path instead of fanning out into a partially-disabled state
+        try (Connection conn = dataSource.getConnection()) {
+            BulkLoadHandle handle = support.disableConstraints(conn, database);
+            support.enableConstraints(conn, database, handle);
+        } catch (BulkLoadUnsupportedException e) {
+            logger.warn("UNORDERED_BULK requested but constraints could not be disabled ({}); "
+                    + "falling back to the ordered level-parallel path", e.getMessage());
+            fillParallel(database, graph);
+            return;
+        }
+
+        // one wave: every table (and partition) becomes a task with no topological barrier; the
+        // worker bodies disable/restore constraints per connection (see fillTableInOwnTransaction)
+        List<Callable<Void>> tasks = new ArrayList<>();
+        for (Table table : graph.vertexSet()) {
+            addTableTasks(tasks, database, table, true);
+        }
+
+        int poolSize = Math.clamp(threads, 1, Math.max(1, tasks.size()));
+
+        logger.info("bulk-filling {} table(s) with constraints disabled across {} worker thread(s) (no topological barrier)",
+                graph.vertexSet().size(), poolSize);
+
+        try (ExecutorService executor = Executors.newFixedThreadPool(poolSize)) {
+            for (Future<Void> future : executor.invokeAll(tasks)) {
+                awaitFuture(future);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SQLException("bulk table fill was interrupted", e);
         }
     }
 
@@ -270,13 +346,15 @@ public class DatabaseFiller implements Fillable {
      * Adds the worker task(s) for one table to {@code tasks}. A table with the default single
      * partition contributes one whole-table task; a table configured with {@code partitions > 1}
      * contributes one task per contiguous row range, so the ranges fill concurrently (intra-table
-     * parallelism) alongside the other tables in the same topological level.
+     * parallelism). When {@code bulk} is true the worker disables foreign-key enforcement on its
+     * connection for the duration of the fill (the unordered bulk path); otherwise it fills with
+     * enforcement intact (the ordered level-parallel path).
      */
-    private void addTableTasks(List<Callable<Void>> tasks, Database database, Table table) {
+    private void addTableTasks(List<Callable<Void>> tasks, Database database, Table table, boolean bulk) {
         int partitions = partitionsFor(table);
         if (partitions <= 1) {
             tasks.add(() -> {
-                fillTableInOwnTransaction(database, table);
+                fillTableInOwnTransaction(database, table, bulk);
                 return null;
             });
             return;
@@ -292,7 +370,7 @@ public class DatabaseFiller implements Fillable {
             if (size > 0) {
                 long rangeStart = start;
                 tasks.add(() -> {
-                    fillTablePartition(database, table, rangeStart, end);
+                    fillTablePartition(database, table, rangeStart, end, bulk);
                     return null;
                 });
             }
@@ -301,34 +379,63 @@ public class DatabaseFiller implements Fillable {
     }
 
     /**
-     * Fills a whole table on its own pooled connection inside a single transaction — the original,
-     * proven per-table parallel path (no row range, so generation is byte-for-byte identical to a
-     * sequential fill). The transaction is managed by {@link TableFiller} via the effective commit
-     * strategy (see {@link #effectiveParallelCommitStrategy()}).
+     * Fills a whole table on its own pooled connection inside a single transaction (no row range, so
+     * each generator is driven through the same call sequence as a sequential fill, producing identical
+     * values for every deterministic column). The transaction is managed by
+     * {@link TableFiller} via the effective commit strategy (see {@link #effectiveParallelCommitStrategy()}).
+     * When {@code bulk} is true, foreign-key enforcement is disabled for the fill and restored before
+     * the connection returns to the pool.
      */
-    private void fillTableInOwnTransaction(Database database, Table table) throws SQLException {
-        try (Connection conn = dataSource.getConnection()) {
-            new TableFiller.Builder(conn, database, configuration)
-                    .table(table)
-                    .commitStrategy(effectiveParallelCommitStrategy())
-                    .build().fill();
-        }
+    private void fillTableInOwnTransaction(Database database, Table table, boolean bulk) throws SQLException {
+        fillOnPooledConnection(database, bulk, conn ->
+                new TableFiller.Builder(conn, database, configuration)
+                        .table(table)
+                        .commitStrategy(effectiveParallelCommitStrategy())
+                        .build().fill());
     }
 
     /**
      * Fills one contiguous row range of a table on its own pooled connection inside a single
      * transaction. The transaction is managed by {@link TableFiller} via the effective commit
      * strategy (see {@link #effectiveParallelCommitStrategy()}): autocommit off, committed when the
-     * range is complete (or every N batches), and rolled back on failure.
+     * range is complete (or every N batches), and rolled back on failure. When {@code bulk} is true,
+     * foreign-key enforcement is disabled for the fill and restored before the connection returns to
+     * the pool.
      */
-    private void fillTablePartition(Database database, Table table, long startInclusive, long endExclusive) throws SQLException {
+    private void fillTablePartition(Database database, Table table, long startInclusive, long endExclusive, boolean bulk) throws SQLException {
+        fillOnPooledConnection(database, bulk, conn ->
+                new TableFiller.Builder(conn, database, configuration)
+                        .table(table)
+                        .commitStrategy(effectiveParallelCommitStrategy())
+                        .rowRange(startInclusive, endExclusive)
+                        .build().fill());
+    }
+
+    /**
+     * Borrows a connection from the pool and runs {@code body} on it. When {@code bulk} is true,
+     * foreign-key enforcement is disabled on the connection's session before {@code body} and restored
+     * in a {@code finally} <em>before</em> the connection returns to the pool — so a constraint-disabled
+     * connection never leaks to other pool users, even if the fill throws. The disable/enable mechanism
+     * is database-specific (see {@link DatabaseSupport#disableConstraints}).
+     */
+    private void fillOnPooledConnection(Database database, boolean bulk, ConnectionFill body) throws SQLException {
+        DatabaseSupport support = configuration.databaseSupport();
         try (Connection conn = dataSource.getConnection()) {
-            new TableFiller.Builder(conn, database, configuration)
-                    .table(table)
-                    .commitStrategy(effectiveParallelCommitStrategy())
-                    .rowRange(startInclusive, endExclusive)
-                    .build().fill();
+            BulkLoadHandle handle = bulk ? support.disableConstraints(conn, database) : null;
+            try {
+                body.fill(conn);
+            } finally {
+                if (bulk) {
+                    support.enableConstraints(conn, database, handle);
+                }
+            }
         }
+    }
+
+    /** A fill action against a borrowed connection; see {@link #fillOnPooledConnection}. */
+    @FunctionalInterface
+    private interface ConnectionFill {
+        void fill(Connection connection) throws SQLException;
     }
 
     /** The configured intra-table partition count for a table, or {@code 1} when not configured. */
@@ -360,6 +467,19 @@ public class DatabaseFiller implements Fillable {
                                 + "use the DataSource constructor with threads(n) > 1 for intra-table parallelism",
                         tableConfiguration.partitions(), tableConfiguration.tableName());
             }
+        }
+    }
+
+    /**
+     * Logs a warning when an {@link BulkLoadStrategy#unorderedBulk()} fill was requested but the fill
+     * will not run on the parallel path (single connection, or a {@link DataSource} with one thread).
+     * Bulk loading needs per-worker session control, so it only applies to the {@code threads > 1}
+     * {@link DataSource} path; elsewhere the engine fills in dependency order.
+     */
+    private void warnIfBulkIgnored() {
+        if (configuration.bulkLoadStrategy().isUnordered()) {
+            logger.warn("UNORDERED_BULK is ignored on the sequential fill path; use the DataSource "
+                    + "constructor with threads(n) > 1 for unordered bulk loading");
         }
     }
 

@@ -18,6 +18,7 @@ package io.bloviate.ext;
 
 import io.bloviate.db.Column;
 import io.bloviate.db.ColumnConstraint;
+import io.bloviate.db.Database;
 import io.bloviate.gen.DataGenerator;
 
 import java.sql.Connection;
@@ -95,6 +96,64 @@ public interface DatabaseSupport {
      */
     default Map<String, ColumnConstraint> readConstraints(Connection connection, String schema, String table) {
         return Map.of();
+    }
+
+    /**
+     * Whether this support can disable and re-enable foreign-key enforcement for an
+     * {@code UNORDERED_BULK} fill (see {@link io.bloviate.db.BulkLoadStrategy}). The default is
+     * {@code false}; callers must check this before invoking {@link #disableConstraints} and fall back
+     * to the ordered fill path when it returns {@code false}.
+     *
+     * <p>PostgreSQL and MySQL override this to {@code true}; CockroachDB leaves it {@code false}
+     * (no {@code session_replication_role}, distributed foreign-key/index handling).
+     *
+     * @return whether unordered bulk loading with disabled constraints is supported
+     * @since 2.17.0
+     */
+    default boolean supportsBulkLoad() {
+        return false;
+    }
+
+    /**
+     * Disables foreign-key (and, where applicable, unique) enforcement for the duration of a bulk load,
+     * on the <strong>given connection's session</strong>. Returns a {@link BulkLoadHandle} describing
+     * what was disabled so {@link #enableConstraints} can restore it.
+     *
+     * <p>The session-based mechanisms used by PostgreSQL and MySQL are <em>per connection</em>: this
+     * must be called on every connection that will insert. {@link io.bloviate.db.DatabaseFiller}
+     * applies it inside each worker task and restores it in a {@code finally} before returning the
+     * connection to the pool, so no constraint-disabled connection ever leaks back to the pool.
+     *
+     * <p>The default throws {@link UnsupportedOperationException}; only override it alongside
+     * {@link #supportsBulkLoad()} returning {@code true}.
+     *
+     * @param connection an open connection whose session enforcement should be disabled
+     * @param database   the database metadata (for mechanisms that need per-table information)
+     * @return a handle describing what was disabled, for use by {@link #enableConstraints}
+     * @throws BulkLoadUnsupportedException if enforcement cannot be disabled (e.g. missing privilege)
+     * @throws SQLException                 if the underlying statement fails
+     * @since 2.17.0
+     */
+    default BulkLoadHandle disableConstraints(Connection connection, Database database) throws SQLException {
+        throw new UnsupportedOperationException("bulk load not supported");
+    }
+
+    /**
+     * Re-enables what {@link #disableConstraints} turned off, on the same connection. Must be safe to
+     * call from a {@code finally} block.
+     *
+     * <p>The session-based PostgreSQL/MySQL mechanisms simply restore the session setting; they cannot
+     * cheaply re-validate already-inserted rows, which is acceptable because bulk-loaded data is
+     * referentially consistent by construction.
+     *
+     * @param connection the same connection passed to {@link #disableConstraints}
+     * @param database   the database metadata
+     * @param handle     the handle returned by {@link #disableConstraints}
+     * @throws SQLException if the underlying statement fails
+     * @since 2.17.0
+     */
+    default void enableConstraints(Connection connection, Database database, BulkLoadHandle handle) throws SQLException {
+        throw new UnsupportedOperationException("bulk load not supported");
     }
 
     /**
