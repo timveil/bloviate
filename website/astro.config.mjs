@@ -140,7 +140,10 @@ export default defineConfig({
 						// Brand-themed Javadoc, generated locally and committed under
 						// public/apidocs (Cloudflare can't run Java). Regenerate with
 						// `./mvnw -Pjavadoc-site javadoc:aggregate`.
-						{ label: 'Full Javadoc', link: '/apidocs/index.html', attrs: { target: '_blank' } },
+						// Link the canonical directory URL, not /apidocs/index.html: Starlight
+						// strips the .html, and Cloudflare then 307-redirects the bare path to
+						// /apidocs/. Pointing straight at /apidocs/ avoids that per-page redirect.
+						{ label: 'Full Javadoc', link: '/apidocs/', attrs: { target: '_blank' } },
 					],
 				},
 			],

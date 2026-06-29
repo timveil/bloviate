@@ -113,13 +113,13 @@ synth (dormant), Snowfakery (Python, recipe-authored, no schema introspection), 
 
 Verified 2026-06 via web survey + codebase analysis.
 
-- Benerator CE — <https://github.com/rapiddweller/rapiddweller-benerator-ce> · <https://benerator.de/faq/>
-- Snowfakery — <https://github.com/SFDO-Tooling/Snowfakery>
-- synth (releases) — <https://github.com/shuttle-hq/synth/releases>
-- DBeaver Mock Data — <https://dbeaver.com/docs/dbeaver/Mock-Data-Generation/>
-- SDV license (BSL) — <https://datacebo.com/blog/sdv-bsl-license/> · <https://github.com/sdv-dev/SDV/blob/main/LICENSE>
-- Gretel → NVIDIA — <https://techcrunch.com/2025/03/19/nvidia-reportedly-acquires-synthetic-data-startup-gretel/>
-- MOSTLY AI (powered by Syntho) — <https://mostly.ai/>
-- Datafaker — <https://github.com/datafaker-net/datafaker>
-- Jailer — <https://github.com/Wisser/Jailer>
-- pgbench — <https://www.postgresql.org/docs/current/pgbench.html>
+- Benerator CE — [GitHub repo](https://github.com/rapiddweller/rapiddweller-benerator-ce) · [FAQ](https://benerator.de/faq/)
+- Snowfakery — [GitHub repo](https://github.com/SFDO-Tooling/Snowfakery)
+- synth — [GitHub releases](https://github.com/shuttle-hq/synth/releases)
+- DBeaver Mock Data — [documentation](https://dbeaver.com/docs/dbeaver/Mock-Data-Generation/)
+- SDV license (BSL) — [announcement post](https://datacebo.com/blog/sdv-bsl-license/) · [LICENSE file](https://github.com/sdv-dev/SDV/blob/main/LICENSE)
+- Gretel → NVIDIA — [TechCrunch report](https://techcrunch.com/2025/03/19/nvidia-reportedly-acquires-synthetic-data-startup-gretel/)
+- MOSTLY AI (powered by Syntho) — [product site](https://mostly.ai/)
+- Datafaker — [GitHub repo](https://github.com/datafaker-net/datafaker)
+- Jailer — [GitHub repo](https://github.com/Wisser/Jailer)
+- pgbench — [PostgreSQL documentation](https://www.postgresql.org/docs/current/pgbench.html)
