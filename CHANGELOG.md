@@ -1,3 +1,9 @@
+## [2.17.0](https://github.com/timveil/bloviate/compare/v2.16.0...v2.17.0) (2026-06-29)
+
+### ✨ Features
+
+* **core:** add UNORDERED_BULK fill strategy (disable constraints, fill barrier-free, re-enable) ([#518](https://github.com/timveil/bloviate/issues/518)) ([3cb49f9](https://github.com/timveil/bloviate/commit/3cb49f976046162ec295974afdb3cf2235b5ca7f))
+
 ## [2.16.0](https://github.com/timveil/bloviate/compare/v2.15.7...v2.16.0) (2026-06-29)
 
 ### ✨ Features
