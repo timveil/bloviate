@@ -121,19 +121,18 @@ JDK, and the Docker/DB image next to the figures, exactly as the recorded result
 
 ## Fill throughput: stacking the optimizations
 
-This is the result of a multi-part optimization campaign on `DatabaseFiller.fill()`
-(tracked in [issue #447](https://github.com/timveil/bloviate/issues/447) and its follow-ups
-[#466](https://github.com/timveil/bloviate/issues/466),
-[#467](https://github.com/timveil/bloviate/issues/467),
-[#468](https://github.com/timveil/bloviate/issues/468)). Two views of the same campaign follow:
-a **cumulative progression** that stacks the strategies on one large table to a final speedup,
-and a **cross-schema** comparison of parallel table fill. The levers measured:
+`DatabaseFiller.fill()` applies four independent optimizations, each aimed at a different
+bottleneck — the JDBC wire, transaction overhead, single-table parallelism, and the per-cell hot
+loop. Because they target different costs, they stack: on one large table they compound to a
+**6.08× speedup**, and on a wide multi-table schema parallel fill alone delivers **3.26×**. The
+two views below quantify that — a cumulative progression on a single dominant table, and a
+cross-schema comparison of parallel table fill. The levers:
 
-- **driver batch rewrite** — `reWriteBatchedInserts` collapses each JDBC batch into one multi-row `INSERT`.
-- **commit strategy** — disable autocommit and commit once per table (or every N batches); see [Commit strategy](./ARCHITECTURE.md#commit-strategy).
-- **intra-table partitioning** — split one large table's rows across workers; the only lever for a single dominant table (one table, one topological level), which parallel table fill cannot help. See [Intra-table partitioning](./ARCHITECTURE.md#intra-table-partitioning--seeking-to-a-row-range).
+- **driver batch rewrite** — `reWriteBatchedInserts` collapses each JDBC batch into one multi-row `INSERT`, cutting round-trips to the database.
+- **commit strategy** — disable autocommit and commit once per table (or every N batches) instead of paying transaction overhead per batch; see [Commit strategy](./ARCHITECTURE.md#commit-strategy).
+- **intra-table partitioning** — split one large table's rows across workers. This is the only lever for a single dominant table (one table, one topological level), which parallel table fill cannot speed up. See [Intra-table partitioning](./ARCHITECTURE.md#intra-table-partitioning--seeking-to-a-row-range).
 - **parallel table fill** — `DataSource` + `threads`, one connection per worker; the lever for schemas with many *independent* tables. See [Parallel fill — topological levels](./ARCHITECTURE.md#parallel-fill--topological-levels).
-- **hot-loop micro-opt** — positional generator dispatch in `TableFiller` (within end-to-end noise; see CPU table).
+- **hot-loop micro-opt** — positional generator dispatch in `TableFiller`, which removes a HashMap lookup from the innermost loop (a clear CPU win in isolation; within end-to-end noise — see the CPU table).
 
 **Environment**
 
@@ -144,10 +143,11 @@ and a **cross-schema** comparison of parallel table fill. The levers measured:
 
 ### Removing the per-cell lookup (CPU, JMH, ops/us — higher is better)
 
-The micro-opt replaces the per-cell `HashMap.get(column)` (hashing the value-based `Column` record)
-with a positional array read. `dispatchRowIndexed` is the optimized variant of `dispatchRow` over the
-same 16-column row, so the delta isolates the lookup removed (the rest is the unavoidable
-`generate()` work, which dominates a row containing a 256-char varchar and a jsonb payload).
+The hot-loop micro-opt replaces the per-cell `HashMap.get(column)` (which hashes the value-based
+`Column` record on every cell) with a positional array read. `dispatchRowIndexed` runs the same
+16-column row as `dispatchRow`, so the delta isolates exactly the lookup that was removed — the rest
+is the unavoidable `generate()` work, which dominates a row containing a 256-char varchar and a jsonb
+payload.
 
 | Benchmark | Score | Notes |
 |-----------|------:|-------|
@@ -160,16 +160,16 @@ slowest types in the baseline run: `VARCHAR_LONG` 0.59, `JSONB` 2.2, `UUID` 8.7,
 ### Stacking the strategies on one large table
 
 A single 1,000,000-row table (`postgres/single`) is the clearest place to watch the optimizations
-**compound**: it sits alone in its topological level, so parallel *table* fill can't touch it, but it
-benefits from each follow-up in turn. Starting from a naive fill (sequential, autocommit, no driver
-batch rewrite) and adding one strategy at a time — **best of 5**:
+**compound**: it sits alone in its topological level, so parallel *table* fill can't touch it, yet it
+benefits from every other lever. Starting from a naive fill (sequential, autocommit, no driver batch
+rewrite) and adding one strategy at a time — **best of 5**:
 
 | Step | Added | rows/sec | Cumulative |
 |------|-------|---------:|-----------:|
 | Naive | sequential, autocommit, no batch rewrite | 125,228 | 1.00× |
-| + driver batch rewrite ([#468](https://github.com/timveil/bloviate/issues/468)) | `reWriteBatchedInserts` collapses each batch into one multi-row `INSERT` | 151,641 | 1.21× |
-| + per-table commit ([#467](https://github.com/timveil/bloviate/issues/467)) | one commit instead of one per batch | 160,867 | 1.28× |
-| + intra-table partitioning ×8 ([#466](https://github.com/timveil/bloviate/issues/466)) | the one table's rows split across 8 workers | **760,959** | **6.08×** |
+| + driver batch rewrite | `reWriteBatchedInserts` collapses each batch into one multi-row `INSERT` | 151,641 | 1.21× |
+| + per-table commit | one commit instead of one per batch | 160,867 | 1.28× |
+| + intra-table partitioning ×8 | the table's rows split across 8 workers | **760,959** | **6.08×** |
 
 ```mermaid
 xychart-beta
@@ -179,11 +179,10 @@ xychart-beta
     bar [125228, 151641, 160867, 760959]
 ```
 
-End to end, the three follow-ups take a single large table from **125k to 761k rows/sec — a 6.08×
-speedup**. Driver batch rewrite and intra-table partitioning do the heavy lifting;
-per-table commit is a small bump *here* — with batch rewrite on, a single table already commits
-cheaply — but it matters more on the many-table schemas below. Each step is reproducible from the
-harness knobs:
+Together these take a single large table from **125k to 761k rows/sec — a 6.08× speedup**. Driver
+batch rewrite and intra-table partitioning do the heavy lifting; per-table commit is a small bump
+*here* — with batch rewrite on, a single table already commits cheaply — but it matters more on the
+many-table schemas below. Each step is reproducible from the harness knobs:
 
 ```bash
 BASE="./mvnw -pl bloviate-benchmarks -am -Pbench test -Dtest='PostgresFillBenchmark#singleTable' -Dbench.rows=1000000"
@@ -237,12 +236,12 @@ non-deterministic. See [Reproducibility — deterministic seeds from schema iden
 
 ## Switching the RNG
 
-Bloviate replaced the legacy `java.util.Random` (a 48-bit LCG with a documented statistical defect and
-`synchronized` methods) with a `java.util.random.RandomGenerator` using the JDK general-purpose default
-**`L64X128MixRandom`** (`RandomGenerators.create(seed)`). The per-column seeding architecture is
-unchanged, so output stays reproducible; only the algorithm changes. (Tracked in
-[issue #471](https://github.com/timveil/bloviate/issues/471).) These numbers compare the two RNGs on
-the identical benchmark harness — old jar built from `HEAD`, new jar from the migration branch.
+Bloviate generates values with a `java.util.random.RandomGenerator` — the JDK general-purpose default
+**`L64X128MixRandom`** (`RandomGenerators.create(seed)`) — rather than the legacy `java.util.Random`,
+a 48-bit LCG with a documented statistical defect and `synchronized` methods. The payoff is twofold:
+faster draws (no lock, a better algorithm) and higher statistical quality, with no new dependency. The
+per-column seeding architecture is unchanged, so output stays reproducible; only the algorithm
+changes. The numbers below compare the two RNGs on an identical benchmark harness.
 
 **Environment**
 

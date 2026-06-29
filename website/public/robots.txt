@@ -1,0 +1,5 @@
+# https://bloviate.io
+User-agent: *
+Allow: /
+
+Sitemap: https://bloviate.io/sitemap-index.xml
