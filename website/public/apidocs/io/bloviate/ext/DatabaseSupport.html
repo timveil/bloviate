@@ -61,6 +61,9 @@ loadScripts(document, 'script');</script>
 <li><a href="#getDataGenerator(io.bloviate.db.Column,java.util.random.RandomGenerator)" tabindex="0">getDataGenerator(Column, RandomGenerator)</a></li>
 <li><a href="#batchRewriteUrlParameter()" tabindex="0">batchRewriteUrlParameter()</a></li>
 <li><a href="#readConstraints(java.sql.Connection,java.lang.String,java.lang.String)" tabindex="0">readConstraints(Connection, String, String)</a></li>
+<li><a href="#supportsBulkLoad()" tabindex="0">supportsBulkLoad()</a></li>
+<li><a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)" tabindex="0">disableConstraints(Connection, Database)</a></li>
+<li><a href="#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)" tabindex="0">enableConstraints(Connection, Database, BulkLoadHandle)</a></li>
 <li><a href="#forProduct(java.lang.String)" tabindex="0">forProduct(String)</a></li>
 <li><a href="#forConnection(java.sql.Connection)" tabindex="0">forConnection(Connection)</a></li>
 </ol>
@@ -75,7 +78,7 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>All Known Implementing Classes:</dt>
-<dd><code><a href="AbstractDatabaseSupport.html" title="class in io.bloviate.ext">AbstractDatabaseSupport</a>, <a href="CockroachDBSupport.html" title="class in io.bloviate.ext">CockroachDBSupport</a>, <a href="DefaultSupport.html" title="class in io.bloviate.ext">DefaultSupport</a>, <a href="MySQLSupport.html" title="class in io.bloviate.ext">MySQLSupport</a>, <a href="PostgresSupport.html" title="class in io.bloviate.ext">PostgresSupport</a></code></dd>
+<dd><code><a href="AbstractDatabaseSupport.html" title="class in io.bloviate.ext">AbstractDatabaseSupport</a>, <a href="CockroachDBSupport.html" title="class in io.bloviate.ext">CockroachDBSupport</a>, <a href="DefaultSupport.html" title="class in io.bloviate.ext">DefaultSupport</a>, <a href="H2Support.html" title="class in io.bloviate.ext">H2Support</a>, <a href="MariaDBSupport.html" title="class in io.bloviate.ext">MariaDBSupport</a>, <a href="MySQLSupport.html" title="class in io.bloviate.ext">MySQLSupport</a>, <a href="PostgresSupport.html" title="class in io.bloviate.ext">PostgresSupport</a>, <a href="SQLiteSupport.html" title="class in io.bloviate.ext">SQLiteSupport</a></code></dd>
 </dl>
 <hr>
 <div class="horizontal-scroll">
@@ -125,6 +128,20 @@ registering or replacing factories rather than implementing this interface direc
 optimization &mdash; collapsing a JDBC batch into a single multi-row <code>INSERT</code> &mdash;
 or <code>null</code> if the database has no such parameter.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)" class="member-name-link">disableConstraints</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a>&nbsp;connection,
+ <a href="../db/Database.html" title="class in io.bloviate.db">Database</a>&nbsp;database)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Disables foreign-key (and, where applicable, unique) enforcement for the duration of a bulk load,
+on the <strong>given connection's session</strong>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)" class="member-name-link">enableConstraints</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a>&nbsp;connection,
+ <a href="../db/Database.html" title="class in io.bloviate.db">Database</a>&nbsp;database,
+ <a href="BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a>&nbsp;handle)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Re-enables what <a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>disableConstraints(Connection, Database)</code></a> turned off, on the same connection.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1"><code>static <a href="DatabaseSupport.html" title="interface in io.bloviate.ext">DatabaseSupport</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1"><code><a href="#forConnection(java.sql.Connection)" class="member-name-link">forConnection</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a>&nbsp;connection)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1">
@@ -152,6 +169,12 @@ to hardcode a specific implementation.</div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Reads the value constraints (CHECK constraints and enum/domain allowed values) for a table's
 columns, so the fill engine can generate values that satisfy them (issue #479).</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#supportsBulkLoad()" class="member-name-link">supportsBulkLoad</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Whether this support can disable and re-enable foreign-key enforcement for an
+<code>UNORDERED_BULK</code> fill (see <a href="../db/BulkLoadStrategy.html" title="class in io.bloviate.db"><code>BulkLoadStrategy</code></a>).</div>
 </div>
 </div>
 </div>
@@ -241,6 +264,87 @@ read the catalog should log and return what it has.</div>
 </section>
 </li>
 <li>
+<section class="detail" id="supportsBulkLoad()">
+<h3>supportsBulkLoad</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">supportsBulkLoad</span>()</div>
+<div class="block">Whether this support can disable and re-enable foreign-key enforcement for an
+<code>UNORDERED_BULK</code> fill (see <a href="../db/BulkLoadStrategy.html" title="class in io.bloviate.db"><code>BulkLoadStrategy</code></a>). The default is
+<code>false</code>; callers must check this before invoking <a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>disableConstraints(Connection, Database)</code></a> and fall back
+to the ordered fill path when it returns <code>false</code>.
+
+<p>PostgreSQL and MySQL override this to <code>true</code>; CockroachDB leaves it <code>false</code>
+(no <code>session_replication_role</code>, distributed foreign-key/index handling).</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>whether unordered bulk loading with disabled constraints is supported</dd>
+<dt>Since:</dt>
+<dd>2.17.0</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="disableConstraints(java.sql.Connection,io.bloviate.db.Database)">
+<h3>disableConstraints</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></span>&nbsp;<span class="element-name">disableConstraints</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a>&nbsp;connection,
+ <a href="../db/Database.html" title="class in io.bloviate.db">Database</a>&nbsp;database)</span>
+                                   throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/SQLException.html" title="class or interface in java.sql" class="external-link">SQLException</a></span></div>
+<div class="block">Disables foreign-key (and, where applicable, unique) enforcement for the duration of a bulk load,
+on the <strong>given connection's session</strong>. Returns a <a href="BulkLoadHandle.html" title="class in io.bloviate.ext"><code>BulkLoadHandle</code></a> describing
+what was disabled so <a href="#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)"><code>enableConstraints(Connection, Database, BulkLoadHandle)</code></a> can restore it.
+
+<p>The session-based mechanisms used by PostgreSQL and MySQL are <em>per connection</em>: this
+must be called on every connection that will insert. <a href="../db/DatabaseFiller.html" title="class in io.bloviate.db"><code>DatabaseFiller</code></a>
+applies it inside each worker task and restores it in a <code>finally</code> before returning the
+connection to the pool, so no constraint-disabled connection ever leaks back to the pool.
+
+<p>The default throws <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/UnsupportedOperationException.html" title="class or interface in java.lang" class="external-link"><code>UnsupportedOperationException</code></a>; only override it alongside
+<a href="#supportsBulkLoad()"><code>supportsBulkLoad()</code></a> returning <code>true</code>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>connection</code> - an open connection whose session enforcement should be disabled</dd>
+<dd><code>database</code> - the database metadata (for mechanisms that need per-table information)</dd>
+<dt>Returns:</dt>
+<dd>a handle describing what was disabled, for use by <a href="#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)"><code>enableConstraints(Connection, Database, BulkLoadHandle)</code></a></dd>
+<dt>Throws:</dt>
+<dd><code><a href="BulkLoadUnsupportedException.html" title="class in io.bloviate.ext">BulkLoadUnsupportedException</a></code> - if enforcement cannot be disabled (e.g. missing privilege)</dd>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/SQLException.html" title="class or interface in java.sql" class="external-link">SQLException</a></code> - if the underlying statement fails</dd>
+<dt>Since:</dt>
+<dd>2.17.0</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)">
+<h3>enableConstraints</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">enableConstraints</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a>&nbsp;connection,
+ <a href="../db/Database.html" title="class in io.bloviate.db">Database</a>&nbsp;database,
+ <a href="BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a>&nbsp;handle)</span>
+                        throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/SQLException.html" title="class or interface in java.sql" class="external-link">SQLException</a></span></div>
+<div class="block">Re-enables what <a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>disableConstraints(Connection, Database)</code></a> turned off, on the same connection. Must be safe to
+call from a <code>finally</code> block.
+
+<p>The session-based PostgreSQL/MySQL mechanisms simply restore the session setting; they cannot
+cheaply re-validate already-inserted rows, which is acceptable because bulk-loaded data is
+referentially consistent by construction.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>connection</code> - the same connection passed to <a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>disableConstraints(Connection, Database)</code></a></dd>
+<dd><code>database</code> - the database metadata</dd>
+<dd><code>handle</code> - the handle returned by <a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>disableConstraints(Connection, Database)</code></a></dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/SQLException.html" title="class or interface in java.sql" class="external-link">SQLException</a></code> - if the underlying statement fails</dd>
+<dt>Since:</dt>
+<dd>2.17.0</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
 <section class="detail" id="forProduct(java.lang.String)">
 <h3>forProduct</h3>
 <div class="horizontal-scroll">
@@ -250,16 +354,25 @@ read the catalog should log and return what it has.</div>
 to hardcode a specific implementation.
 
 <p>Matching is case-insensitive and substring-based: names containing
-<code>"cockroach"</code> map to <a href="CockroachDBSupport.html" title="class in io.bloviate.ext"><code>CockroachDBSupport</code></a>, <code>"mysql"</code> to
-<a href="MySQLSupport.html" title="class in io.bloviate.ext"><code>MySQLSupport</code></a>, and <code>"postgres"</code> to <a href="PostgresSupport.html" title="class in io.bloviate.ext"><code>PostgresSupport</code></a>. Anything
-else (including <code>null</code>) falls back to <a href="DefaultSupport.html" title="class in io.bloviate.ext"><code>DefaultSupport</code></a>.
+<code>"cockroach"</code> map to <a href="CockroachDBSupport.html" title="class in io.bloviate.ext"><code>CockroachDBSupport</code></a>, <code>"mariadb"</code> to
+<a href="MariaDBSupport.html" title="class in io.bloviate.ext"><code>MariaDBSupport</code></a>, <code>"mysql"</code> to <a href="MySQLSupport.html" title="class in io.bloviate.ext"><code>MySQLSupport</code></a>, <code>"postgres"</code> to
+<a href="PostgresSupport.html" title="class in io.bloviate.ext"><code>PostgresSupport</code></a>, <code>"h2"</code> to <a href="H2Support.html" title="class in io.bloviate.ext"><code>H2Support</code></a>, and <code>"sqlite"</code> to
+<a href="SQLiteSupport.html" title="class in io.bloviate.ext"><code>SQLiteSupport</code></a>. Anything else (including <code>null</code>) falls back to
+<a href="DefaultSupport.html" title="class in io.bloviate.ext"><code>DefaultSupport</code></a>.
 
 <p><strong>CockroachDB note:</strong> CockroachDB is typically reached through the
 PostgreSQL JDBC driver, which reports its product name as <code>"PostgreSQL"</code>, so such
 connections resolve to <a href="PostgresSupport.html" title="class in io.bloviate.ext"><code>PostgresSupport</code></a>. Because <a href="CockroachDBSupport.html" title="class in io.bloviate.ext"><code>CockroachDBSupport</code></a>
 extends <a href="PostgresSupport.html" title="class in io.bloviate.ext"><code>PostgresSupport</code></a> and adds no extra behavior, this resolves the same
 type handling (uuid, jsonb, inet, intervals, arrays, bit strings, ...); passing
-<code>new CockroachDBSupport()</code> explicitly is equivalent.</div>
+<code>new CockroachDBSupport()</code> explicitly is equivalent.
+
+<p><strong>MariaDB note:</strong> the MariaDB Connector/J driver reports
+<code>"MariaDB"</code>, which resolves here to <a href="MariaDBSupport.html" title="class in io.bloviate.ext"><code>MariaDBSupport</code></a>. The legacy MySQL
+Connector/J driver, however, reports <code>"MySQL"</code> even against a MariaDB server, in
+which case this resolves to <a href="MySQLSupport.html" title="class in io.bloviate.ext"><code>MySQLSupport</code></a>; that is acceptable because
+<a href="MariaDBSupport.html" title="class in io.bloviate.ext"><code>MariaDBSupport</code></a> extends <a href="MySQLSupport.html" title="class in io.bloviate.ext"><code>MySQLSupport</code></a> and the inherited type handling
+works against MariaDB.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>productName</code> - the database product name, may be null</dd>

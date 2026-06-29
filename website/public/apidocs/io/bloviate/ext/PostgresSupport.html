@@ -66,6 +66,9 @@ loadScripts(document, 'script');</script>
 <ol class="toc-list">
 <li><a href="#batchRewriteUrlParameter()" tabindex="0">batchRewriteUrlParameter()</a></li>
 <li><a href="#readConstraints(java.sql.Connection,java.lang.String,java.lang.String)" tabindex="0">readConstraints(Connection, String, String)</a></li>
+<li><a href="#supportsBulkLoad()" tabindex="0">supportsBulkLoad()</a></li>
+<li><a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)" tabindex="0">disableConstraints(Connection, Database)</a></li>
+<li><a href="#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)" tabindex="0">enableConstraints(Connection, Database, BulkLoadHandle)</a></li>
 <li><a href="#configure(java.util.Map)" tabindex="0">configure(Map)</a></li>
 </ol>
 </li>
@@ -173,6 +176,21 @@ batch of single-row <code>INSERT</code>s into one multi-row statement.</div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Hook for subclasses to add or replace generator factories for specific JDBC types.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)" class="member-name-link">disableConstraints</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a>&nbsp;connection,
+ <a href="../db/Database.html" title="class in io.bloviate.db">Database</a>&nbsp;database)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets <code>session_replication_role = replica</code> on the connection, which stops user and
+foreign-key triggers (including referential-integrity checks) from firing for the session.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)" class="member-name-link">enableConstraints</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a>&nbsp;connection,
+ <a href="../db/Database.html" title="class in io.bloviate.db">Database</a>&nbsp;database,
+ <a href="BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a>&nbsp;handle)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Restores <code>session_replication_role = origin</code>, re-enabling trigger and foreign-key firing
+for the session before the connection is returned to the pool.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>, <a href="../db/ColumnConstraint.html" title="class in io.bloviate.db">ColumnConstraint</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#readConstraints(java.sql.Connection,java.lang.String,java.lang.String)" class="member-name-link">readConstraints</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a>&nbsp;connection,
  <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;schema,
@@ -180,6 +198,12 @@ batch of single-row <code>INSERT</code>s into one multi-row statement.</div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Reads the value constraints (CHECK constraints and enum/domain allowed values) for a table's
 columns, so the fill engine can generate values that satisfy them (issue #479).</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#supportsBulkLoad()" class="member-name-link">supportsBulkLoad</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">PostgreSQL supports unordered bulk loading by suppressing foreign-key trigger firing for the
+session via <code>SET session_replication_role = replica</code>.</div>
 </div>
 </div>
 </div>
@@ -259,6 +283,68 @@ read the catalog should log and return what it has.</div>
 <dd><code>table</code> - the table name</dd>
 <dt>Returns:</dt>
 <dd>constraints keyed by lower-cased column name; empty when none are found or supported</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="supportsBulkLoad()">
+<h3>supportsBulkLoad</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">supportsBulkLoad</span>()</div>
+<div class="block">PostgreSQL supports unordered bulk loading by suppressing foreign-key trigger firing for the
+session via <code>SET session_replication_role = replica</code>.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd><code>true</code></dd>
+<dt>Since:</dt>
+<dd>2.17.0</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="disableConstraints(java.sql.Connection,io.bloviate.db.Database)">
+<h3>disableConstraints</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></span>&nbsp;<span class="element-name">disableConstraints</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a>&nbsp;connection,
+ <a href="../db/Database.html" title="class in io.bloviate.db">Database</a>&nbsp;database)</span>
+                                  throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/SQLException.html" title="class or interface in java.sql" class="external-link">SQLException</a></span></div>
+<div class="block">Sets <code>session_replication_role = replica</code> on the connection, which stops user and
+foreign-key triggers (including referential-integrity checks) from firing for the session. This
+is the cheapest bulk-load mechanism — no catalog churn and nothing to rebuild — but it requires a
+superuser (or <code>rds_superuser</code>) role. A privilege failure is reported as a
+<a href="BulkLoadUnsupportedException.html" title="class in io.bloviate.ext"><code>BulkLoadUnsupportedException</code></a> so the engine can fall back to the ordered path.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>connection</code> - an open connection whose session role is changed</dd>
+<dd><code>database</code> - the database metadata (unused by this mechanism)</dd>
+<dt>Returns:</dt>
+<dd>a handle recording that <code>session_replication_role</code> was changed</dd>
+<dt>Throws:</dt>
+<dd><code><a href="BulkLoadUnsupportedException.html" title="class in io.bloviate.ext">BulkLoadUnsupportedException</a></code> - if the role lacks privilege to change the setting</dd>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/SQLException.html" title="class or interface in java.sql" class="external-link">SQLException</a></code> - if the statement otherwise fails</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)">
+<h3>enableConstraints</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">enableConstraints</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a>&nbsp;connection,
+ <a href="../db/Database.html" title="class in io.bloviate.db">Database</a>&nbsp;database,
+ <a href="BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a>&nbsp;handle)</span>
+                       throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/SQLException.html" title="class or interface in java.sql" class="external-link">SQLException</a></span></div>
+<div class="block">Restores <code>session_replication_role = origin</code>, re-enabling trigger and foreign-key firing
+for the session before the connection is returned to the pool.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>connection</code> - the same connection passed to <a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>disableConstraints(Connection, Database)</code></a></dd>
+<dd><code>database</code> - the database metadata (unused by this mechanism)</dd>
+<dd><code>handle</code> - the handle returned by <a href="#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>disableConstraints(Connection, Database)</code></a></dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/SQLException.html" title="class or interface in java.sql" class="external-link">SQLException</a></code> - if the statement fails</dd>
 </dl>
 </div>
 </section>

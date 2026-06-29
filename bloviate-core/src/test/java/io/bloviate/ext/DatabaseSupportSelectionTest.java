@@ -38,14 +38,38 @@ class DatabaseSupportSelectionTest {
     }
 
     @Test
+    void selectsMariaDbByProductName() {
+        assertInstanceOf(MariaDBSupport.class, DatabaseSupport.forProduct("MariaDB"));
+    }
+
+    @Test
+    void mariaDbIsAMySqlSupport() {
+        // MariaDBSupport extends MySQLSupport, so the legacy MySQL driver reporting "MySQL"
+        // against a MariaDB server still resolves to compatible (MySQL) type handling.
+        assertInstanceOf(MySQLSupport.class, DatabaseSupport.forProduct("MariaDB"));
+    }
+
+    @Test
+    void selectsH2ByProductName() {
+        assertInstanceOf(H2Support.class, DatabaseSupport.forProduct("H2"));
+    }
+
+    @Test
+    void selectsSqliteByProductName() {
+        assertInstanceOf(SQLiteSupport.class, DatabaseSupport.forProduct("SQLite"));
+    }
+
+    @Test
     void matchingIsCaseInsensitive() {
         assertInstanceOf(MySQLSupport.class, DatabaseSupport.forProduct("mysql"));
         assertInstanceOf(PostgresSupport.class, DatabaseSupport.forProduct("POSTGRESQL"));
+        assertInstanceOf(MariaDBSupport.class, DatabaseSupport.forProduct("mariadb"));
+        assertInstanceOf(SQLiteSupport.class, DatabaseSupport.forProduct("SQLITE"));
     }
 
     @Test
     void fallsBackToDefaultForUnknownOrNull() {
-        assertInstanceOf(DefaultSupport.class, DatabaseSupport.forProduct("H2"));
+        assertInstanceOf(DefaultSupport.class, DatabaseSupport.forProduct("Oracle"));
         assertInstanceOf(DefaultSupport.class, DatabaseSupport.forProduct(null));
         assertInstanceOf(DefaultSupport.class, DatabaseSupport.forProduct(""));
     }

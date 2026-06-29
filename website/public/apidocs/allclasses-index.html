@@ -51,7 +51,7 @@ loadScripts(document, 'script');</script>
 <h1 title="All Classes and Interfaces" class="title">All Classes and Interfaces</h1>
 </div>
 <div id="all-classes-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="all-classes-table-tab0" role="tab" aria-selected="true" aria-controls="all-classes-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="all-classes-table-tab1" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab1', 2)" class="table-tab">Interfaces</button><button id="all-classes-table-tab2" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab2', 2)" class="table-tab">Classes</button><button id="all-classes-table-tab3" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab3', 2)" class="table-tab">Enum Classes</button><button id="all-classes-table-tab4" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab4', 2)" class="table-tab">Record Classes</button><button id="all-classes-table-tab6" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab6', 2)" class="table-tab">Annotation Interfaces</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="all-classes-table-tab0" role="tab" aria-selected="true" aria-controls="all-classes-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="all-classes-table-tab1" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab1', 2)" class="table-tab">Interfaces</button><button id="all-classes-table-tab2" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab2', 2)" class="table-tab">Classes</button><button id="all-classes-table-tab3" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab3', 2)" class="table-tab">Enum Classes</button><button id="all-classes-table-tab4" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab4', 2)" class="table-tab">Record Classes</button><button id="all-classes-table-tab5" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab5', 2)" class="table-tab">Exception Classes</button><button id="all-classes-table-tab6" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab6', 2)" class="table-tab">Annotation Interfaces</button></div>
 <div id="all-classes-table.tabpanel" role="tabpanel" aria-labelledby="all-classes-table-tab0">
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
@@ -121,6 +121,25 @@ the pattern Bloviate uses in its own tests.</div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/bloviate/gen/Builder.html" title="interface in io.bloviate.gen">Builder&lt;T&gt;</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Builder interface for creating data generator instances.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/bloviate/ext/BulkLoadHandle.html" title="class in io.bloviate.ext">BulkLoadHandle</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">An opaque token returned by <a href="io/bloviate/ext/DatabaseSupport.html#disableConstraints(java.sql.Connection,io.bloviate.db.Database)"><code>DatabaseSupport.disableConstraints(Connection, Database)</code></a> describing what was disabled,
+so <a href="io/bloviate/ext/DatabaseSupport.html#enableConstraints(java.sql.Connection,io.bloviate.db.Database,io.bloviate.ext.BulkLoadHandle)"><code>DatabaseSupport.enableConstraints(Connection, Database, BulkLoadHandle)</code></a> can restore it.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/bloviate/db/BulkLoadStrategy.html" title="class in io.bloviate.db">BulkLoadStrategy</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">How <a href="io/bloviate/db/DatabaseFiller.html" title="class in io.bloviate.db"><code>DatabaseFiller</code></a> orders table fills relative to foreign-key dependencies.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="io/bloviate/db/BulkLoadStrategy.Mode.html" title="enum class in io.bloviate.db">BulkLoadStrategy.Mode</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
+<div class="block">The available ordering modes.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab5"><a href="io/bloviate/ext/BulkLoadUnsupportedException.html" title="class in io.bloviate.ext">BulkLoadUnsupportedException</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab5">
+<div class="block">Signals that a <a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a> could not disable constraint enforcement for an
+<code>UNORDERED_BULK</code> fill — for example, the connecting role lacks the privilege to set
+PostgreSQL's <code>session_replication_role</code>.</div>
 </div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/ByteGenerator.html" title="class in io.bloviate.gen">ByteGenerator</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
@@ -417,94 +436,102 @@ group.</div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for <a href="io/bloviate/gen/GroupedPrefixGenerator.html" title="class in io.bloviate.gen"><code>GroupedPrefixGenerator</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/bloviate/gen/IndexedDataGenerator.html" title="interface in io.bloviate.gen">IndexedDataGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/ext/H2Support.html" title="class in io.bloviate.ext">H2Support</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">H2-specific <a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a>.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/bloviate/gen/IndexedDataGenerator.html" title="interface in io.bloviate.gen">IndexedDataGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A <a href="io/bloviate/gen/DataGenerator.html" title="interface in io.bloviate.gen"><code>DataGenerator</code></a> whose value for a row is a deterministic function of that row's
 <em>absolute</em> (0-based) index, so it can be positioned to any row without replaying every
 preceding <code>generate()</code> call.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/InetGenerator.html" title="class in io.bloviate.gen">InetGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/InetGenerator.html" title="class in io.bloviate.gen">InetGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates IPv4 host addresses as a dotted-quad <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a>, e.g.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/InetGenerator.Builder.html" title="class in io.bloviate.gen">InetGenerator.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/InetGenerator.Builder.html" title="class in io.bloviate.gen">InetGenerator.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/InetGenerator.html" title="class in io.bloviate.gen"><code>InetGenerator</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/InstantGenerator.html" title="class in io.bloviate.gen">InstantGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/InstantGenerator.html" title="class in io.bloviate.gen">InstantGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates random <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link"><code>Instant</code></a> values drawn uniformly from a millisecond instant in
 the half-open range <code>[start, end)</code> (start inclusive, end exclusive).</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/InstantGenerator.Builder.html" title="class in io.bloviate.gen">InstantGenerator.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/InstantGenerator.Builder.html" title="class in io.bloviate.gen">InstantGenerator.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for <a href="io/bloviate/gen/InstantGenerator.html" title="class in io.bloviate.gen"><code>InstantGenerator</code></a> instances.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntegerArrayGenerator.html" title="class in io.bloviate.gen">IntegerArrayGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntegerArrayGenerator.html" title="class in io.bloviate.gen">IntegerArrayGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates a fixed-length <code>Integer[]</code> whose elements are unbounded random <code>int</code>
 values, bound to JDBC arrays of SQL type <code>INTEGER</code>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntegerArrayGenerator.Builder.html" title="class in io.bloviate.gen">IntegerArrayGenerator.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntegerArrayGenerator.Builder.html" title="class in io.bloviate.gen">IntegerArrayGenerator.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/IntegerArrayGenerator.html" title="class in io.bloviate.gen"><code>IntegerArrayGenerator</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntegerGenerator.html" title="class in io.bloviate.gen">IntegerGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntegerGenerator.html" title="class in io.bloviate.gen">IntegerGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates <code>int</code> values drawn uniformly from the half-open range
 <code>[startInclusive, endExclusive)</code> using the seeded random source, so a given seed
 yields a reproducible sequence.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntegerGenerator.Builder.html" title="class in io.bloviate.gen">IntegerGenerator.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntegerGenerator.Builder.html" title="class in io.bloviate.gen">IntegerGenerator.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/IntegerGenerator.html" title="class in io.bloviate.gen"><code>IntegerGenerator</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntervalGenerator.html" title="class in io.bloviate.gen">IntervalGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntervalGenerator.html" title="class in io.bloviate.gen">IntervalGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates time spans as a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> in PostgreSQL <code>interval</code> input form,
 <code>years-months days hours:minutes:seconds</code>, e.g.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntervalGenerator.Builder.html" title="class in io.bloviate.gen">IntervalGenerator.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/IntervalGenerator.Builder.html" title="class in io.bloviate.gen">IntervalGenerator.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/IntervalGenerator.html" title="class in io.bloviate.gen"><code>IntervalGenerator</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/util/JdbcUrls.html" title="class in io.bloviate.util">JdbcUrls</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/util/JdbcUrls.html" title="class in io.bloviate.util">JdbcUrls</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Small helpers for inspecting and extending JDBC connection URLs.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/JsonbGenerator.html" title="class in io.bloviate.gen">JsonbGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/JsonbGenerator.html" title="class in io.bloviate.gen">JsonbGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generator for JSON / JSONB columns.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/JsonbGenerator.Builder.html" title="class in io.bloviate.gen">JsonbGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/JsonbGenerator.Builder.html" title="class in io.bloviate.gen">JsonbGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/JsonbGenerator.html" title="class in io.bloviate.gen"><code>JsonbGenerator</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/bloviate/db/Key.html" title="class in io.bloviate.db">Key</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/bloviate/db/Key.html" title="class in io.bloviate.db">Key</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
 <div class="block">One column-level link of a foreign-key relationship between two tables.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/bloviate/db/KeyColumn.html" title="class in io.bloviate.db">KeyColumn</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/bloviate/db/KeyColumn.html" title="class in io.bloviate.db">KeyColumn</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
 <div class="block">One column of a possibly-composite key, paired with its position within that key.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/LongGenerator.html" title="class in io.bloviate.gen">LongGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/LongGenerator.html" title="class in io.bloviate.gen">LongGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates <code>long</code> values drawn uniformly from the half-open range
 <code>[startInclusive, endExclusive)</code> using the seeded random source, so a given seed
 yields a reproducible sequence.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/LongGenerator.Builder.html" title="class in io.bloviate.gen">LongGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/LongGenerator.Builder.html" title="class in io.bloviate.gen">LongGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/LongGenerator.html" title="class in io.bloviate.gen"><code>LongGenerator</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/MacAddressGenerator.html" title="class in io.bloviate.gen">MacAddressGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/MacAddressGenerator.html" title="class in io.bloviate.gen">MacAddressGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates MAC addresses as colon-separated hex octets, e.g.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/MacAddressGenerator.Builder.html" title="class in io.bloviate.gen">MacAddressGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/MacAddressGenerator.Builder.html" title="class in io.bloviate.gen">MacAddressGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/MacAddressGenerator.html" title="class in io.bloviate.gen"><code>MacAddressGenerator</code></a>.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/ext/MariaDBSupport.html" title="class in io.bloviate.ext">MariaDBSupport</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">MariaDB-specific <a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a>.</div>
 </div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/util/Mixers.html" title="class in io.bloviate.util">Mixers</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
@@ -662,165 +689,169 @@ end exclusive).</div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for <a href="io/bloviate/gen/SqlDateGenerator.html" title="class in io.bloviate.gen"><code>SqlDateGenerator</code></a> instances.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlStructGenerator.html" title="class in io.bloviate.gen">SqlStructGenerator</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/ext/SQLiteSupport.html" title="class in io.bloviate.ext">SQLiteSupport</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">SQLite-specific <a href="io/bloviate/ext/DatabaseSupport.html" title="interface in io.bloviate.ext"><code>DatabaseSupport</code></a>.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlStructGenerator.html" title="class in io.bloviate.gen">SqlStructGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generator for SQL <code>STRUCT</code> (structured / user-defined type) columns.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlStructGenerator.Builder.html" title="class in io.bloviate.gen">SqlStructGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlStructGenerator.Builder.html" title="class in io.bloviate.gen">SqlStructGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/SqlStructGenerator.html" title="class in io.bloviate.gen"><code>SqlStructGenerator</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlTimeGenerator.html" title="class in io.bloviate.gen">SqlTimeGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlTimeGenerator.html" title="class in io.bloviate.gen">SqlTimeGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates random <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Time.html" title="class or interface in java.sql" class="external-link"><code>Time</code></a> values for binding to JDBC <code>TIME</code> columns, drawn
 uniformly from a millisecond instant in the half-open range <code>[start, end)</code> (start inclusive,
 end exclusive).</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlTimeGenerator.Builder.html" title="class in io.bloviate.gen">SqlTimeGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlTimeGenerator.Builder.html" title="class in io.bloviate.gen">SqlTimeGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for <a href="io/bloviate/gen/SqlTimeGenerator.html" title="class in io.bloviate.gen"><code>SqlTimeGenerator</code></a> instances.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlTimestampGenerator.html" title="class in io.bloviate.gen">SqlTimestampGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlTimestampGenerator.html" title="class in io.bloviate.gen">SqlTimestampGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates random <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Timestamp.html" title="class or interface in java.sql" class="external-link"><code>Timestamp</code></a> values for binding to JDBC <code>TIMESTAMP</code> columns,
 drawn uniformly from a millisecond instant in the half-open range <code>[start, end)</code> (start
 inclusive, end exclusive).</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlTimestampGenerator.Builder.html" title="class in io.bloviate.gen">SqlTimestampGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/SqlTimestampGenerator.Builder.html" title="class in io.bloviate.gen">SqlTimestampGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for <a href="io/bloviate/gen/SqlTimestampGenerator.html" title="class in io.bloviate.gen"><code>SqlTimestampGenerator</code></a> instances.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticBigDecimalGenerator.html" title="class in io.bloviate.gen">StaticBigDecimalGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticBigDecimalGenerator.html" title="class in io.bloviate.gen">StaticBigDecimalGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Always generates the same configured <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link"><code>BigDecimal</code></a> value.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticBigDecimalGenerator.Builder.html" title="class in io.bloviate.gen">StaticBigDecimalGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticBigDecimalGenerator.Builder.html" title="class in io.bloviate.gen">StaticBigDecimalGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/StaticBigDecimalGenerator.html" title="class in io.bloviate.gen"><code>StaticBigDecimalGenerator</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticDoubleGenerator.html" title="class in io.bloviate.gen">StaticDoubleGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticDoubleGenerator.html" title="class in io.bloviate.gen">StaticDoubleGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Always generates the same configured double value.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticDoubleGenerator.Builder.html" title="class in io.bloviate.gen">StaticDoubleGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticDoubleGenerator.Builder.html" title="class in io.bloviate.gen">StaticDoubleGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/StaticDoubleGenerator.html" title="class in io.bloviate.gen"><code>StaticDoubleGenerator</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticFloatGenerator.html" title="class in io.bloviate.gen">StaticFloatGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticFloatGenerator.html" title="class in io.bloviate.gen">StaticFloatGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Always generates the same configured float value.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticFloatGenerator.Builder.html" title="class in io.bloviate.gen">StaticFloatGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticFloatGenerator.Builder.html" title="class in io.bloviate.gen">StaticFloatGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/StaticFloatGenerator.html" title="class in io.bloviate.gen"><code>StaticFloatGenerator</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticIntegerGenerator.html" title="class in io.bloviate.gen">StaticIntegerGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticIntegerGenerator.html" title="class in io.bloviate.gen">StaticIntegerGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Always generates the same configured integer value.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticIntegerGenerator.Builder.html" title="class in io.bloviate.gen">StaticIntegerGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticIntegerGenerator.Builder.html" title="class in io.bloviate.gen">StaticIntegerGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/StaticIntegerGenerator.html" title="class in io.bloviate.gen"><code>StaticIntegerGenerator</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticStringGenerator.html" title="class in io.bloviate.gen">StaticStringGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticStringGenerator.html" title="class in io.bloviate.gen">StaticStringGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Always generates the same configured string value.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticStringGenerator.Builder.html" title="class in io.bloviate.gen">StaticStringGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StaticStringGenerator.Builder.html" title="class in io.bloviate.gen">StaticStringGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for <a href="io/bloviate/gen/StaticStringGenerator.html" title="class in io.bloviate.gen"><code>StaticStringGenerator</code></a> instances.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StringArrayGenerator.html" title="class in io.bloviate.gen">StringArrayGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StringArrayGenerator.html" title="class in io.bloviate.gen">StringArrayGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates a fixed-length <code>String[]</code> whose elements are random alphabetic strings, bound
 to JDBC arrays of SQL type <code>VARCHAR</code>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StringArrayGenerator.Builder.html" title="class in io.bloviate.gen">StringArrayGenerator.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/StringArrayGenerator.Builder.html" title="class in io.bloviate.gen">StringArrayGenerator.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/StringArrayGenerator.html" title="class in io.bloviate.gen"><code>StringArrayGenerator</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/file/TabDelimitedFile.html" title="class in io.bloviate.file">TabDelimitedFile</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/file/TabDelimitedFile.html" title="class in io.bloviate.file">TabDelimitedFile</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block"><a href="io/bloviate/file/FileDefinition.html" title="class in io.bloviate.file"><code>FileDefinition</code></a> for tab-delimited (TSV) output.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/bloviate/db/Table.html" title="class in io.bloviate.db">Table</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/bloviate/db/Table.html" title="class in io.bloviate.db">Table</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
 <div class="block">Represents a database table with its columns, keys, and relationships.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/bloviate/db/TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/bloviate/db/TableConfiguration.html" title="class in io.bloviate.db">TableConfiguration</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
 <div class="block">Configuration for customizing how a specific table should be filled with data.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/db/TableFiller.html" title="class in io.bloviate.db">TableFiller</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/db/TableFiller.html" title="class in io.bloviate.db">TableFiller</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fills a database table with generated data.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/db/TableFiller.Builder.html" title="class in io.bloviate.db">TableFiller.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/db/TableFiller.Builder.html" title="class in io.bloviate.db">TableFiller.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for constructing <a href="io/bloviate/db/TableFiller.html" title="class in io.bloviate.db"><code>TableFiller</code></a> instances.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/tpcc/TPCCConfiguration.html" title="class in io.bloviate.gen.tpcc">TPCCConfiguration</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/tpcc/TPCCConfiguration.html" title="class in io.bloviate.gen.tpcc">TPCCConfiguration</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builds a complete set of <a href="io/bloviate/db/TableConfiguration.html" title="class in io.bloviate.db"><code>TableConfiguration</code></a>s for the TPC-C schema
 (see <code>create_tpcc.*.sql</code>), suitable for passing to a
 <code>DatabaseConfiguration</code>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/tpcc/TPCCUtils.html" title="class in io.bloviate.gen.tpcc">TPCCUtils</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/tpcc/TPCCUtils.html" title="class in io.bloviate.gen.tpcc">TPCCUtils</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Utilities implementing pieces of the TPC-C specification.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/UUIDGenerator.html" title="class in io.bloviate.gen">UUIDGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/UUIDGenerator.html" title="class in io.bloviate.gen">UUIDGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generator for UUID (Universally Unique Identifier) values.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/UUIDGenerator.Builder.html" title="class in io.bloviate.gen">UUIDGenerator.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/UUIDGenerator.Builder.html" title="class in io.bloviate.gen">UUIDGenerator.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for creating UUIDGenerator instances.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/VariableStringGenerator.html" title="class in io.bloviate.gen">VariableStringGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/VariableStringGenerator.html" title="class in io.bloviate.gen">VariableStringGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates strings whose length varies randomly within an inclusive
 <code>[minLength, maxLength]</code> range.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/VariableStringGenerator.Builder.html" title="class in io.bloviate.gen">VariableStringGenerator.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/VariableStringGenerator.Builder.html" title="class in io.bloviate.gen">VariableStringGenerator.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for <a href="io/bloviate/gen/VariableStringGenerator.html" title="class in io.bloviate.gen"><code>VariableStringGenerator</code></a> instances.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/WeightedCategoricalGenerator.html" title="class in io.bloviate.gen">WeightedCategoricalGenerator&lt;T&gt;</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/WeightedCategoricalGenerator.html" title="class in io.bloviate.gen">WeightedCategoricalGenerator&lt;T&gt;</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Draws from a fixed set of values according to per-value <em>weights</em> — a categorical
 distribution.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/WeightedCategoricalGenerator.Builder.html" title="class in io.bloviate.gen">WeightedCategoricalGenerator.Builder&lt;T&gt;</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/WeightedCategoricalGenerator.Builder.html" title="class in io.bloviate.gen">WeightedCategoricalGenerator.Builder&lt;T&gt;</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/WeightedCategoricalGenerator.html" title="class in io.bloviate.gen"><code>WeightedCategoricalGenerator</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/XmlGenerator.html" title="class in io.bloviate.gen">XmlGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/XmlGenerator.html" title="class in io.bloviate.gen">XmlGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates small well-formed XML documents, e.g.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/XmlGenerator.Builder.html" title="class in io.bloviate.gen">XmlGenerator.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/XmlGenerator.Builder.html" title="class in io.bloviate.gen">XmlGenerator.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/XmlGenerator.html" title="class in io.bloviate.gen"><code>XmlGenerator</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/tpcc/ZipCodeGenerator.html" title="class in io.bloviate.gen.tpcc">ZipCodeGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/tpcc/ZipCodeGenerator.html" title="class in io.bloviate.gen.tpcc">ZipCodeGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates TPC-C zip codes (clause 4.3.2.7): four random digits followed by the
 constant suffix "11111", producing a 9-character value.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/tpcc/ZipCodeGenerator.Builder.html" title="class in io.bloviate.gen.tpcc">ZipCodeGenerator.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/tpcc/ZipCodeGenerator.Builder.html" title="class in io.bloviate.gen.tpcc">ZipCodeGenerator.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builds <a href="io/bloviate/gen/tpcc/ZipCodeGenerator.html" title="class in io.bloviate.gen.tpcc"><code>ZipCodeGenerator</code></a> instances.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/ZipfianIntegerGenerator.html" title="class in io.bloviate.gen">ZipfianIntegerGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/ZipfianIntegerGenerator.html" title="class in io.bloviate.gen">ZipfianIntegerGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates integers from a <em>Zipfian</em> (power-law) distribution over <code>size</code> consecutive
 values starting at <code>start</code>: rank <em>k</em> (1-based) has probability proportional to
 <code>1 / k^exponent</code>, so the lowest values are by far the most frequent and the tail is long and
 thin.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/ZipfianIntegerGenerator.Builder.html" title="class in io.bloviate.gen">ZipfianIntegerGenerator.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/bloviate/gen/ZipfianIntegerGenerator.Builder.html" title="class in io.bloviate.gen">ZipfianIntegerGenerator.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Fluent builder for <a href="io/bloviate/gen/ZipfianIntegerGenerator.html" title="class in io.bloviate.gen"><code>ZipfianIntegerGenerator</code></a>.</div>
 </div>
 </div>
