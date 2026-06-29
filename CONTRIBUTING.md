@@ -63,23 +63,11 @@ Test schemas live under `bloviate-core/src/test/resources/` (TPCC, AuctionMark, 
 others). `BaseDatabaseTestCase` provides the shared `DataSource` plumbing and the
 fidelity assertions used by the TPC-C tests.
 
-## Local Databases with Docker
+## Databases for Testing
 
-The `docker/` directory contains throwaway database instances for manual
-experimentation (separate from the TestContainers used in tests):
-
-```bash
-# PostgreSQL
-cd docker/postgres && ./up.sh
-
-# MySQL
-cd docker/mysql && ./up.sh
-
-# CockroachDB
-cd docker/crdb && ./up.sh
-```
-
-Each directory provides `up.sh`, `down.sh`, and `prune.sh` scripts.
+Integration tests rely on [Testcontainers](https://testcontainers.com/), which starts and tears
+down database containers automatically — a running Docker daemon is the only prerequisite. There is
+nothing to start or stop by hand.
 
 ## Submitting Changes
 
