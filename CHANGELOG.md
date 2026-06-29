@@ -1,3 +1,9 @@
+## [2.15.7](https://github.com/timveil/bloviate/compare/v2.15.6...v2.15.7) (2026-06-29)
+
+### 🐛 Bug Fixes
+
+* **ci:** use --squash for dependabot auto-merge ([#512](https://github.com/timveil/bloviate/issues/512)) ([d03e929](https://github.com/timveil/bloviate/commit/d03e9291a5b08e38771acabe364661295fe10fa1))
+
 ## [2.15.6](https://github.com/timveil/bloviate/compare/v2.15.5...v2.15.6) (2026-06-29)
 
 ### 🐛 Bug Fixes
