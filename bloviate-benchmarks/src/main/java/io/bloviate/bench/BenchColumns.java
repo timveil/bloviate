@@ -64,4 +64,23 @@ final class BenchColumns {
                 column("external_id", JDBCType.OTHER, "uuid", null, null),
                 column("payload", JDBCType.OTHER, "jsonb", null, null));
     }
+
+    /**
+     * A portable row of standard SQL types only — the ones every {@link io.bloviate.ext.DatabaseSupport}
+     * resolves through the shared cross-database defaults (no PostgreSQL extension types). Used by the
+     * cross-support resolution benchmark (so every support can resolve every column) and by the bind
+     * benchmark (so a plain {@code CREATE TABLE} of these types accepts the generated values). The
+     * column types are mirrored by {@code BindBenchmark}'s DDL, in this order.
+     */
+    static List<Column> standardRow() {
+        return List.of(
+                column("c_int", JDBCType.INTEGER, "int", null, null),
+                column("c_bigint", JDBCType.BIGINT, "bigint", null, null),
+                column("c_double", JDBCType.DOUBLE, "double", null, null),
+                column("c_numeric", JDBCType.NUMERIC, "numeric", 12, 2),
+                column("c_varchar", JDBCType.VARCHAR, "varchar", 64, null),
+                column("c_bool", JDBCType.BOOLEAN, "boolean", null, null),
+                column("c_date", JDBCType.DATE, "date", null, null),
+                column("c_ts", JDBCType.TIMESTAMP, "timestamp", null, null));
+    }
 }

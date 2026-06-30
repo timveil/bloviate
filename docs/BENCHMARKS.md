@@ -25,9 +25,10 @@ to the library.
 
 ## CPU micro-benchmarks (JMH)
 
-No Docker (the metadata benchmark uses an in-process H2 database; the rest are pure CPU). Where a
-benchmark exercises type-driven generation it resolves generators exactly the way `TableFiller` does
-(`DatabaseSupport.getDataGenerator(column, random)`), so the numbers reflect real engine cost.
+No Docker (the metadata and bind benchmarks use an in-process H2 database; the rest are pure CPU).
+Where a benchmark exercises type-driven generation it resolves generators exactly the way
+`TableFiller` does (`DatabaseSupport.getDataGenerator(column, random)`), so the numbers reflect real
+engine cost.
 
 - `GeneratorBenchmark` — throughput of `generate()` / `generateAsString()` across a spread of
   column types: the common scalars (int, numeric, varchar, timestamp, uuid, jsonb, …) plus the
@@ -62,6 +63,14 @@ benchmark exercises type-driven generation it resolves generators exactly the wa
   scales with *schema size*, not row count, so it is invisible in the end-to-end row/sec numbers.
   Runs against an in-memory H2 schema of `-Dmeta.tables` (default 50) tables × `-Dmeta.columns`
   (default 16) columns with a foreign-key chain.
+- `SupportResolutionBenchmark` — generator *resolution* dispatch (`getDataGenerator`: registry lookup
+  + builder construction) across all seven `DatabaseSupport` implementations, over a portable
+  standard-type row. `GeneratorBenchmark` only resolves through PostgreSQL; this compares the
+  per-support dispatch cost and exercises every support's resolution path.
+- `BindBenchmark` — the real per-cell bind in `TableFiller.fill()`
+  (`generateAndSet(connection, ps, col)`), isolated from the database round-trip by binding into an
+  in-memory H2 `PreparedStatement` and never executing it. Compared with `RowDispatchBenchmark`
+  (generation only), the delta is the JDBC parameter-binding cost the wire normally hides.
 
 Build the runnable uber-jar and run it:
 
@@ -95,6 +104,11 @@ java -jar bloviate-benchmarks/target/benchmarks.jar DistributionGeneratorBenchma
 # metadata introspection on a larger schema (JMH forks JVMs, so pass -D via -jvmArgsAppend)
 java -jar bloviate-benchmarks/target/benchmarks.jar MetadataBenchmark \
     -jvmArgsAppend "-Dmeta.tables=300 -Dmeta.columns=24"
+
+# resolution dispatch for a couple of supports, and the isolated JDBC bind cost
+java -jar bloviate-benchmarks/target/benchmarks.jar SupportResolutionBenchmark \
+    -p supportCase=POSTGRES,MYSQL
+java -jar bloviate-benchmarks/target/benchmarks.jar BindBenchmark
 
 # fewer forks/iterations while iterating locally
 java -jar bloviate-benchmarks/target/benchmarks.jar -f 1 -wi 2 -i 3
