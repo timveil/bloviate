@@ -19,6 +19,7 @@ package io.bloviate.junit;
 import io.bloviate.db.DatabaseConfiguration;
 import io.bloviate.db.DatabaseFiller;
 import io.bloviate.ext.DatabaseSupport;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionConfigurationException;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -88,7 +89,7 @@ public class BloviateExtension implements BeforeEachCallback {
         new DatabaseFiller.Builder(connection, configuration).build().fill();
     }
 
-    private FillDatabase resolveAnnotation(ExtensionContext context) {
+    private @Nullable FillDatabase resolveAnnotation(ExtensionContext context) {
         return context.getTestMethod()
                 .flatMap(method -> AnnotationSupport.findAnnotation(method, FillDatabase.class))
                 .orElseGet(() -> AnnotationSupport.findAnnotation(
