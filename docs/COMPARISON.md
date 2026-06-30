@@ -73,7 +73,7 @@ Syntho").
 5. **Determinism as a first-class contract.** Same seed + same schema ⇒ byte-identical data, even
    under parallel and partitioned fills (see [reproducibility](./ARCHITECTURE.md#reproducibility--deterministic-seeds-from-schema-identity)).
    Most ML synthesizers cannot offer byte-identical reruns.
-6. **Maintained and multi-DB** — PostgreSQL, MySQL, and CockroachDB, actively released — while synth
+6. **Maintained and multi-DB** — PostgreSQL, MySQL, MariaDB, CockroachDB, H2, and SQLite, actively released — while synth
    is dormant and Benerator CE is frozen.
 
 ## Limitations
