@@ -1,3 +1,9 @@
+## [2.18.1](https://github.com/timveil/bloviate/compare/v2.18.0...v2.18.1) (2026-06-30)
+
+### ♻️ Code Refactoring
+
+* simplify benchmark loop, adopt @NullMarked in bloviate-junit ([#524](https://github.com/timveil/bloviate/issues/524)) ([2b1fb5c](https://github.com/timveil/bloviate/commit/2b1fb5c65b81940002f0c52812c3fb4b6a4ff990))
+
 ## [2.18.0](https://github.com/timveil/bloviate/compare/v2.17.0...v2.18.0) (2026-06-29)
 
 ### ✨ Features
