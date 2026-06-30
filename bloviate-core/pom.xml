@@ -33,6 +33,10 @@
     <name>Bloviate Core</name>
     <description>Bloviate's dependency-free engine: auto-discovers a JDBC schema and fills it with reproducible, foreign-key-aware test data (and CSV/TSV files)</description>
 
+    <properties>
+        <automatic.module.name>io.bloviate.core</automatic.module.name>
+    </properties>
+
     <dependencies>
 
         <dependency>

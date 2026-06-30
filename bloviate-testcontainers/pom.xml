@@ -34,6 +34,7 @@
     <description>Testcontainers integration for Bloviate: fill a JdbcDatabaseContainer with generated data</description>
 
     <properties>
+        <automatic.module.name>io.bloviate.testcontainers</automatic.module.name>
         <!-- thin integration layer with a single end-to-end test; relaxed below the parent floor to
              lock in no-regression. Ratchet up as coverage improves. -->
         <jacoco.line.min>0.70</jacoco.line.min>
