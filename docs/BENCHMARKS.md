@@ -25,7 +25,8 @@ to the library.
 
 ## CPU micro-benchmarks (JMH)
 
-No Docker. The benchmarks resolve generators exactly the way `TableFiller` does
+No Docker (the metadata benchmark uses an in-process H2 database; the rest are pure CPU). Where a
+benchmark exercises type-driven generation it resolves generators exactly the way `TableFiller` does
 (`DatabaseSupport.getDataGenerator(column, random)`), so the numbers reflect real engine cost.
 
 - `GeneratorBenchmark` — throughput of `generate()` / `generateAsString()` across a spread of
@@ -52,6 +53,15 @@ No Docker. The benchmarks resolve generators exactly the way `TableFiller` does
   projected by several columns): `projectRowShared` (one `Person` build per row, the rest cache
   hits) vs `projectRowUncorrelated` (every column rebuilds its own entity), isolating what the
   shared-entity cache saves.
+- `ForeignKeyGeneratorBenchmark` — per-row cost of the cross-table key generation that
+  referentially-correct fills pay and FK-free fills don't (the reason a TPC-C row costs more than a
+  `wide` row). Models a TPC-C `orders` → `order_line` relationship with no JDBC: `parentKeyRow`
+  (composite key + child-count column) and `childKeyRow` (parent-reproducing key components + a
+  per-parent sequence number, sharing one `ChildCardinality`).
+- `MetadataBenchmark` — cost of JDBC metadata introspection (`DatabaseUtils.getMetadata`), which
+  scales with *schema size*, not row count, so it is invisible in the end-to-end row/sec numbers.
+  Runs against an in-memory H2 schema of `-Dmeta.tables` (default 50) tables × `-Dmeta.columns`
+  (default 16) columns with a foreign-key chain.
 
 Build the runnable uber-jar and run it:
 
@@ -81,6 +91,10 @@ java -jar bloviate-benchmarks/target/benchmarks.jar DatafakerBenchmark \
 # just the Zipfian draws (skewed foreign-key references)
 java -jar bloviate-benchmarks/target/benchmarks.jar DistributionGeneratorBenchmark.generate \
     -p distCase=ZIPFIAN,ZIPFIAN_STEEP
+
+# metadata introspection on a larger schema (JMH forks JVMs, so pass -D via -jvmArgsAppend)
+java -jar bloviate-benchmarks/target/benchmarks.jar MetadataBenchmark \
+    -jvmArgsAppend "-Dmeta.tables=300 -Dmeta.columns=24"
 
 # fewer forks/iterations while iterating locally
 java -jar bloviate-benchmarks/target/benchmarks.jar -f 1 -wi 2 -i 3

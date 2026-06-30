@@ -61,6 +61,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- in-memory database for the metadata-introspection JMH benchmark (no Docker) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+        </dependency>
+
         <!-- JMH (CPU micro-benchmarks) -->
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
