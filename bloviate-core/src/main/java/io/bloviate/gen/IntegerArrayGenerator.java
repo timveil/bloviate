@@ -17,6 +17,7 @@
 package io.bloviate.gen;
 
 import java.sql.*;
+import java.util.StringJoiner;
 import java.util.random.RandomGenerator;
 
 /**
@@ -40,6 +41,22 @@ public class IntegerArrayGenerator extends AbstractDataGenerator<Integer[]> {
 
         return randomArray;
 
+    }
+
+    /**
+     * Renders the generated array as a PostgreSQL array literal — e.g. {@code {1,-42,7}} — so
+     * flat-file output (the only consumer of {@code generateAsString}) carries the element values
+     * rather than an {@code Integer[]} identity string.
+     */
+    @Override
+    public String generateAsString() {
+        StringJoiner joiner = new StringJoiner(",", "{", "}");
+
+        for (Integer element : generate()) {
+            joiner.add(element == null ? "NULL" : element.toString());
+        }
+
+        return joiner.toString();
     }
 
     @Override
