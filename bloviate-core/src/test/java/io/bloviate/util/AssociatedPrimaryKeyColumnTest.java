@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.sql.JDBCType;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -122,5 +123,25 @@ class AssociatedPrimaryKeyColumnTest {
         // sequence 2 on the child FK must resolve to the sequence-2 PK column, not sequence 1
         assertSame(pkB, DatabaseUtils.getAssociatedPrimaryKeyColumn(database, child, fkB));
         assertSame(pkA, DatabaseUtils.getAssociatedPrimaryKeyColumn(database, child, fkA));
+    }
+
+    @Test
+    void terminatesOnCircularForeignKeyChainInsteadOfStackOverflow() {
+        // A.id is the PK of A and a FK to B.id; B.id is the PK of B and a FK to A.id — a cycle A->B->A.
+        Column aId = col("id", "a");
+        Column bId = col("id", "b");
+
+        ForeignKey aToB = new ForeignKey(List.of(new KeyColumn(1, aId)), singleColumnPk("b", bId));
+        Table a = new Table("a", singleColumnPk("a", aId), List.of(aId), List.of(aToB));
+
+        ForeignKey bToA = new ForeignKey(List.of(new KeyColumn(1, bId)), singleColumnPk("a", aId));
+        Table b = new Table("b", singleColumnPk("b", bId), List.of(bId), List.of(bToA));
+
+        Database database = new Database("test", "1", null, null, List.of(a, b));
+
+        // the visited-set guard must break the cycle rather than recurse without bound
+        Column resolved = assertDoesNotThrow(
+                () -> DatabaseUtils.getAssociatedPrimaryKeyColumn(database, a, aId));
+        assertSame(aId, resolved);
     }
 }

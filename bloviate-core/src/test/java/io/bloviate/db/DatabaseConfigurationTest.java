@@ -23,8 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import java.sql.JDBCType;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DatabaseConfigurationTest {
 
@@ -44,5 +46,19 @@ class DatabaseConfigurationTest {
         DatabaseConfiguration configuration = new DatabaseConfiguration(128, 100, new DefaultSupport(), null, registry);
 
         assertSame(registry, configuration.generatorRegistry());
+    }
+
+    @Test
+    void rejectsZeroBatchSize() {
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> new DatabaseConfiguration(0, 100, new DefaultSupport(), null));
+
+        assertEquals("batchSize must be >= 1: 0", e.getMessage());
+    }
+
+    @Test
+    void rejectsNegativeBatchSize() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new DatabaseConfiguration(-5, 100, new DefaultSupport(), null));
     }
 }

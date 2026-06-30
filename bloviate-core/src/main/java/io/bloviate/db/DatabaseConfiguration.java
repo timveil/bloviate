@@ -44,7 +44,7 @@ import java.util.Set;
  * {@link io.bloviate.util.DatabaseUtils#columnSeed(Column, long)} for how per-column seeds are
  * derived.
  *
- * @param batchSize the number of rows to include in each batch INSERT operation
+ * @param batchSize the number of rows to include in each batch INSERT operation; must be {@code >= 1}
  * @param defaultRowCount the default number of rows to generate for each table
  * @param databaseSupport the database-specific support implementation
  * @param tableConfigurations optional per-table configuration overrides
@@ -73,6 +73,9 @@ public record DatabaseConfiguration(int batchSize, long defaultRowCount, Databas
      * applies whenever a caller does not specify them.
      */
     public DatabaseConfiguration {
+        if (batchSize < 1) {
+            throw new IllegalArgumentException("batchSize must be >= 1: " + batchSize);
+        }
         if (commitStrategy == null) {
             commitStrategy = CommitStrategy.connectionDefault();
         }

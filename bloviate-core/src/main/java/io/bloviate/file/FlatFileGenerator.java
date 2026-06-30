@@ -104,7 +104,7 @@ public class FlatFileGenerator implements FileGenerator {
 
             printHeader(csvPrinter);
 
-            for (int i = 0; i < rows; i++) {
+            for (long i = 0; i < rows; i++) {
                 for (ColumnDefinition columnDefinition : columnDefinitions) {
                     csvPrinter.print(columnDefinition.dataGenerator().generateAsString());
                 }
