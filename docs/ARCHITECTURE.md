@@ -381,10 +381,7 @@ classDiagram
     AbstractDatabaseSupport <|-- DefaultSupport
     AbstractDatabaseSupport <|-- PostgresSupport
     AbstractDatabaseSupport <|-- MySQLSupport
-    AbstractDatabaseSupport <|-- H2Support
-    AbstractDatabaseSupport <|-- SQLiteSupport
     PostgresSupport <|-- CockroachDBSupport
-    MySQLSupport <|-- MariaDBSupport
 ```
 
 | Implementation | Adds on top of the JDBC defaults |
@@ -392,10 +389,7 @@ classDiagram
 | [`DefaultSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/DefaultSupport.java) | Nothing — cross-database JDBC types only |
 | [`PostgresSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/PostgresSupport.java) | `uuid`, `json`/`jsonb`, `inet`, `cidr`, `macaddr`/`macaddr8`, `interval`, `bit`/`varbit`, `xml`, and `text`/`int` arrays |
 | [`MySQLSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/MySQLSupport.java) | `JSON` columns generate valid JSON instead of arbitrary text |
-| [`MariaDBSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/MariaDBSupport.java) | Extends `MySQLSupport` — MariaDB columns surface through JDBC essentially as MySQL's |
 | [`CockroachDBSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/CockroachDBSupport.java) | Extends `PostgresSupport` (CockroachDB is PG wire-compatible) |
-| [`H2Support`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/H2Support.java) | Signed `TINYINT` (`-128..127`), `UUID` (reported as `BINARY`), and valid `JSON` |
-| [`SQLiteSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/SQLiteSupport.java) | Nothing — SQLite's affinity types collapse onto `INTEGER`/`FLOAT`/`VARCHAR`, already covered by the defaults |
 
 You don't have to pick manually. `DatabaseSupport.forConnection(connection)` reads
 `DatabaseMetaData.getDatabaseProductName()` and selects the right strategy by substring match,
@@ -585,8 +579,8 @@ These principles aren't abstract — they show up as concrete quality properties
 - **A dependency-free core.** `bloviate-core` keeps its dependency surface small and pushes JUnit and
   Testcontainers to `provided` scope, so integrating Bloviate doesn't drag a testing framework into
   your runtime classpath, and you bring your own versions.
-- **Tested against real databases.** Integration tests run against actual PostgreSQL, MySQL, MariaDB,
-  and CockroachDB instances via Testcontainers — plus embedded H2 and SQLite — not mocks — over real benchmark schemas (TPC-C,
+- **Tested against real databases.** Integration tests run against actual PostgreSQL, MySQL, and
+  CockroachDB instances via Testcontainers — not mocks — over real benchmark schemas (TPC-C,
   AuctionMark, Wikipedia). Behavior is verified end-to-end, including the FK ordering and round-trip
   read-back through each generator's `get(ResultSet, ...)`.
 - **Reproducibility as a guarantee, not a hope.** Because seeds are pure functions of schema identity,
