@@ -1,3 +1,9 @@
+## [2.18.4](https://github.com/timveil/bloviate/compare/v2.18.3...v2.18.4) (2026-06-30)
+
+### 🐛 Bug Fixes
+
+* **engine:** harden fill engine against memory/resource issues at scale ([#526](https://github.com/timveil/bloviate/issues/526)) ([#529](https://github.com/timveil/bloviate/issues/529)) ([dade406](https://github.com/timveil/bloviate/commit/dade4066fab714aca91a87657ea3565b8400bede))
+
 ## [2.18.3](https://github.com/timveil/bloviate/compare/v2.18.2...v2.18.3) (2026-06-30)
 
 ### 🔧 Build System
