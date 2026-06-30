@@ -17,6 +17,7 @@
 package io.bloviate.gen;
 
 import java.sql.*;
+import java.util.StringJoiner;
 import java.util.random.RandomGenerator;
 
 /**
@@ -44,9 +45,21 @@ public class StringArrayGenerator extends AbstractDataGenerator<String[]> {
 
     }
 
+    /**
+     * Renders the generated array as a PostgreSQL array literal — e.g. {@code {abc,def,ghi}} —
+     * so flat-file output (the only consumer of {@code generateAsString}) carries the element
+     * values rather than a {@code String[]} identity string. Elements are plain alphabetic
+     * strings, so no element quoting or escaping is required.
+     */
     @Override
     public String generateAsString() {
-        return null;
+        StringJoiner joiner = new StringJoiner(",", "{", "}");
+
+        for (String element : generate()) {
+            joiner.add(element == null ? "NULL" : element);
+        }
+
+        return joiner.toString();
     }
 
     @Override
