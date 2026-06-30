@@ -1,3 +1,9 @@
+## [2.18.3](https://github.com/timveil/bloviate/compare/v2.18.2...v2.18.3) (2026-06-30)
+
+### 🔧 Build System
+
+* stamp a stable Automatic-Module-Name into each jar ([#525](https://github.com/timveil/bloviate/issues/525)) ([9c56a49](https://github.com/timveil/bloviate/commit/9c56a49e976e4b3c06eefc00d1395b46b4f23834))
+
 ## [2.18.2](https://github.com/timveil/bloviate/compare/v2.18.1...v2.18.2) (2026-06-30)
 
 ### 🐛 Bug Fixes
