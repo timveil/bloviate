@@ -1,3 +1,9 @@
+## [2.18.2](https://github.com/timveil/bloviate/compare/v2.18.1...v2.18.2) (2026-06-30)
+
+### 🐛 Bug Fixes
+
+* **gen:** render array generators as PostgreSQL array literals in generateAsString ([#528](https://github.com/timveil/bloviate/issues/528)) ([94df6bc](https://github.com/timveil/bloviate/commit/94df6bcc30a4c116c7689c0b68fa71c8d03c0c05))
+
 ## [2.18.1](https://github.com/timveil/bloviate/compare/v2.18.0...v2.18.1) (2026-06-30)
 
 ### ♻️ Code Refactoring
