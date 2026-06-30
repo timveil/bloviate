@@ -68,7 +68,16 @@ public class GeneratorBenchmark {
         TIMESTAMP(BenchColumns.column("c", JDBCType.TIMESTAMP, "timestamp", null, null)),
         BIT(BenchColumns.column("c", JDBCType.BIT, "bit", 8, null)),
         UUID(BenchColumns.column("c", JDBCType.OTHER, "uuid", null, null)),
-        JSONB(BenchColumns.column("c", JDBCType.OTHER, "jsonb", null, null));
+        JSONB(BenchColumns.column("c", JDBCType.OTHER, "jsonb", null, null)),
+        // structured / extension types — typically the most expensive cells, dispatched on type name
+        XML(BenchColumns.column("c", JDBCType.SQLXML, "xml", null, null)),
+        INET(BenchColumns.column("c", JDBCType.OTHER, "inet", null, null)),
+        CIDR(BenchColumns.column("c", JDBCType.OTHER, "cidr", null, null)),
+        MACADDR(BenchColumns.column("c", JDBCType.OTHER, "macaddr", null, null)),
+        INTERVAL(BenchColumns.column("c", JDBCType.OTHER, "interval", null, null)),
+        VARBIT(BenchColumns.column("c", JDBCType.OTHER, "varbit", 16, null)),
+        INT_ARRAY(BenchColumns.column("c", JDBCType.ARRAY, "_int4", null, null)),
+        TEXT_ARRAY(BenchColumns.column("c", JDBCType.ARRAY, "_text", null, null));
 
         private final Column column;
 

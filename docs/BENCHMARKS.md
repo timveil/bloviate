@@ -29,7 +29,13 @@ No Docker. The benchmarks resolve generators exactly the way `TableFiller` does
 (`DatabaseSupport.getDataGenerator(column, random)`), so the numbers reflect real engine cost.
 
 - `GeneratorBenchmark` — throughput of `generate()` / `generateAsString()` across a spread of
-  column types (int, numeric, varchar, timestamp, uuid, jsonb, …).
+  column types: the common scalars (int, numeric, varchar, timestamp, uuid, jsonb, …) plus the
+  heavier structured/extension types (xml, inet, cidr, macaddr, interval, varbit, int/text arrays),
+  which are typically the most expensive cells.
+- `DistributionGeneratorBenchmark` — per-draw cost of the non-uniform *distribution* generators
+  (Zipfian, weighted-categorical, normal int/double, recency-skewed timestamp) that
+  `GeneratorBenchmark`'s uniform spread doesn't cover. Isolates the sampling overhead each shape
+  adds — e.g. the cumulative-weight binary search behind Zipfian/categorical draws.
 - `RowDispatchBenchmark` — models the inner loop of `TableFiller.fill()`: the per-cell
   `generatorMap.get(column)` HashMap lookup plus `generate()` over a wide row. This is the
   baseline for the "index generators by array position" change.
@@ -71,6 +77,10 @@ java -jar bloviate-benchmarks/target/benchmarks.jar FileGenBenchmark \
 # realistic-value cost for a couple of Datafaker providers
 java -jar bloviate-benchmarks/target/benchmarks.jar DatafakerBenchmark \
     -p provider=EMAIL,STREET_ADDRESS
+
+# just the Zipfian draws (skewed foreign-key references)
+java -jar bloviate-benchmarks/target/benchmarks.jar DistributionGeneratorBenchmark.generate \
+    -p distCase=ZIPFIAN,ZIPFIAN_STEEP
 
 # fewer forks/iterations while iterating locally
 java -jar bloviate-benchmarks/target/benchmarks.jar -f 1 -wi 2 -i 3
