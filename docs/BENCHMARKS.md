@@ -25,14 +25,52 @@ to the library.
 
 ## CPU micro-benchmarks (JMH)
 
-Pure-CPU, no Docker. The benchmarks resolve generators exactly the way `TableFiller` does
-(`DatabaseSupport.getDataGenerator(column, random)`), so the numbers reflect real engine cost.
+No Docker (the metadata and bind benchmarks use an in-process H2 database; the rest are pure CPU).
+Where a benchmark exercises type-driven generation it resolves generators exactly the way
+`TableFiller` does (`DatabaseSupport.getDataGenerator(column, random)`), so the numbers reflect real
+engine cost.
 
 - `GeneratorBenchmark` — throughput of `generate()` / `generateAsString()` across a spread of
-  column types (int, numeric, varchar, timestamp, uuid, jsonb, …).
+  column types: the common scalars (int, numeric, varchar, timestamp, uuid, jsonb, …) plus the
+  heavier structured/extension types (xml, inet, cidr, macaddr, interval, varbit, int/text arrays),
+  which are typically the most expensive cells.
+- `DistributionGeneratorBenchmark` — per-draw cost of the non-uniform *distribution* generators
+  (Zipfian, weighted-categorical, normal int/double, recency-skewed timestamp) that
+  `GeneratorBenchmark`'s uniform spread doesn't cover. Isolates the sampling overhead each shape
+  adds — e.g. the cumulative-weight binary search behind Zipfian/categorical draws.
 - `RowDispatchBenchmark` — models the inner loop of `TableFiller.fill()`: the per-cell
   `generatorMap.get(column)` HashMap lookup plus `generate()` over a wide row. This is the
   baseline for the "index generators by array position" change.
+- `FileGenBenchmark` — end-to-end throughput of the flat-file subsystem
+  (`FlatFileGenerator.generate()`) writing a full file to a temp path: per-cell
+  `generateAsString()`, Commons-CSV formatting/quoting, and buffered IO. Crosses the three
+  delimited formats (`CSV`/`TDV`/`PIPE`) with cell content that is realistic (`MIXED`) or
+  constant strings that do/don't need escaping (`PLAIN`/`ESCAPED`), isolating the quoting cost.
+  Tune file size with `-Dfile.rows` (default 5,000).
+- `DatafakerBenchmark` — raw per-cell cost of the `bloviate-datafaker` realistic-value layer:
+  one `DatafakerStringGenerator.generate()` across a spread of providers (email, name, phone,
+  company, address, …), directly comparable to the type-driven generators above.
+- `DatafakerProjectionBenchmark` — the correlated row projection (one shared per-row entity
+  projected by several columns): `projectRowShared` (one `Person` build per row, the rest cache
+  hits) vs `projectRowUncorrelated` (every column rebuilds its own entity), isolating what the
+  shared-entity cache saves.
+- `ForeignKeyGeneratorBenchmark` — per-row cost of the cross-table key generation that
+  referentially-correct fills pay and FK-free fills don't (the reason a TPC-C row costs more than a
+  `wide` row). Models a TPC-C `orders` → `order_line` relationship with no JDBC: `parentKeyRow`
+  (composite key + child-count column) and `childKeyRow` (parent-reproducing key components + a
+  per-parent sequence number, sharing one `ChildCardinality`).
+- `MetadataBenchmark` — cost of JDBC metadata introspection (`DatabaseUtils.getMetadata`), which
+  scales with *schema size*, not row count, so it is invisible in the end-to-end row/sec numbers.
+  Runs against an in-memory H2 schema of `-Dmeta.tables` (default 50) tables × `-Dmeta.columns`
+  (default 16) columns with a foreign-key chain.
+- `SupportResolutionBenchmark` — generator *resolution* dispatch (`getDataGenerator`: registry lookup
+  + builder construction) across all seven `DatabaseSupport` implementations, over a portable
+  standard-type row. `GeneratorBenchmark` only resolves through PostgreSQL; this compares the
+  per-support dispatch cost and exercises every support's resolution path.
+- `BindBenchmark` — the real per-cell bind in `TableFiller.fill()`
+  (`generateAndSet(connection, ps, col)`), isolated from the database round-trip by binding into an
+  in-memory H2 `PreparedStatement` and never executing it. Compared with `RowDispatchBenchmark`
+  (generation only), the delta is the JDBC parameter-binding cost the wire normally hides.
 
 Build the runnable uber-jar and run it:
 
@@ -50,6 +88,27 @@ java -jar bloviate-benchmarks/target/benchmarks.jar RowDispatchBenchmark
 # restrict GeneratorBenchmark to specific column types
 java -jar bloviate-benchmarks/target/benchmarks.jar GeneratorBenchmark.generate \
     -p genCase=UUID,VARCHAR_SHORT
+
+# flat-file write, CSV only, bigger files (JMH forks JVMs, so pass -Dfile.rows via -jvmArgsAppend)
+java -jar bloviate-benchmarks/target/benchmarks.jar FileGenBenchmark \
+    -p format=CSV -jvmArgsAppend "-Dfile.rows=50000"
+
+# realistic-value cost for a couple of Datafaker providers
+java -jar bloviate-benchmarks/target/benchmarks.jar DatafakerBenchmark \
+    -p provider=EMAIL,STREET_ADDRESS
+
+# just the Zipfian draws (skewed foreign-key references)
+java -jar bloviate-benchmarks/target/benchmarks.jar DistributionGeneratorBenchmark.generate \
+    -p distCase=ZIPFIAN,ZIPFIAN_STEEP
+
+# metadata introspection on a larger schema (JMH forks JVMs, so pass -D via -jvmArgsAppend)
+java -jar bloviate-benchmarks/target/benchmarks.jar MetadataBenchmark \
+    -jvmArgsAppend "-Dmeta.tables=300 -Dmeta.columns=24"
+
+# resolution dispatch for a couple of supports, and the isolated JDBC bind cost
+java -jar bloviate-benchmarks/target/benchmarks.jar SupportResolutionBenchmark \
+    -p supportCase=POSTGRES,MYSQL
+java -jar bloviate-benchmarks/target/benchmarks.jar BindBenchmark
 
 # fewer forks/iterations while iterating locally
 java -jar bloviate-benchmarks/target/benchmarks.jar -f 1 -wi 2 -i 3
