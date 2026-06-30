@@ -54,6 +54,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- realistic-value module under test (Datafaker providers + correlated row projection) -->
+        <dependency>
+            <groupId>io.bloviate</groupId>
+            <artifactId>bloviate-datafaker</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- JMH (CPU micro-benchmarks) -->
         <dependency>
             <groupId>org.openjdk.jmh</groupId>

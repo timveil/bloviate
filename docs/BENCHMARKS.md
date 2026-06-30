@@ -25,7 +25,7 @@ to the library.
 
 ## CPU micro-benchmarks (JMH)
 
-Pure-CPU, no Docker. The benchmarks resolve generators exactly the way `TableFiller` does
+No Docker. The benchmarks resolve generators exactly the way `TableFiller` does
 (`DatabaseSupport.getDataGenerator(column, random)`), so the numbers reflect real engine cost.
 
 - `GeneratorBenchmark` — throughput of `generate()` / `generateAsString()` across a spread of
@@ -33,6 +33,19 @@ Pure-CPU, no Docker. The benchmarks resolve generators exactly the way `TableFil
 - `RowDispatchBenchmark` — models the inner loop of `TableFiller.fill()`: the per-cell
   `generatorMap.get(column)` HashMap lookup plus `generate()` over a wide row. This is the
   baseline for the "index generators by array position" change.
+- `FileGenBenchmark` — end-to-end throughput of the flat-file subsystem
+  (`FlatFileGenerator.generate()`) writing a full file to a temp path: per-cell
+  `generateAsString()`, Commons-CSV formatting/quoting, and buffered IO. Crosses the three
+  delimited formats (`CSV`/`TDV`/`PIPE`) with cell content that is realistic (`MIXED`) or
+  constant strings that do/don't need escaping (`PLAIN`/`ESCAPED`), isolating the quoting cost.
+  Tune file size with `-Dfile.rows` (default 5,000).
+- `DatafakerBenchmark` — raw per-cell cost of the `bloviate-datafaker` realistic-value layer:
+  one `DatafakerStringGenerator.generate()` across a spread of providers (email, name, phone,
+  company, address, …), directly comparable to the type-driven generators above.
+- `DatafakerProjectionBenchmark` — the correlated row projection (one shared per-row entity
+  projected by several columns): `projectRowShared` (one `Person` build per row, the rest cache
+  hits) vs `projectRowUncorrelated` (every column rebuilds its own entity), isolating what the
+  shared-entity cache saves.
 
 Build the runnable uber-jar and run it:
 
@@ -50,6 +63,14 @@ java -jar bloviate-benchmarks/target/benchmarks.jar RowDispatchBenchmark
 # restrict GeneratorBenchmark to specific column types
 java -jar bloviate-benchmarks/target/benchmarks.jar GeneratorBenchmark.generate \
     -p genCase=UUID,VARCHAR_SHORT
+
+# flat-file write, CSV only, bigger files (JMH forks JVMs, so pass -Dfile.rows via -jvmArgsAppend)
+java -jar bloviate-benchmarks/target/benchmarks.jar FileGenBenchmark \
+    -p format=CSV -jvmArgsAppend "-Dfile.rows=50000"
+
+# realistic-value cost for a couple of Datafaker providers
+java -jar bloviate-benchmarks/target/benchmarks.jar DatafakerBenchmark \
+    -p provider=EMAIL,STREET_ADDRESS
 
 # fewer forks/iterations while iterating locally
 java -jar bloviate-benchmarks/target/benchmarks.jar -f 1 -wi 2 -i 3
