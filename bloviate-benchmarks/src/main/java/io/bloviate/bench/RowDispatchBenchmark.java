@@ -96,8 +96,8 @@ public class RowDispatchBenchmark {
      */
     @Benchmark
     public void dispatchRowIndexed(Blackhole blackhole) {
-        for (int i = 0; i < generators.length; i++) {
-            blackhole.consume(generators[i].generate());
+        for (DataGenerator<?> generator : generators) {
+            blackhole.consume(generator.generate());
         }
     }
 }

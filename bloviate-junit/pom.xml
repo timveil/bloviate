@@ -54,6 +54,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- JSpecify nullness annotations (@NullMarked); compile-time only -->
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Testing Dependencies -->
 
         <dependency>
