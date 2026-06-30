@@ -107,16 +107,3 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - **Issues**: [GitHub Issues](https://github.com/timveil/bloviate/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/timveil/bloviate/discussions)
 
-## 📈 Roadmap
-
-- [ ] [Additional database support (Oracle, SQL Server)](https://github.com/timveil/bloviate/issues/445)
-- [x] [Custom data generation plugins](https://github.com/timveil/bloviate/issues/446)
-- [x] [Performance optimizations for large datasets](https://github.com/timveil/bloviate/issues/447) — _parallel table fill, intra-table partitioning, unordered bulk load, configurable commit strategy, batch-rewrite surfacing, and hot-loop dispatch ([benchmarks](https://bloviate.io/guides/benchmarks/))_
-- [ ] GUI for configuration management
-- [x] [Integration with popular testing frameworks](https://github.com/timveil/bloviate/issues/448) — _JUnit 5 (`bloviate-junit`) and Testcontainers (`bloviate-testcontainers`)_
-
----
-
-<div align="center">
-Made with ❤️ by <a href="https://github.com/timveil">Tim Veil</a>
-</div>
