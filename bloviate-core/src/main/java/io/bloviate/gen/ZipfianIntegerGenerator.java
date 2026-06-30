@@ -37,6 +37,15 @@ import java.util.random.RandomGenerator;
  */
 public class ZipfianIntegerGenerator extends AbstractDataGenerator<Integer> {
 
+    /**
+     * The largest supported {@link Builder#size(int)}. Construction precomputes a cumulative table of
+     * {@code size} {@code double}s ({@code 8 * size} bytes), so an unbounded {@code size} would OOM the
+     * JVM at construction time (e.g. {@code size = 2_000_000_000} would request ~16&nbsp;GB). This cap
+     * keeps the table to ~400&nbsp;MB and fails fast with a clear message above it; the distribution is
+     * intended for value spaces of thousands to low millions anyway.
+     */
+    public static final int MAX_SIZE = 50_000_000;
+
     private final int start;
     private final double[] cumulativeWeights;
     private final double totalWeight;
@@ -86,7 +95,7 @@ public class ZipfianIntegerGenerator extends AbstractDataGenerator<Integer> {
         }
 
         /**
-         * The number of distinct values; required and must be {@code >= 1}.
+         * The number of distinct values; required and must be in {@code [1, }{@link #MAX_SIZE}{@code ]}.
          *
          * @param size the count of distinct ranks
          * @return this builder, for chaining
@@ -111,6 +120,9 @@ public class ZipfianIntegerGenerator extends AbstractDataGenerator<Integer> {
         public ZipfianIntegerGenerator build() {
             if (size < 1) {
                 throw new IllegalArgumentException("size must be >= 1: " + size);
+            }
+            if (size > MAX_SIZE) {
+                throw new IllegalArgumentException("size must be <= " + MAX_SIZE + ": " + size);
             }
             if (exponent < 0) {
                 throw new IllegalArgumentException("exponent must be non-negative: " + exponent);

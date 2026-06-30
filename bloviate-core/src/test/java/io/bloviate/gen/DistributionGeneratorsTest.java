@@ -164,6 +164,9 @@ class DistributionGeneratorsTest {
                 () -> new NormalIntegerGenerator.Builder(random).min(10).max(0).build());
         assertThrows(IllegalArgumentException.class,
                 () -> new ZipfianIntegerGenerator.Builder(random).size(0).build());
+        // size above the cap fails fast instead of OOM-ing on a multi-gigabyte cumulative table
+        assertThrows(IllegalArgumentException.class,
+                () -> new ZipfianIntegerGenerator.Builder(random).size(ZipfianIntegerGenerator.MAX_SIZE + 1).build());
         assertThrows(IllegalArgumentException.class,
                 () -> new SkewedTimestampGenerator.Builder(random).skew(0).build());
     }

@@ -19,9 +19,14 @@ package io.bloviate.file;
 import io.bloviate.gen.*;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class FlatFileTest {
 
@@ -66,5 +71,30 @@ class FlatFileTest {
         pipe.yaml();
 
         //new FlatFile.Builder("target/large-csv-test").output(new CsvFile()).addAll(definitions).rows(1000000).build().generate();
+    }
+
+    /**
+     * Guards the row loop bound. The counter is a {@code long} (not an {@code int}) so a row count
+     * past {@link Integer#MAX_VALUE} cannot overflow to {@link Integer#MIN_VALUE} and loop forever;
+     * a literal multi-billion-row run is infeasible to assert, so this pins the exact-count contract
+     * the widened loop preserves.
+     */
+    @Test
+    public void generatesExactRowCount() throws IOException {
+        Random random = new Random();
+        List<ColumnDefinition> definitions = List.of(
+                new ColumnDefinition("integer_col", new IntegerGenerator.Builder(random).build()));
+
+        long requestedRows = 5;
+        FlatFileGenerator csv = new FlatFileGenerator.Builder("target/exact-row-count-test")
+                .addAll(definitions)
+                .rows(requestedRows)
+                .build();
+        csv.generate();
+
+        long lines = Files.lines(Path.of("target/exact-row-count-test.csv")).count();
+
+        // one header line plus exactly the requested number of data rows
+        assertEquals(requestedRows + 1, lines);
     }
 }

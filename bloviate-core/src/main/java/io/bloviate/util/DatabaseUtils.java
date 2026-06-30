@@ -17,6 +17,8 @@
 package io.bloviate.util;
 
 import io.bloviate.db.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -49,6 +51,8 @@ import java.util.*;
  * @see DatabaseFiller
  */
 public class DatabaseUtils {
+
+    private static final Logger logger = LoggerFactory.getLogger(DatabaseUtils.class);
 
     /** Static utility holder — not instantiable. */
     private DatabaseUtils() {
@@ -320,6 +324,23 @@ public class DatabaseUtils {
      * @return the root primary key column, or null if no foreign key relationship exists
      */
     public static Column getAssociatedPrimaryKeyColumn(Database database, Table table, Column column) {
+        return getAssociatedPrimaryKeyColumn(database, table, column, new HashSet<>());
+    }
+
+    /**
+     * Cycle-safe implementation of {@link #getAssociatedPrimaryKeyColumn(Database, Table, Column)}.
+     * {@code visited} accumulates the columns already resolved on the current foreign-key chain (a
+     * {@link Column} carries its owning table name, so it identifies a table/column pair); if one
+     * recurs (a circular FK schema, e.g. A&rarr;B&rarr;A) the traversal stops and returns {@code null}
+     * instead of recursing without bound to a {@link StackOverflowError}.
+     */
+    private static Column getAssociatedPrimaryKeyColumn(Database database, Table table, Column column, Set<Column> visited) {
+
+        if (!visited.add(column)) {
+            logger.warn("circular foreign-key reference detected at [{}.{}]; stopping primary-key resolution",
+                    table.name(), column.name());
+            return null;
+        }
 
         // get this tables foreign keys
         List<ForeignKey> foreignKeys = table.foreignKeys();
@@ -354,7 +375,7 @@ public class DatabaseUtils {
 
                                 Column primaryKeyColumnColumn = primaryKeyColumn.column();
 
-                                Column possibleRoot = getAssociatedPrimaryKeyColumn(database, primaryTable, primaryKeyColumnColumn);
+                                Column possibleRoot = getAssociatedPrimaryKeyColumn(database, primaryTable, primaryKeyColumnColumn, visited);
 
                                 if (possibleRoot != null) {
                                     return possibleRoot;

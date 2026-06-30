@@ -270,10 +270,12 @@ public class DatabaseFiller implements Fillable {
         DatabaseSupport support = configuration.databaseSupport();
 
         // probe once: if we can't disable+re-enable constraints on a borrowed connection, fall back to
-        // the ordered path instead of fanning out into a partially-disabled state
+        // the ordered path instead of fanning out into a partially-disabled state. As in the worker
+        // bodies, a failed re-enable aborts the connection rather than returning it to the pool still
+        // in its constraint-disabled state (see restoreConstraints).
         try (Connection conn = dataSource.getConnection()) {
             BulkLoadHandle handle = support.disableConstraints(conn, database);
-            support.enableConstraints(conn, database, handle);
+            restoreConstraints(support, conn, database, handle);
         } catch (BulkLoadUnsupportedException e) {
             logger.warn("UNORDERED_BULK requested but constraints could not be disabled ({}); "
                     + "falling back to the ordered level-parallel path", e.getMessage());
@@ -415,8 +417,9 @@ public class DatabaseFiller implements Fillable {
      * Borrows a connection from the pool and runs {@code body} on it. When {@code bulk} is true,
      * foreign-key enforcement is disabled on the connection's session before {@code body} and restored
      * in a {@code finally} <em>before</em> the connection returns to the pool — so a constraint-disabled
-     * connection never leaks to other pool users, even if the fill throws. The disable/enable mechanism
-     * is database-specific (see {@link DatabaseSupport#disableConstraints}).
+     * connection never leaks to other pool users, even if the fill throws. If the restore itself fails,
+     * the connection is aborted rather than returned to the pool (see {@link #restoreConstraints}). The
+     * disable/enable mechanism is database-specific (see {@link DatabaseSupport#disableConstraints}).
      */
     private void fillOnPooledConnection(Database database, boolean bulk, ConnectionFill body) throws SQLException {
         DatabaseSupport support = configuration.databaseSupport();
@@ -426,9 +429,33 @@ public class DatabaseFiller implements Fillable {
                 body.fill(conn);
             } finally {
                 if (bulk) {
-                    support.enableConstraints(conn, database, handle);
+                    restoreConstraints(support, conn, database, handle);
                 }
             }
+        }
+    }
+
+    /**
+     * Re-enables the foreign-key enforcement that {@link DatabaseSupport#disableConstraints} turned off
+     * on {@code conn}. If the restore itself fails, the connection is still in its constraint-disabled
+     * session state (e.g. PostgreSQL {@code session_replication_role=replica}); connection pools do not
+     * reset arbitrary session variables on return, so returning it would silently skip FK enforcement
+     * for whatever borrows it next. To prevent that, the connection is {@link Connection#abort aborted}
+     * so the pool discards the physical connection instead of reusing it, and the failure is rethrown
+     * loudly rather than swallowed.
+     */
+    private void restoreConstraints(DatabaseSupport support, Connection conn, Database database, BulkLoadHandle handle) throws SQLException {
+        try {
+            support.enableConstraints(conn, database, handle);
+        } catch (SQLException e) {
+            logger.error("failed to re-enable constraints [{}] on a bulk-load connection; aborting it so the "
+                    + "constraint-disabled session is not returned to the pool", handle, e);
+            try {
+                conn.abort(Runnable::run);
+            } catch (SQLException abortFailure) {
+                e.addSuppressed(abortFailure);
+            }
+            throw e;
         }
     }
 
