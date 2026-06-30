@@ -10,5 +10,7 @@ node_modules/
 # macOS
 .DS_Store
 
-# Synced from ../docs by scripts/sync-docs.mjs (derived — do not commit)
+# Synced/generated from ../docs by scripts/sync-docs.mjs (derived — do not commit)
 src/content/docs/guides/
+public/llms.txt
+public/llms-full.txt

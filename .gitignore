@@ -19,3 +19,5 @@ website/node_modules/
 website/dist/
 website/.astro/
 website/src/content/docs/guides/
+website/public/llms.txt
+website/public/llms-full.txt
