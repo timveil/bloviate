@@ -229,6 +229,9 @@ public class TableFiller implements Fillable {
             connection.setAutoCommit(false);
         }
 
+        // captures a fill/rollback failure so autocommit restore (below) can attach to it rather than
+        // replace it; null when the fill succeeds
+        SQLException failure = null;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
             if (partitioned) {
@@ -262,6 +265,11 @@ public class TableFiller implements Fillable {
 
                 if (++produced % batchSize == 0) {
                     ps.executeBatch();
+                    // explicit clearBatch after executeBatch: the JDBC spec already clears the batch,
+                    // but this makes the O(batchSize) in-flight bound explicit and is cheap insurance
+                    // against drivers / rewriteBatchedInserts paths that might otherwise retain the
+                    // submitted row references
+                    ps.clearBatch();
                     if (commitStrategy.mode() == CommitStrategy.Mode.EVERY_N_BATCHES
                             && ++batchesSinceCommit % commitStrategy.batches() == 0) {
                         connection.commit();
@@ -270,26 +278,69 @@ public class TableFiller implements Fillable {
             }
 
             ps.executeBatch();
+            ps.clearBatch();
 
             if (manageTransaction) {
                 // commit the final partial batch (and any whole batches not yet committed under EVERY_N_BATCHES)
                 connection.commit();
             }
         } catch (SQLException e) {
+            failure = e;
             if (manageTransaction) {
-                connection.rollback();
+                // roll back, but never let a rollback failure replace the original cause
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    e.addSuppressed(rollbackFailure);
+                }
             }
-            throw e;
-        } finally {
-            if (manageTransaction) {
-                connection.setAutoCommit(previousAutoCommit);
-            }
+        }
+
+        // restore autocommit outside the try/finally so a restore failure can neither mask a primary
+        // fill exception nor return a wrong-state connection to the pool (see restoreAutoCommit)
+        if (manageTransaction) {
+            failure = restoreAutoCommit(previousAutoCommit, failure);
+        }
+
+        if (failure != null) {
+            throw failure;
         }
 
         tableWatch.stop();
 
         logger.debug("{}", tableWatch);
 
+    }
+
+    /**
+     * Restores the connection's prior autocommit setting after an engine-managed transaction. A failure
+     * here must neither replace a primary fill exception nor return a connection in an unknown
+     * autocommit state to the pool, so on failure the connection is {@link Connection#abort aborted}
+     * (the pool then discards it) and the restore failure is attached to {@code primary} when one
+     * exists, or becomes the failure to throw otherwise.
+     *
+     * @param previousAutoCommit the autocommit value to restore
+     * @param primary            the in-flight fill failure, or null if the fill succeeded
+     * @return the exception the caller should throw (possibly {@code primary}), or null if none
+     */
+    private SQLException restoreAutoCommit(boolean previousAutoCommit, SQLException primary) {
+        try {
+            connection.setAutoCommit(previousAutoCommit);
+            return primary;
+        } catch (SQLException restoreFailure) {
+            logger.error("failed to restore autocommit [{}] after fill; aborting the connection so it is "
+                    + "not reused in an unknown transaction state", previousAutoCommit, restoreFailure);
+            try {
+                connection.abort(Runnable::run);
+            } catch (SQLException abortFailure) {
+                restoreFailure.addSuppressed(abortFailure);
+            }
+            if (primary != null) {
+                primary.addSuppressed(restoreFailure);
+                return primary;
+            }
+            return restoreFailure;
+        }
     }
 
     /**

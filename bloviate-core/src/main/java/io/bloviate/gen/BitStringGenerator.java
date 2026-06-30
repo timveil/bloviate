@@ -43,7 +43,8 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
         // bit string. Clamp to the range [1, 25].
         int maxSize = Math.clamp(size, 1, 25);
 
-        StringBuilder builder = new StringBuilder();
+        // pre-size to the exact bit count so the buffer never has to grow/recopy
+        StringBuilder builder = new StringBuilder(maxSize);
 
         for (int i = 0; i < maxSize; i++) {
             builder.append(bitGenerator.generate());

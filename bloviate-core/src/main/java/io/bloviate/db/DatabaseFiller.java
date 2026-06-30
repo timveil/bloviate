@@ -47,7 +47,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -84,6 +86,22 @@ import java.util.concurrent.Future;
 public class DatabaseFiller implements Fillable {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseFiller.class);
+
+    /**
+     * The commit cadence the parallel/bulk path uses when the caller leaves the commit strategy on
+     * {@link CommitStrategy.Mode#CONNECTION_DEFAULT}: commit every this-many JDBC batches rather than
+     * once per whole table/partition. This bounds the size of an open server-side transaction (WAL/undo
+     * growth and lock accumulation) on a very large partition, which a single per-table commit would
+     * not. See {@link #effectiveParallelCommitStrategy()}.
+     */
+    private static final int DEFAULT_PARALLEL_COMMIT_BATCHES = 64;
+
+    /**
+     * The largest DOT graph (in characters) for which {@link #visualizeGraph} renders a GraphvizOnline
+     * link at INFO. Beyond this the URL-encoded link (encoding can roughly triple the length) is too
+     * long to be useful, so the link is skipped and only the DOT itself is logged at DEBUG.
+     */
+    private static final int MAX_GRAPH_LINK_CHARS = 8_000;
 
     /** A caller-managed connection for the sequential path; null when filling from a {@link DataSource}. */
     private final Connection connection;
@@ -233,10 +251,10 @@ public class DatabaseFiller implements Fillable {
                     addTableTasks(tasks, database, table, false);
                 }
 
-                // barrier: every table in this level must finish before the next level may start
-                for (Future<Void> future : executor.invokeAll(tasks)) {
-                    awaitFuture(future);
-                }
+                // barrier: every table in this level must finish before the next level may start.
+                // Submitted with backpressure so queued tasks stay bounded even for a level whose
+                // tables carry a large partition count (see runWithBackpressure).
+                runWithBackpressure(executor, tasks, poolSize);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -296,9 +314,9 @@ public class DatabaseFiller implements Fillable {
                 graph.vertexSet().size(), poolSize);
 
         try (ExecutorService executor = Executors.newFixedThreadPool(poolSize)) {
-            for (Future<Void> future : executor.invokeAll(tasks)) {
-                awaitFuture(future);
-            }
+            // submitted with backpressure so queued tasks stay bounded even when the schema (or a
+            // partitioned table) produces far more tasks than worker threads (see runWithBackpressure)
+            runWithBackpressure(executor, tasks, poolSize);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new SQLException("bulk table fill was interrupted", e);
@@ -326,6 +344,35 @@ public class DatabaseFiller implements Fillable {
         }
         logger.warn("JDBC driver batch rewrite is not enabled; add '{}=true' to the JDBC URL for a "
                 + "potentially large fill speedup (see io.bloviate.util.JdbcUrls#withBatchRewrite)", parameter);
+    }
+
+    /**
+     * Runs every task on {@code executor} but keeps at most {@code ~2 × poolSize} in flight at once,
+     * draining a completed task before submitting the next. This bounds the executor's work queue (and
+     * the outstanding {@link Future}s) to a small multiple of the pool size rather than letting them
+     * scale with the total task count — important when a large {@code partitions} value (or many
+     * partitioned tables) produces far more tasks than worker threads, which an eager
+     * {@code invokeAll(allTasks)} would queue all at once. All tasks still complete before this returns,
+     * preserving the level barrier in {@link #fillParallel}. The first task failure is rethrown; the
+     * surrounding {@code try-with-resources} on the executor then drains the in-flight tasks on close.
+     */
+    private void runWithBackpressure(ExecutorService executor, List<Callable<Void>> tasks, int poolSize) throws SQLException, InterruptedException {
+        CompletionService<Void> completionService = new ExecutorCompletionService<>(executor);
+        int inFlightCap = Math.max(1, 2 * poolSize);
+        int next = 0;
+
+        // prime the pipeline up to the in-flight cap
+        while (next < tasks.size() && next < inFlightCap) {
+            completionService.submit(tasks.get(next++));
+        }
+
+        // for each completion, surface any failure and top the pipeline back up
+        for (int completed = 0; completed < tasks.size(); completed++) {
+            awaitFuture(completionService.take());
+            if (next < tasks.size()) {
+                completionService.submit(tasks.get(next++));
+            }
+        }
     }
 
     /** Unwraps a worker future, re-throwing the underlying {@link SQLException} or runtime failure. */
@@ -512,14 +559,18 @@ public class DatabaseFiller implements Fillable {
 
     /**
      * The commit strategy used by parallel workers. A pooled worker connection must not be left on
-     * the connection's autocommit (that would commit per batch and lose the per-table transaction),
-     * so {@link CommitStrategy.Mode#CONNECTION_DEFAULT} maps to {@link CommitStrategy#perTable()};
-     * any explicitly configured strategy (e.g. {@link CommitStrategy#everyNBatches(int)}) is honored.
+     * the connection's autocommit (that would commit per batch and lose the engine-managed
+     * transaction), so {@link CommitStrategy.Mode#CONNECTION_DEFAULT} maps to a bounded
+     * {@link CommitStrategy#everyNBatches(int)} of {@value #DEFAULT_PARALLEL_COMMIT_BATCHES} batches
+     * rather than {@link CommitStrategy#perTable()}: a single per-table commit would hold an entire
+     * large partition open in one server-side transaction (unbounded WAL/undo growth and lock
+     * accumulation), which is the scale failure the parallel/bulk path most needs to avoid. Any
+     * explicitly configured strategy (including {@link CommitStrategy#perTable()}) is honored as-is.
      */
     private CommitStrategy effectiveParallelCommitStrategy() {
         CommitStrategy configured = configuration.commitStrategy();
         return configured.mode() == CommitStrategy.Mode.CONNECTION_DEFAULT
-                ? CommitStrategy.perTable()
+                ? CommitStrategy.everyNBatches(DEFAULT_PARALLEL_COMMIT_BATCHES)
                 : configured;
     }
 
@@ -649,6 +700,13 @@ public class DatabaseFiller implements Fillable {
      * @param databaseName the name of the database for graph labeling
      */
     private void visualizeGraph(Graph<Table, DefaultEdge> graph, String databaseName) {
+        // both the DOT string and the (longer) URL-encoded link are schema-scaled allocations; skip
+        // them entirely when neither level that consumes them is enabled
+        boolean info = logger.isInfoEnabled();
+        if (!info && !logger.isDebugEnabled()) {
+            return;
+        }
+
         DOTExporter<Table, DefaultEdge> exporter = new DOTExporter<>(Table::name);
         exporter.setVertexAttributeProvider((v) -> {
             Map<String, Attribute> map = new LinkedHashMap<>();
@@ -664,6 +722,18 @@ public class DatabaseFiller implements Fillable {
         String graphAsString = writer.toString();
 
         logger.debug("database graph in DOT notation:\n\n{}", graphAsString);
+
+        if (!info) {
+            return;
+        }
+
+        // for a very large schema the URL-encoded DOT is too long to be a usable link; skip the
+        // encode (which can roughly triple the length) and point the reader at the DEBUG DOT instead
+        if (graphAsString.length() > MAX_GRAPH_LINK_CHARS) {
+            logger.info("database graph has {} chars of DOT notation — too large for a GraphvizOnline link; "
+                    + "enable DEBUG logging for {} to see the DOT itself", graphAsString.length(), DatabaseFiller.class.getName());
+            return;
+        }
 
         String encodedDiagram = URLEncoder.encode(graphAsString, StandardCharsets.UTF_8).replace("+", "%20");
 
