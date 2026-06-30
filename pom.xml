@@ -59,6 +59,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
+        <!-- fallback so the pluginManagement reference always resolves (e.g. in this parent's own
+             static analysis); every jar-producing module overrides this with its real module name -->
+        <automatic.module.name>io.bloviate</automatic.module.name>
+
         <!-- compile dependency versions -->
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <commons-csv.version>1.14.1</commons-csv.version>
@@ -82,6 +86,7 @@
         <jmh.version>1.37</jmh.version>
 
         <!-- plugin versions -->
+        <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
         <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
@@ -261,6 +266,21 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
+                </plugin>
+                <!-- stamps a stable JPMS module name into each jar's manifest so module-path
+                     consumers get a guaranteed name instead of one derived from the filename;
+                     each module supplies its own ${automatic.module.name} -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven-jar-plugin.version}</version>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                                <Automatic-Module-Name>${automatic.module.name}</Automatic-Module-Name>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

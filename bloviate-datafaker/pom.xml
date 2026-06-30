@@ -33,6 +33,10 @@
     <name>Bloviate Datafaker</name>
     <description>Optional semantic/realistic data for Bloviate: maps column names to Datafaker providers</description>
 
+    <properties>
+        <automatic.module.name>io.bloviate.datafaker</automatic.module.name>
+    </properties>
+
     <dependencies>
 
         <dependency>

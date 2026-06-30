@@ -34,6 +34,7 @@
     <description>JUnit Jupiter integration for Bloviate: declaratively fill a test database</description>
 
     <properties>
+        <automatic.module.name>io.bloviate.junit</automatic.module.name>
         <!-- the SPI extension's resolution/validation branches are unit-tested directly
              (BloviateExtensionErrorPathsTest) on top of the end-to-end fill test -->
         <jacoco.line.min>0.85</jacoco.line.min>
