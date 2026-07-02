@@ -14,6 +14,13 @@ permissions:
   contents: write
   pull-requests: write
 
+# Single source of truth for which Maven groups/artifacts may auto-merge. Space-
+# separated substrings matched against Dependabot's dependency names (primary
+# path) and the PR branch name (fallback path), so the two paths can't drift.
+# Only patch & minor updates auto-merge; majors are always left for review.
+env:
+  MAVEN_ALLOWLIST: "com.zaxxer org.apache.commons com.fasterxml.jackson org.slf4j org.junit.jupiter org.testcontainers org.postgresql mysql org.jgrapht org.apache.maven.plugins org.codehaus.mojo"
+
 jobs:
   dependabot:
     runs-on: ubuntu-latest
@@ -25,18 +32,39 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Auto-merge Dependabot PRs
-        if: contains(steps.metadata.outputs.dependency-names, 'com.zaxxer') || contains(steps.metadata.outputs.dependency-names, 'org.apache.commons') || contains(steps.metadata.outputs.dependency-names, 'com.fasterxml.jackson') || contains(steps.metadata.outputs.dependency-names, 'org.slf4j') || contains(steps.metadata.outputs.dependency-names, 'org.junit.jupiter') || contains(steps.metadata.outputs.dependency-names, 'org.testcontainers') || contains(steps.metadata.outputs.dependency-names, 'org.postgresql') || contains(steps.metadata.outputs.dependency-names, 'mysql') || contains(steps.metadata.outputs.dependency-names, 'org.jgrapht') || contains(steps.metadata.outputs.dependency-names, 'org.apache.maven.plugins') || contains(steps.metadata.outputs.dependency-names, 'org.codehaus.mojo')
-        run: gh pr merge --auto --squash "$PR_URL"
+      # Maven deps: auto-merge patch & minor for allowlisted groups only. Majors
+      # (semver-major) are excluded and left for manual review, mirroring the npm
+      # policy below — a major bump of any dependency or build plugin can change
+      # behavior in ways `mvn verify` won't necessarily catch.
+      - name: Auto-merge allowlisted Maven patch & minor updates
+        if: >-
+          steps.metadata.outputs.package-ecosystem == 'maven' &&
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+           steps.metadata.outputs.update-type == 'version-update:semver-minor')
         env:
+          NAMES: ${{ steps.metadata.outputs.dependency-names }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for tok in $MAVEN_ALLOWLIST; do
+            case "$NAMES" in
+              *"$tok"*)
+                echo "Allowlisted dependency matched '$tok'; enabling auto-merge."
+                gh pr merge --auto --squash "$PR_URL"
+                exit 0
+                ;;
+            esac
+          done
+          echo "No allowlisted dependency in: $NAMES"
 
       # Website (npm/pnpm) deps: auto-merge patch & minor only; majors are left
-      # for manual review. --auto waits for required checks, so the Build website
-      # check gates the merge.
+      # for manual review. --auto waits for required checks, so the required
+      # "build-website" check gates the merge.
       - name: Auto-merge website (npm) patch & minor updates
-        if: steps.metadata.outputs.package-ecosystem == 'npm' && (steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor')
+        if: >-
+          steps.metadata.outputs.package-ecosystem == 'npm' &&
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+           steps.metadata.outputs.update-type == 'version-update:semver-minor')
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
@@ -46,6 +74,8 @@ jobs:
   # fetch-metadata can't run on workflow_run events (no pull_request payload), so
   # the allowlist is re-applied by matching the Dependabot branch name, which
   # encodes "<group>-<artifact>" (e.g. dependabot/maven/com.fasterxml.jackson...).
+  # npm branches never match the Maven allowlist, so website PRs are handled only
+  # by the primary path above.
   auto-merge-retry:
     runs-on: ubuntu-latest
     if: >
@@ -61,17 +91,35 @@ jobs:
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          case "$HEAD_BRANCH" in
-            *com.zaxxer*|*org.apache.commons*|*com.fasterxml.jackson*|*org.slf4j*|*org.junit.jupiter*|*org.testcontainers*|*org.postgresql*|*mysql*|*org.jgrapht*|*org.apache.maven.plugins*|*org.codehaus.mojo*) ;;
-            *)
-              echo "Branch '$HEAD_BRANCH' is not in the auto-merge allowlist; skipping."
-              exit 0
-              ;;
-          esac
+          matched=
+          for tok in $MAVEN_ALLOWLIST; do
+            case "$HEAD_BRANCH" in *"$tok"*) matched=1; break;; esac
+          done
+          if [ -z "$matched" ]; then
+            echo "Branch '$HEAD_BRANCH' is not in the auto-merge allowlist; skipping."
+            exit 0
+          fi
 
           PR_URL=$(gh pr list --head "$HEAD_BRANCH" --state open --json url --jq '.[0].url')
           if [ -z "$PR_URL" ]; then
             echo "No open PR found for branch '$HEAD_BRANCH'; nothing to do."
+            exit 0
+          fi
+
+          # Version guard: this path has no fetch-metadata, so derive the bump
+          # type from the PR title ("... from X to Y"). Skip majors and anything
+          # we can't parse, leaving them for manual review — mirrors the primary
+          # path's patch/minor-only policy so the fallback can't merge a major
+          # the primary path deliberately declined.
+          TITLE=$(gh pr view "$PR_URL" --json title --jq '.title')
+          FROM=$(printf '%s' "$TITLE" | sed -n 's/.* from \([0-9][^ ]*\) to .*/\1/p')
+          TO=$(printf '%s' "$TITLE" | sed -n 's/.* to \([0-9][^ ]*\).*/\1/p')
+          if [ -z "$FROM" ] || [ -z "$TO" ]; then
+            echo "Could not parse versions from title '$TITLE'; leaving for manual review."
+            exit 0
+          fi
+          if [ "${FROM%%.*}" != "${TO%%.*}" ]; then
+            echo "Major update ($FROM -> $TO); leaving for manual review."
             exit 0
           fi
 
