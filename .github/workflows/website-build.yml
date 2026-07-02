@@ -1,8 +1,10 @@
 name: Build website
 
-# Verifies the docs site builds. Runs on PRs that touch the site or its content
-# so a dependency bump (or content change) can't merge — or auto-merge — if it
-# breaks the build. Cloudflare deploys the same `pnpm build` on push to main.
+# Verifies the docs site builds. Runs on every PR to main so it can be a
+# required status check that gates auto-merge, but only does the heavy pnpm
+# build when website/docs actually changed; otherwise it exits green
+# immediately, keeping the check fast for code-only PRs. Cloudflare deploys the
+# same `pnpm build` on push to main.
 
 on:
   push:
@@ -11,38 +13,62 @@ on:
       - 'website/**'
       - 'docs/**'
       - '.github/workflows/website-build.yml'
+  # No paths filter here: the job must run (and report its status) on every PR
+  # so branch protection can require it. Relevance is decided inside the job.
   pull_request:
     branches: [ main ]
-    paths:
-      - 'website/**'
-      - 'docs/**'
-      - '.github/workflows/website-build.yml'
 
 permissions:
   contents: read
+  pull-requests: read
 
 env:
   COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
 
 jobs:
-  build:
+  # Named "build-website" (not "build") to avoid colliding with the Maven CI
+  # job's "build" status context, which made the required check ambiguous.
+  build-website:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: website
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
+      # On pull_request, skip the build unless the site or its content changed,
+      # so this required check stays fast for code-only PRs. On push the paths
+      # filter above already guarantees relevance, so always run.
+      - name: Detect website changes
+        id: changes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          FILES=$(gh pr view "${{ github.event.pull_request.number }}" --json files --jq '.files[].path')
+          if printf '%s\n' "$FILES" | grep -qE '^(website/|docs/|\.github/workflows/website-build\.yml)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No website/docs changes; skipping build."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        if: steps.changes.outputs.run == 'true'
         with:
           node-version-file: website/.node-version
 
       # pnpm version comes from the `packageManager` pin in website/package.json.
       - name: Enable corepack
+        if: steps.changes.outputs.run == 'true'
         run: corepack enable
 
       - name: Install dependencies
+        if: steps.changes.outputs.run == 'true'
+        working-directory: website
         run: pnpm install --frozen-lockfile
 
       - name: Build site
+        if: steps.changes.outputs.run == 'true'
+        working-directory: website
         run: pnpm build
