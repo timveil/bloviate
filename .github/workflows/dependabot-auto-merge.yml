@@ -44,7 +44,7 @@ jobs:
         env:
           NAMES: ${{ steps.metadata.outputs.dependency-names }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for tok in $MAVEN_ALLOWLIST; do
             case "$NAMES" in
@@ -68,7 +68,7 @@ jobs:
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Fallback: re-attempt auto-merge after the CI workflow completes successfully.
   # fetch-metadata can't run on workflow_run events (no pull_request payload), so
@@ -89,7 +89,7 @@ jobs:
         env:
           GH_REPO: ${{ github.repository }}
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           matched=
           for tok in $MAVEN_ALLOWLIST; do
