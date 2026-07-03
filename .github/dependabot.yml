@@ -13,6 +13,14 @@ updates:
       interval: "daily"
     assignees:
       - "timveil"
+    # codeql-action/init and codeql-action/analyze must run the same version,
+    # so bump them together in one PR — separate PRs create a version mismatch
+    # that fails analysis ("Loaded a configuration file for version X, but
+    # running version Y").
+    groups:
+      codeql:
+        patterns:
+          - "github/codeql-action*"
   # docs site (Astro/Starlight). The npm ecosystem reads the committed
   # pnpm-lock.yaml. Patch/minor bumps here are auto-merged once the website
   # build passes (see .github/workflows/dependabot-auto-merge.yml); majors open
