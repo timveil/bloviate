@@ -76,7 +76,7 @@
         <!-- test / integration dependency versions -->
         <testcontainers.version>1.21.4</testcontainers.version>
         <hikaricp.version>7.1.0</hikaricp.version>
-        <postgresql.version>42.7.12</postgresql.version>
+        <postgresql.version>42.7.13</postgresql.version>
         <mysql.version>9.7.0</mysql.version>
         <mariadb.version>3.5.9</mariadb.version>
         <h2.version>2.4.240</h2.version>
