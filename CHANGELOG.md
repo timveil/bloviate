@@ -1,3 +1,9 @@
+## [2.19.1](https://github.com/timveil/bloviate/compare/v2.19.0...v2.19.1) (2026-07-15)
+
+### 🐛 Bug Fixes
+
+* propagate reseed to delegate generators and quiet schema-leaking logs ([#554](https://github.com/timveil/bloviate/issues/554)) ([0671f88](https://github.com/timveil/bloviate/commit/0671f8808d6cbdd825b8ed637cb7dc35e71f8bf1))
+
 ## [2.19.0](https://github.com/timveil/bloviate/compare/v2.18.6...v2.19.0) (2026-07-15)
 
 ### ✨ Features
