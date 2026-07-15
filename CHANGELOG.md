@@ -1,3 +1,9 @@
+## [2.18.5](https://github.com/timveil/bloviate/compare/v2.18.4...v2.18.5) (2026-07-15)
+
+### 🐛 Bug Fixes
+
+* quote and schema-qualify insert identifiers, guard nullable column sizes ([#550](https://github.com/timveil/bloviate/issues/550)) ([aa59172](https://github.com/timveil/bloviate/commit/aa5917224448b59c4705daef6494b8eb6203a142))
+
 ## [2.18.4](https://github.com/timveil/bloviate/compare/v2.18.3...v2.18.4) (2026-06-30)
 
 ### 🐛 Bug Fixes
