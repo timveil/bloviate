@@ -69,6 +69,18 @@ Integration tests rely on [Testcontainers](https://testcontainers.com/), which s
 down database containers automatically — a running Docker daemon is the only prerequisite. There is
 nothing to start or stop by hand.
 
+## Design Invariants
+
+A few properties are hard guarantees — treat a change that violates them as a breaking change,
+no matter how it is labeled:
+
+- **Seed reproducibility.** The same schema filled with the same seed must produce byte-for-byte
+  identical data, including across releases. Any change to a generator's draw sequence or value
+  derivation (even a faster algorithm producing "equivalent" values) breaks this and is not an
+  acceptable performance optimization.
+- **Deterministic ordering.** Metadata traversal and fill order must not depend on hash order or
+  other run-to-run varying iteration; prefer insertion-ordered or explicitly sorted collections.
+
 ## Submitting Changes
 
 1. Fork the repository

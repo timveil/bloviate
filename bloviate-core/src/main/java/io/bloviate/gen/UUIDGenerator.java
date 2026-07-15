@@ -34,6 +34,10 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
 
     @Override
     public UUID generate() {
+        // Seed reproducibility is a hard product guarantee: the same schema and seed must yield
+        // identical data across releases. Changing this derivation (e.g. to a cheaper v4
+        // construction from two nextLong() draws) changes every generated UUID for a given seed
+        // and is therefore a breaking change — do not alter it for performance.
         byte[] array = new byte[16];
         random.nextBytes(array);
         return UUID.nameUUIDFromBytes(array);

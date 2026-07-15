@@ -149,7 +149,7 @@ public class FlatFileGenerator implements FileGenerator {
     /**
      * Returns the column definitions, in output order.
      *
-     * @return an unmodifiable view of the column definitions
+     * @return an unmodifiable list of the column definitions, copied at build time
      */
     public List<ColumnDefinition> getColumnDefinitions() {
         return columnDefinitions;
