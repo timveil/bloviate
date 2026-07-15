@@ -21,7 +21,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'java' ]
+        # java covers the library; javascript-typescript covers the website;
+        # actions covers the workflow files themselves
+        language: [ 'java', 'javascript-typescript', 'actions' ]
 
     steps:
     - name: Checkout repository
@@ -38,7 +40,8 @@ jobs:
       with:
         languages: ${{ matrix.language }}
 
-    - run: |
+    - if: matrix.language == 'java'
+      run: |
        ./mvnw -B -ntp clean package -DskipTests
 
     - name: Perform CodeQL Analysis
