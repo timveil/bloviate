@@ -71,6 +71,12 @@ jobs:
           cat ~/.m2/settings.xml || echo "No settings.xml found"
           echo "GitHub actor: ${{ github.actor }}"
 
+      # Gate the release on a full build: publishCmd below deploys with -DskipTests
+      # (the artifacts were just verified here), so without this step a direct push
+      # to main could publish untested jars.
+      - name: Verify build before release
+        run: ./mvnw -B -ntp verify
+
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:

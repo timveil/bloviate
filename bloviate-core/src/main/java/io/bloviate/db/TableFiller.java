@@ -98,7 +98,7 @@ public class TableFiller implements Fillable {
     @Override
     public void fill() throws SQLException {
 
-        String sql = table.insertString();
+        String sql = table.insertString(connection.getMetaData().getIdentifierQuoteString());
 
         logger.trace("{}", sql);
 

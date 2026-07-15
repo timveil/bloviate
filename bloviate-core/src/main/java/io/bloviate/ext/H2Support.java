@@ -70,7 +70,13 @@ public class H2Support extends AbstractDatabaseSupport {
             if ("uuid".equalsIgnoreCase(column.typeName())) {
                 return new UUIDGenerator.Builder(random).build();
             }
-            return new ByteGenerator.Builder(random).size(column.maxSize()).build();
+            // COLUMN_SIZE is nullable metadata; fall back to the generator's default length
+            Integer maxSize = column.maxSize();
+            ByteGenerator.Builder builder = new ByteGenerator.Builder(random);
+            if (maxSize != null && maxSize > 0) {
+                builder.size(maxSize);
+            }
+            return builder.build();
         });
 
         // H2 JSON surfaces as OTHER (type name "JSON"); H2 parses the value, so generate valid JSON.
