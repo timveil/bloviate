@@ -49,12 +49,14 @@ public record TableConfiguration(String tableName, long rowCount, Set<ColumnConf
 
     /**
      * Validates and normalizes the partition count: a non-positive value defaults to {@code 1}
-     * (no intra-table partitioning).
+     * (no intra-table partitioning). Copies the column-configuration set so the record is
+     * deeply immutable.
      */
     public TableConfiguration {
         if (partitions < 1) {
             partitions = 1;
         }
+        columnConfigurations = columnConfigurations == null ? null : Set.copyOf(columnConfigurations);
     }
 
     /**

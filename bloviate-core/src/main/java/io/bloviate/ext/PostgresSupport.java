@@ -34,6 +34,7 @@ import java.sql.Connection;
 import java.sql.JDBCType;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -177,7 +178,7 @@ public class PostgresSupport extends AbstractDatabaseSupport {
 
         // Most PostgreSQL extension types surface as OTHER, dispatched on the type name.
         registry.put(JDBCType.OTHER, (column, random) -> {
-            String typeName = column.typeName() == null ? "" : column.typeName().toLowerCase();
+            String typeName = column.typeName() == null ? "" : column.typeName().toLowerCase(Locale.ROOT);
             return switch (typeName) {
                 case "uuid" -> new UUIDGenerator.Builder(random).build();
                 case "json", "jsonb" -> new JsonbGenerator.Builder(random).build();

@@ -18,7 +18,6 @@ package io.bloviate.db;
 
 import org.junit.jupiter.api.Test;
 
-import java.sql.Connection;
 import java.sql.JDBCType;
 import java.util.List;
 
@@ -30,10 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * a live database connection.
  */
 class DatabaseFillerOrderTest {
-
-    // cast disambiguates the Connection vs DataSource builder overloads; this test only exercises
-    // the dependency-ordering logic, which touches neither
-    private static final DatabaseFiller FILLER = new DatabaseFiller.Builder((Connection) null, null).build();
 
     private static Column id(String tableName) {
         return new Column("id", tableName, null, null, JDBCType.INTEGER, 10, null, "int4", false, false, null, 1);
@@ -69,7 +64,7 @@ class DatabaseFillerOrderTest {
     void independentTablesAreAllIncluded() {
         Database database = new Database("test", "1", null, null, List.of(parentless("a"), parentless("b")));
 
-        assertEquals(2, FILLER.fillOrder(database).size());
+        assertEquals(2, DatabaseFiller.fillOrder(database).size());
     }
 
     @Test
@@ -78,7 +73,7 @@ class DatabaseFillerOrderTest {
         Table child = childOf("child", parent);
         Database database = new Database("test", "1", null, null, List.of(child, parent));
 
-        List<Table> order = FILLER.fillOrder(database);
+        List<Table> order = DatabaseFiller.fillOrder(database);
 
         assertEquals(2, order.size());
         assertTrue(indexOf(order, "parent") < indexOf(order, "child"),
@@ -94,7 +89,7 @@ class DatabaseFillerOrderTest {
         // deliberately supply them out of dependency order
         Database database = new Database("test", "1", null, null, List.of(child, parent, grandparent));
 
-        List<Table> order = FILLER.fillOrder(database);
+        List<Table> order = DatabaseFiller.fillOrder(database);
 
         assertEquals(3, order.size());
         assertTrue(indexOf(order, "grandparent") < indexOf(order, "parent"));
@@ -118,7 +113,7 @@ class DatabaseFillerOrderTest {
 
         Database database = new Database("test", "1", null, null, List.of(a, b, c, d));
 
-        List<Table> order = FILLER.fillOrder(database);
+        List<Table> order = DatabaseFiller.fillOrder(database);
 
         assertEquals(4, order.size());
         assertTrue(indexOf(order, "d") < indexOf(order, "b"));

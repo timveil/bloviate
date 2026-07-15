@@ -33,4 +33,10 @@ import java.util.List;
  * @param primaryKey the primary key that this foreign key references
  * @since 1.0.0
  */
-public record ForeignKey(List<KeyColumn> foreignKeyColumns, PrimaryKey primaryKey) {}
+public record ForeignKey(List<KeyColumn> foreignKeyColumns, PrimaryKey primaryKey) {
+
+    /** Copies the key-column list so the record is deeply immutable. */
+    public ForeignKey {
+        foreignKeyColumns = foreignKeyColumns == null ? null : List.copyOf(foreignKeyColumns);
+    }
+}

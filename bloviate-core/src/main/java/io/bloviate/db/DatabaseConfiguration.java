@@ -82,6 +82,8 @@ public record DatabaseConfiguration(int batchSize, long defaultRowCount, Databas
         if (bulkLoadStrategy == null) {
             bulkLoadStrategy = BulkLoadStrategy.ordered();
         }
+        // copy so the configuration is deeply immutable; it is shared across worker threads
+        tableConfigurations = tableConfigurations == null ? null : Set.copyOf(tableConfigurations);
     }
 
     /**

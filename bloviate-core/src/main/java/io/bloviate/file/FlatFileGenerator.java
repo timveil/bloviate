@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Generator for creating flat files (CSV, TSV, pipe-delimited) with synthetic data.
@@ -148,7 +149,7 @@ public class FlatFileGenerator implements FileGenerator {
     /**
      * Returns the column definitions, in output order.
      *
-     * @return the column definitions
+     * @return an unmodifiable view of the column definitions
      */
     public List<ColumnDefinition> getColumnDefinitions() {
         return columnDefinitions;
@@ -213,11 +214,15 @@ public class FlatFileGenerator implements FileGenerator {
          * Replaces the column definitions with the supplied list. The columns are written in the
          * order given, one delimited field per column.
          *
+         * <p>The list is copied, so later changes to the caller's list are not observed and
+         * {@link #add(ColumnDefinition)} keeps working even when an immutable list (e.g.
+         * {@link List#of}) is supplied.
+         *
          * @param columnDefinitions the column definitions to use
          * @return this builder, for chaining
          */
         public Builder addAll(List<ColumnDefinition> columnDefinitions) {
-            this.columnDefinitions = columnDefinitions;
+            this.columnDefinitions = new ArrayList<>(columnDefinitions);
             return this;
         }
 
@@ -255,9 +260,10 @@ public class FlatFileGenerator implements FileGenerator {
     }
 
     private FlatFileGenerator(Builder builder) {
-        this.fileName = builder.fileName;
-        this.columnDefinitions = builder.columnDefinitions;
-        this.definition = builder.definition;
+        this.fileName = Objects.requireNonNull(builder.fileName, "fileName must not be null");
+        // copy so reusing or mutating the builder after build() cannot affect this instance
+        this.columnDefinitions = List.copyOf(builder.columnDefinitions);
+        this.definition = Objects.requireNonNull(builder.definition, "definition must not be null");
         this.rows = builder.rows;
     }
 
