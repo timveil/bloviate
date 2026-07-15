@@ -1,3 +1,9 @@
+## [2.19.0](https://github.com/timveil/bloviate/compare/v2.18.6...v2.19.0) (2026-07-15)
+
+### ✨ Features
+
+* add DatabaseConfiguration.Builder and speed up hot-path generation ([#552](https://github.com/timveil/bloviate/issues/552)) ([35b7dd4](https://github.com/timveil/bloviate/commit/35b7dd49e48969b57fffc67bae03a5f047c60410))
+
 ## [2.18.6](https://github.com/timveil/bloviate/compare/v2.18.5...v2.18.6) (2026-07-15)
 
 ### 🐛 Bug Fixes
