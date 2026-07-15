@@ -478,11 +478,14 @@ public class DatabaseFiller implements Fillable {
      * catalog queries once per partition.
      */
     private Map<String, ColumnConstraint> constraintsFor(Connection conn, Table table) {
-        return constraintCache.computeIfAbsent(table.name(), name -> {
-            List<Column> columns = table.filteredColumns();
-            String schema = columns.isEmpty() ? null : columns.getFirst().schema();
-            return configuration.databaseSupport().readConstraints(conn, schema, name);
-        });
+        List<Column> columns = table.filteredColumns();
+        String schema = columns.isEmpty() ? null : columns.getFirst().schema();
+        // schema-qualified key: constraints are schema-sensitive and one fill can see
+        // same-named tables in different schemas (metadata is loaded with a null schema
+        // filter on connections without a current schema)
+        String cacheKey = schema == null ? table.name() : schema + '.' + table.name();
+        return constraintCache.computeIfAbsent(cacheKey,
+                key -> configuration.databaseSupport().readConstraints(conn, schema, table.name()));
     }
 
     /**

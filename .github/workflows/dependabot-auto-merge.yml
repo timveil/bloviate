@@ -51,10 +51,12 @@ jobs:
           # entry as an anchored group-id prefix. The previous substring-anywhere
           # match let a grouped PR auto-merge when only one of its dependencies
           # was allowlisted, and let short tokens match unrelated names.
+          # split the comma-separated names on default IFS (maven coordinates never
+          # contain spaces) — reassigning IFS here would also break the space-split
+          # of $MAVEN_ALLOWLIST in the inner loop
+          NAMES_SPLIT=$(printf '%s' "$NAMES" | tr ',' ' ')
           ok=1
-          IFS=','
-          for name in $NAMES; do
-            name=$(printf '%s' "$name" | sed 's/^ *//;s/ *$//')
+          for name in $NAMES_SPLIT; do
             matched=0
             for tok in $MAVEN_ALLOWLIST; do
               case "$name" in
@@ -69,7 +71,6 @@ jobs:
               ok=0
             fi
           done
-          unset IFS
           if [ "$ok" -eq 1 ]; then
             echo "All updated dependencies are allowlisted; enabling auto-merge."
             gh pr merge --auto --squash "$PR_URL"
