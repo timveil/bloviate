@@ -1,3 +1,9 @@
+## [2.18.6](https://github.com/timveil/bloviate/compare/v2.18.5...v2.18.6) (2026-07-15)
+
+### 🐛 Bug Fixes
+
+* deep-immutable records, deterministic metadata, fail-fast builders, CI hardening ([#551](https://github.com/timveil/bloviate/issues/551)) ([aea8ac5](https://github.com/timveil/bloviate/commit/aea8ac5571ca046da0b09030a28da950713e6062))
+
 ## [2.18.5](https://github.com/timveil/bloviate/compare/v2.18.4...v2.18.5) (2026-07-15)
 
 ### 🐛 Bug Fixes
