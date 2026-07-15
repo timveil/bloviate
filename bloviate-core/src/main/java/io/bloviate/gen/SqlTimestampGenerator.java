@@ -31,7 +31,9 @@ import java.util.random.RandomGenerator;
  */
 public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
 
-    private final LongGenerator longGenerator;
+    private final long startMillisInclusive;
+    private final long endMillisExclusive;
+    private LongGenerator longGenerator;
 
     @Override
     public Timestamp generate() {
@@ -100,10 +102,21 @@ public class SqlTimestampGenerator extends AbstractDataGenerator<Timestamp> {
 
     private SqlTimestampGenerator(Builder builder) {
         super(builder.random);
+        this.startMillisInclusive = builder.startInclusive.toInstant().toEpochMilli();
+        this.endMillisExclusive = builder.endExclusive.toInstant().toEpochMilli();
+        buildDelegates();
+    }
 
-        this.longGenerator = new LongGenerator.Builder(builder.random)
-                .start(builder.startInclusive.toInstant().toEpochMilli())
-                .end(builder.endExclusive.toInstant().toEpochMilli())
+    private void buildDelegates() {
+        this.longGenerator = new LongGenerator.Builder(random)
+                .start(startMillisInclusive)
+                .end(endMillisExclusive)
                 .build();
     }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

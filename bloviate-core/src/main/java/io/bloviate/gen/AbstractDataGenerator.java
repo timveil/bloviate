@@ -82,6 +82,17 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
     public void reseed(long seed) {
         this.random = RandomGenerators.create(seed);
         this.randomUtils = new SeededRandomUtils(random);
+        onReseed();
+    }
+
+    /**
+     * Hook invoked after {@link #reseed(long)} swaps the random source. Generators that hold
+     * delegate generators built from the source must override this to rebuild them; otherwise a
+     * delegate keeps drawing from the pre-reseed sequence and foreign-key replay diverges from
+     * the parent sequence it is meant to track.
+     */
+    protected void onReseed() {
+        // nothing to rebuild by default
     }
 
     @Override

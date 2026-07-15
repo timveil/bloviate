@@ -28,7 +28,7 @@ import java.util.random.RandomGenerator;
  */
 public class CidrGenerator extends AbstractDataGenerator<String> {
 
-    private final IntegerGenerator octetGenerator;
+    private IntegerGenerator octetGenerator;
 
     @Override
     public String generate() {
@@ -65,6 +65,16 @@ public class CidrGenerator extends AbstractDataGenerator<String> {
 
     private CidrGenerator(Builder builder) {
         super(builder.random);
+        buildDelegates();
+    }
+
+    private void buildDelegates() {
         this.octetGenerator = new IntegerGenerator.Builder(random).start(1).end(256).build();
     }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

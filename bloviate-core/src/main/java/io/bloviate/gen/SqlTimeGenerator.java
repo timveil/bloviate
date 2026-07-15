@@ -31,7 +31,9 @@ import java.util.random.RandomGenerator;
  */
 public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
 
-    private final LongGenerator longGenerator;
+    private final long startMillisInclusive;
+    private final long endMillisExclusive;
+    private LongGenerator longGenerator;
 
     @Override
     public Time generate() {
@@ -100,10 +102,21 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
 
     private SqlTimeGenerator(Builder builder) {
         super(builder.random);
+        this.startMillisInclusive = builder.startInclusive.getTime();
+        this.endMillisExclusive = builder.endExclusive.getTime();
+        buildDelegates();
+    }
 
-        this.longGenerator = new LongGenerator.Builder(builder.random)
-                .start(builder.startInclusive.getTime())
-                .end(builder.endExclusive.getTime())
+    private void buildDelegates() {
+        this.longGenerator = new LongGenerator.Builder(random)
+                .start(startMillisInclusive)
+                .end(endMillisExclusive)
                 .build();
     }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

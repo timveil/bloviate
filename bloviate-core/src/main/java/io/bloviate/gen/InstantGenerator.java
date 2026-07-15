@@ -32,7 +32,9 @@ import java.util.random.RandomGenerator;
  */
 public class InstantGenerator extends AbstractDataGenerator<Instant> {
 
-    private final LongGenerator longGenerator;
+    private final long startMillisInclusive;
+    private final long endMillisExclusive;
+    private LongGenerator longGenerator;
 
     @Override
     public Instant generate() {
@@ -97,10 +99,21 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
 
     private InstantGenerator(Builder builder) {
         super(builder.random);
+        this.startMillisInclusive = builder.startInclusive.toEpochMilli();
+        this.endMillisExclusive = builder.endExclusive.toEpochMilli();
+        buildDelegates();
+    }
 
-        this.longGenerator = new LongGenerator.Builder(builder.random)
-                .start(builder.startInclusive.toEpochMilli())
-                .end(builder.endExclusive.toEpochMilli())
+    private void buildDelegates() {
+        this.longGenerator = new LongGenerator.Builder(random)
+                .start(startMillisInclusive)
+                .end(endMillisExclusive)
                 .build();
     }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }
