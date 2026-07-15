@@ -71,18 +71,17 @@ nothing to start or stop by hand.
 
 ## Design Invariants
 
-A few properties are hard guarantees — treat a change that violates them as a breaking change,
-no matter how it is labeled:
+A few properties are hard guarantees:
 
-- **Seed reproducibility.** The same schema filled with the same seed must produce byte-for-byte
-  identical data, including across releases. Any change to a generator's draw sequence or value
-  derivation (even a faster algorithm producing "equivalent" values) breaks this and is not an
-  acceptable performance optimization.
-- **Deterministic ordering.** New code must not introduce iteration order that varies run to run;
-  prefer insertion-ordered or explicitly sorted collections. The exception is order that is already
-  load-bearing for seed compatibility: foreign-key grouping intentionally keeps its historical
-  hash-based order (see the comment in `DatabaseUtils.getForeignKeys`) because changing it would
-  change which parent seeds a column that participates in multiple foreign keys.
+- **Seed reproducibility within a version.** For a given Bloviate version, the same schema filled
+  with the same seed must produce byte-for-byte identical data on every run, on every platform and
+  JDK. Nothing that feeds generation may depend on run-to-run or JDK-dependent state (hash iteration
+  order, wall-clock time, identity hash codes, default locale/timezone).
+- **Cross-version changes are allowed but must be deliberate.** A new release may change the data a
+  seed produces (e.g. a fixed traversal order or an improved generator), but the change must be
+  intentional, called out in the release notes, and accompanied by regenerating the golden dump in
+  `SeedGoldenDumpTest` — never an accidental side effect of a refactor. The golden-dump test exists
+  to turn any unintentional drift into a loud failure.
 
 ## Submitting Changes
 

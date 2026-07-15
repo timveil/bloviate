@@ -161,13 +161,13 @@ public class DatabaseUtils {
 
         List<Key> importedKeys = getImportedKeys(metaData, catalog, schema, tableName);
 
-        // Deliberately a HashMap: foreign keys have been grouped and emitted in hash order since
-        // the first release, and for a column participating in MULTIPLE foreign keys the first
-        // group in this order decides which parent seeds its generator. Changing the order (e.g.
-        // to driver-reported order) changes generated data for such schemas and breaks the
-        // cross-version seed-reproducibility guarantee — verified empirically against v2.18.4.
-        // Do not "fix" this to an insertion-ordered map.
-        Map<String, List<Key>> map = new HashMap<>();
+        // LinkedHashMap keeps foreign keys in driver-reported order. For a column participating in
+        // MULTIPLE foreign keys, the first group in this order decides which parent seeds its
+        // generator, so the order must be identical on every run and every JDK (hash order is
+        // JDK-implementation-dependent and would violate within-version reproducibility). Note:
+        // this ordering differs from releases <= 2.18.5, which used hash order — a deliberate,
+        // release-noted change affecting only multi-FK columns.
+        Map<String, List<Key>> map = new LinkedHashMap<>();
 
         for (Key key : importedKeys) {
             map.computeIfAbsent(key.name(), k -> new ArrayList<>()).add(key);
