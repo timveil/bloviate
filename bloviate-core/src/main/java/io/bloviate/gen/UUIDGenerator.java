@@ -23,8 +23,10 @@ import java.util.UUID;
 
 /**
  * Generator for UUID (Universally Unique Identifier) values.
- * Produces random UUIDs for database columns that store unique identifiers.
- * The generated UUIDs are deterministic based on the provided random seed.
+ * Produces version-3 (name-based, per {@link UUID#nameUUIDFromBytes}) UUIDs derived from
+ * 16 seeded pseudo-random bytes, so the generated UUIDs are deterministic for a given
+ * random seed. They are dummy data — not version-4 random UUIDs, and no uniqueness or
+ * unguessability guarantee is made.
  *
  * @since 1.0.0
  */
@@ -32,6 +34,10 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
 
     @Override
     public UUID generate() {
+        // Within a version, the same seed must always yield the same UUIDs. Changing this
+        // derivation (e.g. to a cheaper v4 construction from two nextLong() draws) is allowed in
+        // a new release, but it changes every generated UUID for a given seed — make it a
+        // deliberate, release-noted change and regenerate the SeedGoldenDumpTest golden file.
         byte[] array = new byte[16];
         random.nextBytes(array);
         return UUID.nameUUIDFromBytes(array);
@@ -62,6 +68,7 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
             super(random);
         }
 
+        @Override
         public UUIDGenerator build() {
             return new UUIDGenerator(this);
         }

@@ -45,6 +45,15 @@ import java.util.StringJoiner;
 public record Table(String name, PrimaryKey primaryKey, List<Column> columns, List<ForeignKey> foreignKeys) {
 
     /**
+     * Copies the column and foreign-key lists so the record is deeply immutable — table
+     * metadata is shared across worker threads during parallel fills.
+     */
+    public Table {
+        columns = columns == null ? null : List.copyOf(columns);
+        foreignKeys = foreignKeys == null ? null : List.copyOf(foreignKeys);
+    }
+
+    /**
      * Generates an SQL INSERT statement template for this table with unquoted, unqualified
      * identifiers.
      *

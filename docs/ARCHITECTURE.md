@@ -450,7 +450,7 @@ Crucially, registry- and plugin-supplied generators are still constructed with t
 **[`bloviate-datafaker`](https://github.com/timveil/bloviate/tree/main/bloviate-datafaker/)** module is exactly this pattern in practice: one
 `GeneratorPlugin` that maps column names (`email`, `first_name`, `phone`, …) to realistic
 [Datafaker](https://www.datafaker.net/) values, seeded from the engine's column seed for
-reproducibility — keeping the core dependency-free. It also offers **referential realism** via a
+reproducibility — keeping Datafaker out of the core. It also offers **referential realism** via a
 `RowContext`: correlated columns project fields of one per-row entity — a `Person` whose email/username
 derive from its name, or a `Geo` tuple (city/state/zip/area-code that agree) drawn from a bundled
 reference dataset — computed as a pure function of `(seed, rowIndex)` so consistency survives parallel
@@ -507,12 +507,12 @@ new FlatFileGenerator.Builder("output/users")
 
 ## Multi-module layout
 
-Bloviate is a Maven reactor. The engine is dependency-free; the integration modules pull in their
+Bloviate is a Maven reactor. The engine is self-contained; the integration modules pull in their
 framework as a **`provided`** dependency so you bring your own version.
 
 ```mermaid
 graph TD
-    core["bloviate-core<br/><i>dependency-free engine</i><br/>db · ext · gen · file · util"]
+    core["bloviate-core<br/><i>self-contained engine</i><br/>db · ext · gen · file · util"]
     junit["bloviate-junit<br/><i>@FillDatabase / @FillSource</i><br/>BloviateExtension"]
     tc["bloviate-testcontainers<br/><i>BloviateContainers</i>"]
     df["bloviate-datafaker<br/><i>DatafakerGeneratorPlugin</i>"]
@@ -582,7 +582,7 @@ deliberate design effort, not incidental:
 
 These principles aren't abstract — they show up as concrete quality properties you can rely on:
 
-- **A dependency-free core.** `bloviate-core` keeps its dependency surface small and pushes JUnit and
+- **A lean core.** `bloviate-core` keeps its dependency surface small and pushes JUnit and
   Testcontainers to `provided` scope, so integrating Bloviate doesn't drag a testing framework into
   your runtime classpath, and you bring your own versions.
 - **Tested against real databases.** Integration tests run against actual PostgreSQL, MySQL, MariaDB,

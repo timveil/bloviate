@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Bloviate is a Java library for generating dummy data for JDBC-compatible relational databases. It automatically fills database tables with appropriate data based on detected column types and relationships, and can also generate flat files (CSV, TSV, pipe-delimited).
 
 It is a multi-module Maven build:
-- `bloviate-core` — the dependency-free engine (all core packages below live here)
+- `bloviate-core` — the self-contained engine (all core packages below live here; framework-free, with a few small utility dependencies such as SLF4J, Commons CSV, and JGraphT)
 - `bloviate-junit` — JUnit Jupiter integration (`@FillDatabase`/`@FillSource`, `BloviateExtension`); JUnit is a `provided` dependency
 - `bloviate-testcontainers` — fills a started `JdbcDatabaseContainer` (`BloviateContainers`); Testcontainers is a `provided` dependency
 

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FlatFileTest {
 
@@ -96,5 +97,39 @@ class FlatFileTest {
 
         // one header line plus exactly the requested number of data rows
         assertEquals(requestedRows + 1, lines);
+    }
+
+    @Test
+    public void addWorksAfterAddAllWithImmutableList() {
+        Random random = new Random();
+        ColumnDefinition first = new ColumnDefinition("a", new IntegerGenerator.Builder(random).build());
+        ColumnDefinition second = new ColumnDefinition("b", new IntegerGenerator.Builder(random).build());
+
+        // addAll copies, so an immutable input list must not break a subsequent add()
+        FlatFileGenerator generator = new FlatFileGenerator.Builder("target/builder-copy-test")
+                .addAll(List.of(first))
+                .add(second)
+                .build();
+
+        assertEquals(List.of(first, second), generator.getColumnDefinitions());
+    }
+
+    @Test
+    public void builderAndGeneratorDoNotShareCallerList() {
+        Random random = new Random();
+        ColumnDefinition first = new ColumnDefinition("a", new IntegerGenerator.Builder(random).build());
+        List<ColumnDefinition> callerList = new ArrayList<>(List.of(first));
+
+        FlatFileGenerator generator = new FlatFileGenerator.Builder("target/builder-alias-test")
+                .addAll(callerList)
+                .build();
+
+        // mutating the caller's list after build() must not change the generator...
+        callerList.add(new ColumnDefinition("b", new IntegerGenerator.Builder(random).build()));
+        assertEquals(1, generator.getColumnDefinitions().size());
+
+        // ...and the generator's view must not be mutable
+        assertThrows(UnsupportedOperationException.class,
+                () -> generator.getColumnDefinitions().add(first));
     }
 }

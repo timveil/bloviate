@@ -66,6 +66,8 @@ final class PostgresConstraints {
         } catch (SQLException e) {
             // constraint awareness is best-effort: never fail a fill because the catalog couldn't be read
             logger.warn("could not read constraints for table [{}]: {}", table, e.getMessage());
+            // full stack (with SQLState) at debug for diagnosis without noising up the default level
+            logger.debug("constraint read failure for table [{}]", table, e);
         }
         return constraints;
     }

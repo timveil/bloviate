@@ -123,49 +123,60 @@ public class DatabaseUtils {
     }
 
     private static List<Table> getTables(DatabaseMetaData metaData, String catalog, String schema) throws SQLException {
+
+        List<String> tableNames = new ArrayList<>();
+
         try (ResultSet tablesResultSet = metaData.getTables(catalog, schema, null, new String[]{"TABLE"})) {
-
-            List<Table> tables = new ArrayList<>();
-
             while (tablesResultSet.next()) {
-
-                String tableName = tablesResultSet.getString("TABLE_NAME");
-
-                List<Column> columns = getColumns(metaData, catalog, schema, tableName);
-                PrimaryKey primaryKey = getPrimaryKey(metaData, catalog, schema, tableName);
-                List<ForeignKey> foreignKeys = getForeignKeys(metaData, catalog, schema, tableName);
-
-                tables.add(new Table(tableName, primaryKey, columns, foreignKeys));
+                tableNames.add(tablesResultSet.getString("TABLE_NAME"));
             }
-
-            return tables;
         }
+
+        // each table's columns are fetched once and reused for primary- and foreign-key
+        // resolution below, instead of issuing a getColumns round trip per key column
+        Map<String, List<Column>> columnsByTable = new LinkedHashMap<>();
+        for (String tableName : tableNames) {
+            columnsByTable.put(tableName, getColumns(metaData, catalog, schema, tableName));
+        }
+
+        // a table's primary key is needed once for itself and once per referencing foreign
+        // key; cache it so each is read from the catalog a single time
+        Map<String, PrimaryKey> primaryKeysByTable = new HashMap<>();
+
+        List<Table> tables = new ArrayList<>();
+
+        for (String tableName : tableNames) {
+            PrimaryKey primaryKey = primaryKeyFor(metaData, catalog, schema, tableName, columnsByTable, primaryKeysByTable);
+            List<ForeignKey> foreignKeys = getForeignKeys(metaData, catalog, schema, tableName, columnsByTable, primaryKeysByTable);
+
+            tables.add(new Table(tableName, primaryKey, columnsByTable.get(tableName), foreignKeys));
+        }
+
+        return tables;
     }
 
-    private static List<ForeignKey> getForeignKeys(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {
+    private static List<ForeignKey> getForeignKeys(DatabaseMetaData metaData, String catalog, String schema, String tableName,
+                                                   Map<String, List<Column>> columnsByTable,
+                                                   Map<String, PrimaryKey> primaryKeysByTable) throws SQLException {
 
         List<Key> importedKeys = getImportedKeys(metaData, catalog, schema, tableName);
 
-        Map<String, List<Key>> map = new HashMap<>();
+        // LinkedHashMap keeps foreign keys in driver-reported order. For a column participating in
+        // MULTIPLE foreign keys, the first group in this order decides which parent seeds its
+        // generator, so the order must be identical on every run and every JDK (hash order is
+        // JDK-implementation-dependent and would violate within-version reproducibility). Note:
+        // this ordering differs from releases <= 2.18.5, which used hash order — a deliberate,
+        // release-noted change affecting only multi-FK columns.
+        Map<String, List<Key>> map = new LinkedHashMap<>();
 
         for (Key key : importedKeys) {
-
-            List<Key> keys;
-            if (map.containsKey(key.name())) {
-                keys = map.get(key.name());
-            } else {
-                keys = new ArrayList<>();
-            }
-
-            keys.add(key);
-            map.put(key.name(), keys);
+            map.computeIfAbsent(key.name(), k -> new ArrayList<>()).add(key);
         }
 
         List<ForeignKey> foreignKeys = new ArrayList<>();
 
-        for (String keyName : map.keySet()) {
+        for (List<Key> keys : map.values()) {
 
-            List<Key> keys = map.get(keyName);
             keys.sort(Comparator.comparing(Key::sequence));
 
             List<KeyColumn> columns = new ArrayList<>();
@@ -173,15 +184,28 @@ public class DatabaseUtils {
             String primaryKeyTable = null;
             for (Key key : keys) {
                 primaryKeyTable = key.primaryTableName();
-                columns.add(new KeyColumn(key.sequence(), getColumn(metaData, catalog, schema, tableName, key.foreignColumnName())));
+                columns.add(new KeyColumn(key.sequence(), columnFor(metaData, catalog, schema, tableName, key.foreignColumnName(), columnsByTable)));
             }
 
-            foreignKeys.add(new ForeignKey(columns, getPrimaryKey(metaData, catalog, schema, primaryKeyTable)));
+            foreignKeys.add(new ForeignKey(columns, primaryKeyFor(metaData, catalog, schema, primaryKeyTable, columnsByTable, primaryKeysByTable)));
 
         }
 
         return foreignKeys;
 
+    }
+
+    private static PrimaryKey primaryKeyFor(DatabaseMetaData metaData, String catalog, String schema, String tableName,
+                                            Map<String, List<Column>> columnsByTable,
+                                            Map<String, PrimaryKey> primaryKeysByTable) throws SQLException {
+        PrimaryKey cached = primaryKeysByTable.get(tableName);
+        if (cached != null) {
+            return cached;
+        }
+
+        PrimaryKey primaryKey = getPrimaryKey(metaData, catalog, schema, tableName, columnsByTable);
+        primaryKeysByTable.put(tableName, primaryKey);
+        return primaryKey;
     }
 
     private static List<Key> getImportedKeys(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {
@@ -206,7 +230,8 @@ public class DatabaseUtils {
     }
 
 
-    private static PrimaryKey getPrimaryKey(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {
+    private static PrimaryKey getPrimaryKey(DatabaseMetaData metaData, String catalog, String schema, String tableName,
+                                            Map<String, List<Column>> columnsByTable) throws SQLException {
 
         try (ResultSet primaryKeyResultSet = metaData.getPrimaryKeys(catalog, schema, tableName)) {
 
@@ -217,7 +242,7 @@ public class DatabaseUtils {
                 String columnName = primaryKeyResultSet.getString("COLUMN_NAME");
                 int sequence = primaryKeyResultSet.getInt("KEY_SEQ");
 
-                keyColumns.add(new KeyColumn(sequence, getColumn(metaData, catalog, schema, tableName, columnName)));
+                keyColumns.add(new KeyColumn(sequence, columnFor(metaData, catalog, schema, tableName, columnName, columnsByTable)));
             }
 
             keyColumns.sort(Comparator.comparing(KeyColumn::sequence));
@@ -228,11 +253,29 @@ public class DatabaseUtils {
 
     }
 
-    private static Column getColumn(DatabaseMetaData metaData, String catalog, String schema, String tableName, String columnName) throws SQLException {
+    private static Column columnFor(DatabaseMetaData metaData, String catalog, String schema, String tableName, String columnName,
+                                    Map<String, List<Column>> columnsByTable) throws SQLException {
 
-        try (ResultSet columnsResultSet = metaData.getColumns(catalog, schema, tableName, columnName)) {
-            if (columnsResultSet.next()) {
-                return mapColumn(columnsResultSet);
+        List<Column> columns = columnsByTable.get(tableName);
+
+        if (columns == null) {
+            // a key can reference a table outside the introspected set (e.g. a view filter or
+            // another schema); load its columns once and reuse them for later references
+            columns = getColumns(metaData, catalog, schema, tableName);
+            columnsByTable.put(tableName, columns);
+        }
+
+        for (Column column : columns) {
+            if (column.name().equals(columnName)) {
+                return column;
+            }
+        }
+
+        // fall back to a case-insensitive match: key result sets and column result sets can
+        // disagree on identifier case with some drivers
+        for (Column column : columns) {
+            if (column.name().equalsIgnoreCase(columnName)) {
+                return column;
             }
         }
 

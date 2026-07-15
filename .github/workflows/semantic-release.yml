@@ -11,9 +11,16 @@ permissions:
   pull-requests: write
   issues: write
 
+# Never run two releases at once: concurrent runs would race on version
+# computation and the release commit push. Queued runs wait, never cancel.
+concurrency:
+  group: semantic-release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     
     outputs:
@@ -146,8 +153,8 @@ jobs:
               [
                 "@semantic-release/exec",
                 {
-                  "prepareCmd": "mvn versions:set -DnewVersion=${nextRelease.version} -DgenerateBackupPoms=false -DprocessAllModules=true",
-                  "publishCmd": "mvn clean deploy -DskipTests=true"
+                  "prepareCmd": "./mvnw -B -ntp versions:set -DnewVersion=${nextRelease.version} -DgenerateBackupPoms=false -DprocessAllModules=true",
+                  "publishCmd": "./mvnw -B -ntp clean deploy -DskipTests=true"
                 }
               ],
               [

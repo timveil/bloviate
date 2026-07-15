@@ -18,7 +18,7 @@ code lives in modules:
 
 | Module | Description |
 | --- | --- |
-| `bloviate-core` | The dependency-free data-generation engine and flat-file support |
+| `bloviate-core` | The self-contained data-generation engine and flat-file support |
 | `bloviate-junit` | JUnit Jupiter integration (`@FillDatabase`); JUnit is a `provided` dependency |
 | `bloviate-testcontainers` | Testcontainers integration; Testcontainers is a `provided` dependency |
 
@@ -68,6 +68,20 @@ fidelity assertions used by the TPC-C tests.
 Integration tests rely on [Testcontainers](https://testcontainers.com/), which starts and tears
 down database containers automatically — a running Docker daemon is the only prerequisite. There is
 nothing to start or stop by hand.
+
+## Design Invariants
+
+A few properties are hard guarantees:
+
+- **Seed reproducibility within a version.** For a given Bloviate version, the same schema filled
+  with the same seed must produce byte-for-byte identical data on every run, on every platform and
+  JDK. Nothing that feeds generation may depend on run-to-run or JDK-dependent state (hash iteration
+  order, wall-clock time, identity hash codes, default locale/timezone).
+- **Cross-version changes are allowed but must be deliberate.** A new release may change the data a
+  seed produces (e.g. a fixed traversal order or an improved generator), but the change must be
+  intentional, called out in the release notes, and accompanied by regenerating the golden dump in
+  `SeedGoldenDumpTest` — never an accidental side effect of a refactor. The golden-dump test exists
+  to turn any unintentional drift into a loud failure.
 
 ## Submitting Changes
 

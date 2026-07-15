@@ -42,6 +42,14 @@ import java.util.List;
 public record Database(String product, String productVersion, String catalog, String schema, List<Table> tables) {
 
     /**
+     * Copies the table list so the record is deeply immutable — database metadata is shared
+     * across worker threads during parallel fills.
+     */
+    public Database {
+        tables = tables == null ? null : List.copyOf(tables);
+    }
+
+    /**
      * Retrieves a table by name using case-insensitive comparison.
      * 
      * @param tableName the name of the table to find

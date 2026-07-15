@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -638,7 +639,7 @@ public class DatabaseFiller implements Fillable {
      * @param database the database whose tables and foreign keys define the dependencies
      * @return the reversed dependency graph, ready for topological ordering
      */
-    Graph<Table, DefaultEdge> buildReversedDependencyGraph(Database database) {
+    static Graph<Table, DefaultEdge> buildReversedDependencyGraph(Database database) {
         Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
         for (Table table : database.tables()) {
 
@@ -683,7 +684,7 @@ public class DatabaseFiller implements Fillable {
      * @param database the database to order
      * @return the tables in dependency-respecting fill order
      */
-    List<Table> fillOrder(Database database) {
+    static List<Table> fillOrder(Database database) {
         List<Table> ordered = new ArrayList<>();
         new TopologicalOrderIterator<>(buildReversedDependencyGraph(database)).forEachRemaining(ordered::add);
         return ordered;
@@ -764,9 +765,9 @@ public class DatabaseFiller implements Fillable {
          * @param configuration the configuration specifying batch sizes, record counts, and table settings
          */
         public Builder(Connection connection, DatabaseConfiguration configuration) {
-            this.connection = connection;
+            this.connection = Objects.requireNonNull(connection, "connection must not be null");
             this.dataSource = null;
-            this.configuration = configuration;
+            this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
         }
 
         /**
@@ -780,8 +781,8 @@ public class DatabaseFiller implements Fillable {
          */
         public Builder(DataSource dataSource, DatabaseConfiguration configuration) {
             this.connection = null;
-            this.dataSource = dataSource;
-            this.configuration = configuration;
+            this.dataSource = Objects.requireNonNull(dataSource, "dataSource must not be null");
+            this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
         }
 
         /**

@@ -30,4 +30,10 @@ import java.util.List;
  * @param keyColumns the ordered list of columns that comprise this primary key
  * @since 1.0.0
  */
-public record PrimaryKey(String tableName, List<KeyColumn> keyColumns) {}
+public record PrimaryKey(String tableName, List<KeyColumn> keyColumns) {
+
+    /** Copies the key-column list so the record is deeply immutable. */
+    public PrimaryKey {
+        keyColumns = keyColumns == null ? null : List.copyOf(keyColumns);
+    }
+}

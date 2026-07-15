@@ -48,7 +48,7 @@ Requires **Java 25+** and a JDBC-compatible database.
 </dependency>
 ```
 
-Bloviate is a multi-module build. `bloviate-core` is the dependency-free engine; the optional
+Bloviate is a multi-module build. `bloviate-core` is the self-contained engine (framework-free, with a handful of small utility dependencies); the optional
 integration modules (`bloviate-junit`, `bloviate-testcontainers`, `bloviate-datafaker`) pull in
 their framework as a `provided` dependency. See the
 [Quick Start](https://bloviate.io/guides/quickstart/) for module coordinates and the GitHub

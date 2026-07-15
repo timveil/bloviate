@@ -33,6 +33,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.random.RandomGenerator;
 
 /**
@@ -70,10 +71,10 @@ public class TableFiller implements Fillable {
      * @param commitStrategy the commit strategy to use; falls back to the configuration's when null
      */
     public TableFiller(Connection connection, Database database, DatabaseConfiguration databaseConfiguration, Table table, CommitStrategy commitStrategy) {
-        this.connection = connection;
-        this.database = database;
-        this.databaseConfiguration = databaseConfiguration;
-        this.table = table;
+        this.connection = Objects.requireNonNull(connection, "connection must not be null");
+        this.database = Objects.requireNonNull(database, "database must not be null");
+        this.databaseConfiguration = Objects.requireNonNull(databaseConfiguration, "databaseConfiguration must not be null");
+        this.table = Objects.requireNonNull(table, "table must not be null");
         this.commitStrategy = commitStrategy != null ? commitStrategy : databaseConfiguration.commitStrategy();
         this.partitioned = false;
         this.rangeStartInclusive = 0;
@@ -407,9 +408,9 @@ public class TableFiller implements Fillable {
          * @param databaseConfiguration the configuration controlling batch size, row counts, seed, and commit behavior
          */
         public Builder(Connection connection, Database database, DatabaseConfiguration databaseConfiguration) {
-            this.connection = connection;
-            this.database = database;
-            this.databaseConfiguration = databaseConfiguration;
+            this.connection = Objects.requireNonNull(connection, "connection must not be null");
+            this.database = Objects.requireNonNull(database, "database must not be null");
+            this.databaseConfiguration = Objects.requireNonNull(databaseConfiguration, "databaseConfiguration must not be null");
         }
 
         /**
@@ -460,8 +461,12 @@ public class TableFiller implements Fillable {
          * Builds a {@link TableFiller} from the configured parameters.
          *
          * @return a new filler ready to fill the configured table
+         * @throws IllegalStateException if no table was configured via {@link #table(Table)}
          */
         public TableFiller build() {
+            if (table == null) {
+                throw new IllegalStateException("no table configured: call table(Table) before build()");
+            }
             return new TableFiller(this);
         }
     }

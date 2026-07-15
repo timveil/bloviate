@@ -27,6 +27,7 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -77,7 +78,7 @@ public final class BloviateContainers {
         private Set<TableConfiguration> tableConfigurations;
 
         private Builder(JdbcDatabaseContainer<?> container) {
-            this.container = container;
+            this.container = Objects.requireNonNull(container, "container must not be null");
         }
 
         /**
