@@ -58,6 +58,22 @@ class DatabaseSupportTest {
     }
 
     @Test
+    void configureRunsAfterSubclassConstruction() {
+        // the registry is built lazily on first use, so a subclass's own fields are initialized
+        // by the time configure() runs — an eager constructor call would see them as null
+        DatabaseSupport support = new DefaultSupport() {
+            private final GeneratorFactory custom = (column, random) -> new BooleanGenerator.Builder(random).build();
+
+            @Override
+            protected void configure(java.util.Map<JDBCType, GeneratorFactory> registry) {
+                registry.put(JDBCType.INTEGER, custom);
+            }
+        };
+
+        assertInstanceOf(BooleanGenerator.class, generatorFor(support, JDBCType.INTEGER, 10, "int4"));
+    }
+
+    @Test
     void defaultSupportToleratesNullColumnSize() {
         DatabaseSupport support = new DefaultSupport();
 

@@ -28,31 +28,43 @@ import java.util.random.RandomGenerator;
  * Base {@link DatabaseSupport} that maps columns to generators through a
  * {@link JDBCType}-keyed registry of {@link GeneratorFactory} entries.
  *
- * <p>The constructor seeds the registry with cross-database defaults and then invokes
- * {@link #configure(Map)}, which database-specific subclasses override to add or replace
- * entries (for example, to handle driver-specific type names). Types absent from the
+ * <p>On first use the registry is seeded with cross-database defaults and then
+ * {@link #configure(Map)} is invoked, which database-specific subclasses override to add or
+ * replace entries (for example, to handle driver-specific type names). Types absent from the
  * registry are unsupported and cause {@link #getDataGenerator(Column, RandomGenerator)} to throw.
  *
  * @see GeneratorFactory
  */
 public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
-    private final Map<JDBCType, GeneratorFactory> registry;
+    // built lazily on first use (double-checked): calling the overridable configure() from the
+    // constructor would hand a subclass the registry before its own fields are initialized — a
+    // fragile-base-class trap for third-party DatabaseSupport implementations
+    private volatile Map<JDBCType, GeneratorFactory> registry;
 
-    /**
-     * Builds the support, seeding the registry with cross-database defaults and then invoking
-     * {@link #configure(Map)} so subclasses can add or replace entries.
-     */
+    /** Creates the support; the generator registry is built on first use. */
     protected AbstractDatabaseSupport() {
-        Map<JDBCType, GeneratorFactory> defaults = new EnumMap<>(JDBCType.class);
-        registerDefaults(defaults);
-        configure(defaults);
-        this.registry = defaults;
+    }
+
+    private Map<JDBCType, GeneratorFactory> registry() {
+        Map<JDBCType, GeneratorFactory> result = registry;
+        if (result == null) {
+            synchronized (this) {
+                result = registry;
+                if (result == null) {
+                    Map<JDBCType, GeneratorFactory> defaults = new EnumMap<>(JDBCType.class);
+                    registerDefaults(defaults);
+                    configure(defaults);
+                    registry = result = defaults;
+                }
+            }
+        }
+        return result;
     }
 
     @Override
     public final DataGenerator<?> getDataGenerator(Column column, RandomGenerator random) {
-        GeneratorFactory factory = registry.get(column.jdbcType());
+        GeneratorFactory factory = registry().get(column.jdbcType());
         if (factory == null) {
             throw new UnsupportedOperationException("JDBCType [" + column.jdbcType() + "] not supported");
         }
