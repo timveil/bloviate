@@ -30,7 +30,9 @@ import java.util.random.RandomGenerator;
  */
 public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
-    private final LongGenerator longGenerator;
+    private final long startMillisInclusive;
+    private final long endMillisExclusive;
+    private LongGenerator longGenerator;
 
     @Override
     public Date generate() {
@@ -99,9 +101,21 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
     private SqlDateGenerator(Builder builder) {
         super(builder.random);
-        this.longGenerator = new LongGenerator.Builder(builder.random)
-                .start(builder.startInclusive.getTime())
-                .end(builder.endExclusive.getTime())
+        this.startMillisInclusive = builder.startInclusive.getTime();
+        this.endMillisExclusive = builder.endExclusive.getTime();
+        buildDelegates();
+    }
+
+    private void buildDelegates() {
+        this.longGenerator = new LongGenerator.Builder(random)
+                .start(startMillisInclusive)
+                .end(endMillisExclusive)
                 .build();
     }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

@@ -28,7 +28,7 @@ import java.util.random.RandomGenerator;
  */
 public class XmlGenerator extends AbstractDataGenerator<String> {
 
-    private final SimpleStringGenerator contentGenerator;
+    private SimpleStringGenerator contentGenerator;
 
     @Override
     public String generate() {
@@ -65,6 +65,16 @@ public class XmlGenerator extends AbstractDataGenerator<String> {
 
     private XmlGenerator(Builder builder) {
         super(builder.random);
+        buildDelegates();
+    }
+
+    private void buildDelegates() {
         this.contentGenerator = new SimpleStringGenerator.Builder(random).size(16).letters(true).numbers(true).build();
     }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

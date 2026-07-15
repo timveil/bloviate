@@ -34,7 +34,9 @@ import java.util.random.RandomGenerator;
 public class DateGenerator extends AbstractDataGenerator<Date> {
 
 
-    private final LongGenerator longGenerator;
+    private final long startMillisInclusive;
+    private final long endMillisExclusive;
+    private LongGenerator longGenerator;
 
     @Override
     public Date generate() {
@@ -99,10 +101,21 @@ public class DateGenerator extends AbstractDataGenerator<Date> {
 
     private DateGenerator(Builder builder) {
         super(builder.random);
+        this.startMillisInclusive = builder.startInclusive.getTime();
+        this.endMillisExclusive = builder.endExclusive.getTime();
+        buildDelegates();
+    }
 
-        this.longGenerator = new LongGenerator.Builder(builder.random)
-                .start(builder.startInclusive.getTime())
-                .end(builder.endExclusive.getTime())
+    private void buildDelegates() {
+        this.longGenerator = new LongGenerator.Builder(random)
+                .start(startMillisInclusive)
+                .end(endMillisExclusive)
                 .build();
     }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

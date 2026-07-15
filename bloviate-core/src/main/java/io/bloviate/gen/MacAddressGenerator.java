@@ -29,7 +29,7 @@ import java.util.random.RandomGenerator;
 public class MacAddressGenerator extends AbstractDataGenerator<String> {
 
     private final int octets;
-    private final IntegerGenerator octetGenerator;
+    private IntegerGenerator octetGenerator;
 
     private static final char[] HEX = "0123456789abcdef".toCharArray();
 
@@ -93,6 +93,16 @@ public class MacAddressGenerator extends AbstractDataGenerator<String> {
     private MacAddressGenerator(Builder builder) {
         super(builder.random);
         this.octets = builder.octets;
+        buildDelegates();
+    }
+
+    private void buildDelegates() {
         this.octetGenerator = new IntegerGenerator.Builder(random).start(0).end(256).build();
     }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

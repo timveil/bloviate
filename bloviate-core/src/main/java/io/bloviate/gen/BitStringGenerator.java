@@ -33,7 +33,7 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
 
     private final int size;
 
-    private final BitGenerator bitGenerator;
+    private BitGenerator bitGenerator;
 
     @Override
     public String generate() {
@@ -92,6 +92,16 @@ public class BitStringGenerator extends AbstractDataGenerator<String> {
     private BitStringGenerator(Builder builder) {
         super(builder.random);
         this.size = builder.size;
-        this.bitGenerator = new BitGenerator.Builder(builder.random).build();
+        buildDelegates();
     }
+
+    private void buildDelegates() {
+        this.bitGenerator = new BitGenerator.Builder(random).build();
+    }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

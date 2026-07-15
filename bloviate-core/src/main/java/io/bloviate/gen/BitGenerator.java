@@ -28,7 +28,7 @@ import java.util.random.RandomGenerator;
  */
 public class BitGenerator extends AbstractDataGenerator<Integer> {
 
-    private final IntegerGenerator integerGenerator;
+    private IntegerGenerator integerGenerator;
 
     @Override
     public Integer generate() {
@@ -61,7 +61,16 @@ public class BitGenerator extends AbstractDataGenerator<Integer> {
 
     private BitGenerator(Builder builder) {
         super(builder.random);
-
-        this.integerGenerator = new IntegerGenerator.Builder(builder.random).start(0).end(2).build();
+        buildDelegates();
     }
+
+    private void buildDelegates() {
+        this.integerGenerator = new IntegerGenerator.Builder(random).start(0).end(2).build();
+    }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

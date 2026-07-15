@@ -29,7 +29,7 @@ import java.util.random.RandomGenerator;
  */
 public class InetGenerator extends AbstractDataGenerator<String> {
 
-    private final IntegerGenerator integerGenerator;
+    private IntegerGenerator integerGenerator;
 
     @Override
     public String generate() {
@@ -66,8 +66,16 @@ public class InetGenerator extends AbstractDataGenerator<String> {
 
     private InetGenerator(Builder builder) {
         super(builder.random);
-
-        this.integerGenerator = new IntegerGenerator.Builder(random).start(1).end(256).build();
-
+        buildDelegates();
     }
+
+    private void buildDelegates() {
+        this.integerGenerator = new IntegerGenerator.Builder(random).start(1).end(256).build();
+    }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

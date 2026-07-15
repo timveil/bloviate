@@ -148,8 +148,7 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     }
 
     @Override
-    public void reseed(long seed) {
-        super.reseed(seed);
+    protected void onReseed() {
         this.doubleGenerator = new DoubleGenerator.Builder(random).build();
     }
 

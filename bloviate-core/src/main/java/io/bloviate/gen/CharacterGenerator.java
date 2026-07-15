@@ -27,7 +27,7 @@ import java.util.random.RandomGenerator;
  */
 public class CharacterGenerator extends AbstractDataGenerator<Character> {
 
-    private final IntegerGenerator integerGenerator;
+    private IntegerGenerator integerGenerator;
 
 
     @Override
@@ -70,8 +70,16 @@ public class CharacterGenerator extends AbstractDataGenerator<Character> {
 
     private CharacterGenerator(Builder builder) {
         super(builder.random);
-
-        this.integerGenerator = new IntegerGenerator.Builder(random).start(0).end(26).build();
-
+        buildDelegates();
     }
+
+    private void buildDelegates() {
+        this.integerGenerator = new IntegerGenerator.Builder(random).start(0).end(26).build();
+    }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }

@@ -100,8 +100,9 @@ public class DatabaseFiller implements Fillable {
 
     /**
      * The largest DOT graph (in characters) for which {@link #visualizeGraph} renders a GraphvizOnline
-     * link at INFO. Beyond this the URL-encoded link (encoding can roughly triple the length) is too
-     * long to be useful, so the link is skipped and only the DOT itself is logged at DEBUG.
+     * link (at DEBUG, like the DOT itself — the link embeds every table name, so it stays out of
+     * default-level logs). Beyond this the URL-encoded link (encoding can roughly triple the length)
+     * is too long to be useful, so only the DOT is logged.
      */
     private static final int MAX_GRAPH_LINK_CHARS = 8_000;
 
@@ -728,10 +729,10 @@ public class DatabaseFiller implements Fillable {
      * @param databaseName the name of the database for graph labeling
      */
     private void visualizeGraph(Graph<Table, DefaultEdge> graph, String databaseName) {
-        // both the DOT string and the (longer) URL-encoded link are schema-scaled allocations; skip
-        // them entirely when neither level that consumes them is enabled
-        boolean info = logger.isInfoEnabled();
-        if (!info && !logger.isDebugEnabled()) {
+        // DEBUG-only: the DOT and the GraphvizOnline link embed the full schema topology (every
+        // table name), which default-level logs shipped to aggregation shouldn't carry — and both
+        // are schema-scaled allocations worth skipping when disabled
+        if (!logger.isDebugEnabled()) {
             return;
         }
 
@@ -751,21 +752,16 @@ public class DatabaseFiller implements Fillable {
 
         logger.debug("database graph in DOT notation:\n\n{}", graphAsString);
 
-        if (!info) {
-            return;
-        }
-
         // for a very large schema the URL-encoded DOT is too long to be a usable link; skip the
-        // encode (which can roughly triple the length) and point the reader at the DEBUG DOT instead
+        // encode (which can roughly triple the length) — the DOT itself was logged above
         if (graphAsString.length() > MAX_GRAPH_LINK_CHARS) {
-            logger.info("database graph has {} chars of DOT notation — too large for a GraphvizOnline link; "
-                    + "enable DEBUG logging for {} to see the DOT itself", graphAsString.length(), DatabaseFiller.class.getName());
+            logger.debug("database graph has {} chars of DOT notation — too large for a GraphvizOnline link", graphAsString.length());
             return;
         }
 
         String encodedDiagram = URLEncoder.encode(graphAsString, StandardCharsets.UTF_8).replace("+", "%20");
 
-        logger.info("Use this link to visualize the database graph:  https://dreampuf.github.io/GraphvizOnline/#{}", encodedDiagram);
+        logger.debug("Use this link to visualize the database graph:  https://dreampuf.github.io/GraphvizOnline/#{}", encodedDiagram);
     }
 
     /**

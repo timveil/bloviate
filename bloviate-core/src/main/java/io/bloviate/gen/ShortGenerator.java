@@ -31,7 +31,9 @@ import java.util.random.RandomGenerator;
  */
 public class ShortGenerator extends AbstractDataGenerator<Short> {
 
-    private final IntegerGenerator integerGenerator;
+    private final int startInclusive;
+    private final int endExclusive;
+    private IntegerGenerator integerGenerator;
 
     @Override
     public Short generate() {
@@ -104,6 +106,18 @@ public class ShortGenerator extends AbstractDataGenerator<Short> {
 
     private ShortGenerator(Builder builder) {
         super(builder.random);
-        this.integerGenerator = new IntegerGenerator.Builder(builder.random).start(builder.startInclusive).end(builder.endExclusive).build();
+        this.startInclusive = builder.startInclusive;
+        this.endExclusive = builder.endExclusive;
+        buildDelegates();
     }
+
+    private void buildDelegates() {
+        this.integerGenerator = new IntegerGenerator.Builder(random).start(startInclusive).end(endExclusive).build();
+    }
+
+    @Override
+    protected void onReseed() {
+        buildDelegates();
+    }
+
 }
