@@ -72,8 +72,8 @@ public class MyGenerators implements GeneratorPlugin {
 
 The type-driven default fills an `email VARCHAR` from its type (random text). The optional
 **`bloviate-datafaker`** module maps common column **names** (`email`, `first_name`, `phone`,
-`city`, `zip`, …) to realistic [Datafaker](https://www.datafaker.net/) values — keeping the core
-dependency-free (Datafaker only lands if you add this module).
+`city`, `zip`, …) to realistic [Datafaker](https://www.datafaker.net/) values — keeping Datafaker
+out of the core (it only lands if you add this module).
 
 It's **opt-in twice over**: add the module, and build a `GeneratorRegistry` that includes its plugin
 — either by `discover()` (it registers via `ServiceLoader`) or explicitly:

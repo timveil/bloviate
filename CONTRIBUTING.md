@@ -18,7 +18,7 @@ code lives in modules:
 
 | Module | Description |
 | --- | --- |
-| `bloviate-core` | The dependency-free data-generation engine and flat-file support |
+| `bloviate-core` | The self-contained data-generation engine and flat-file support |
 | `bloviate-junit` | JUnit Jupiter integration (`@FillDatabase`); JUnit is a `provided` dependency |
 | `bloviate-testcontainers` | Testcontainers integration; Testcontainers is a `provided` dependency |
 

@@ -64,7 +64,7 @@ Syntho").
 2. **Zero-config foreign-key correctness.** Point it at a schema and it derives the fill order from
    `DatabaseMetaData` (see [the dependency DAG](./ARCHITECTURE.md#the-dependency-dag--fill-order-via-topological-sort)).
    Benerator and Snowfakery make you hand-author relationships; DBeaver expects parents to pre-exist.
-3. **In-process, dependency-free, CI-native.** No cloud account, no Python/GPU runtime, no
+3. **In-process, self-contained, CI-native.** No cloud account, no Python/GPU runtime, no
    per-row/per-GB pricing — just a library on your classpath, with first-class
    [`@FillDatabase`/`@FillSource`](/guides/integrations/) and Testcontainers support.
 4. **Privacy-safe by construction.** Generates from schema/type and never reads production, so the

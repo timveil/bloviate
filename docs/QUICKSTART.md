@@ -11,7 +11,7 @@ each column type. This page gets you from zero to a filled database (or file) in
 
 ## Installation
 
-Add `bloviate-core` to your build. It is the dependency-free engine — `DatabaseFiller`, the
+Add `bloviate-core` to your build. It is the self-contained engine — `DatabaseFiller`, the
 generators, and flat-file generation.
 
 ```xml

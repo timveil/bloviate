@@ -10,10 +10,10 @@ appreciate responsible disclosure of any vulnerabilities.
 Security fixes are released against the latest published version. We recommend
 always running the most recent release.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.15.x  | :white_check_mark: |
-| < 2.15  | :x:                |
+| Version                                                                    | Supported          |
+| -------------------------------------------------------------------------- | ------------------ |
+| [latest release](https://github.com/timveil/bloviate/releases/latest)      | :white_check_mark: |
+| all earlier versions                                                       | :x:                |
 
 Because the project follows [semantic versioning](https://semver.org/) driven by
 [Conventional Commits](https://conventionalcommits.org/), fixes are shipped in a
