@@ -38,6 +38,41 @@ class DatabaseConfigurationTest {
     }
 
     @Test
+    void builderProducesSameConfigurationAsCanonicalConstructor() {
+        DefaultSupport support = new DefaultSupport();
+        GeneratorRegistry registry = new GeneratorRegistry.Builder().build();
+
+        DatabaseConfiguration built = new DatabaseConfiguration.Builder(128, 100, support)
+                .generatorRegistry(registry)
+                .seed(42L)
+                .commitStrategy(CommitStrategy.perTable())
+                .bulkLoadStrategy(BulkLoadStrategy.unorderedBulk())
+                .build();
+
+        assertEquals(new DatabaseConfiguration(128, 100, support, null, registry, 42L,
+                CommitStrategy.perTable(), BulkLoadStrategy.unorderedBulk()), built);
+    }
+
+    @Test
+    void builderAppliesDefaults() {
+        DatabaseConfiguration built = new DatabaseConfiguration.Builder(128, 100, new DefaultSupport()).build();
+
+        assertEquals(0L, built.seed());
+        assertNull(built.tableConfigurations());
+        assertNull(built.generatorRegistry());
+        assertEquals(CommitStrategy.connectionDefault(), built.commitStrategy());
+        assertEquals(BulkLoadStrategy.ordered(), built.bulkLoadStrategy());
+    }
+
+    @Test
+    void builderValidatesInputs() {
+        assertThrows(NullPointerException.class,
+                () -> new DatabaseConfiguration.Builder(128, 100, null));
+        assertThrows(IllegalArgumentException.class,
+                () -> new DatabaseConfiguration.Builder(0, 100, new DefaultSupport()).build());
+    }
+
+    @Test
     void registryIsRetained() {
         GeneratorRegistry registry = new GeneratorRegistry.Builder()
                 .registerJdbcType(JDBCType.INTEGER, (column, random) -> new IntegerGenerator.Builder(random).build())
