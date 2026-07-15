@@ -49,6 +49,9 @@ jobs:
           };
           EOF
 
+      # Only the PR title is linted, deliberately: the repository squash-merges, so the
+      # title becomes the commit subject on main and individual branch-commit subjects
+      # never reach the history.
       - name: Validate PR title
         # The title is attacker-controlled; pass it via env instead of interpolating it
         # into the script to avoid shell injection on the runner.
