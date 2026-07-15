@@ -49,6 +49,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -112,6 +113,10 @@ public class DatabaseFiller implements Fillable {
 
     private final DatabaseConfiguration configuration;
 
+    // per-fill cache of value-constraint metadata, keyed by table name; cleared at the start of
+    // each fill() so a reused filler re-reads the catalog
+    private final ConcurrentHashMap<String, Map<String, ColumnConstraint>> constraintCache = new ConcurrentHashMap<>();
+
     /** Worker threads for parallel table fill; {@code 1} (the default) keeps the fill sequential. */
     private final int threads;
 
@@ -133,6 +138,10 @@ public class DatabaseFiller implements Fillable {
      */
     @Override
     public void fill() throws SQLException {
+
+        // constraint metadata is per-fill state: a table's constraints are read once and shared
+        // across its partitions/workers instead of once per partition
+        constraintCache.clear();
 
         StopWatch metadataWatch = new StopWatch("fetched database metadata in");
         metadataWatch.start();
@@ -440,6 +449,7 @@ public class DatabaseFiller implements Fillable {
         fillOnPooledConnection(database, bulk, conn ->
                 new TableFiller.Builder(conn, database, configuration)
                         .table(table)
+                        .constraints(constraintsFor(conn, table))
                         .commitStrategy(effectiveParallelCommitStrategy())
                         .build().fill());
     }
@@ -456,9 +466,23 @@ public class DatabaseFiller implements Fillable {
         fillOnPooledConnection(database, bulk, conn ->
                 new TableFiller.Builder(conn, database, configuration)
                         .table(table)
+                        .constraints(constraintsFor(conn, table))
                         .commitStrategy(effectiveParallelCommitStrategy())
                         .rowRange(startInclusive, endExclusive)
                         .build().fill());
+    }
+
+    /**
+     * Returns the value-constraint metadata for {@code table}, reading it from the catalog at most
+     * once per {@link #fill()} run — an intra-table parallel fill would otherwise issue the same
+     * catalog queries once per partition.
+     */
+    private Map<String, ColumnConstraint> constraintsFor(Connection conn, Table table) {
+        return constraintCache.computeIfAbsent(table.name(), name -> {
+            List<Column> columns = table.filteredColumns();
+            String schema = columns.isEmpty() ? null : columns.getFirst().schema();
+            return configuration.databaseSupport().readConstraints(conn, schema, name);
+        });
     }
 
     /**

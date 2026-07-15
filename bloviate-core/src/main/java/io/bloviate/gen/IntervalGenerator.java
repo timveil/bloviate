@@ -39,14 +39,16 @@ public class IntervalGenerator extends AbstractDataGenerator<String> {
 
     @Override
     public String generate() {
-        return String.format("%d-%d %d %d:%d:%d",
-                yearGenerator.generate(),
-                monthGenerator.generate(),
-                dayGenerator.generate(),
-                hourGenerator.generate(),
-                minuteGenerator.generate(),
-                secondGenerator.generate()
-        );
+        // plain appends instead of String.format: identical output ("%d" is Integer.toString),
+        // and the generate() draw order (year..second) is unchanged
+        return new StringBuilder(20)
+                .append(yearGenerator.generate()).append('-')
+                .append(monthGenerator.generate()).append(' ')
+                .append(dayGenerator.generate()).append(' ')
+                .append(hourGenerator.generate()).append(':')
+                .append(minuteGenerator.generate()).append(':')
+                .append(secondGenerator.generate())
+                .toString();
     }
 
     @Override

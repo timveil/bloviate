@@ -56,6 +56,9 @@ public class TableFiller implements Fillable {
     /** How this filler commits; resolved from the builder override or {@link DatabaseConfiguration}. */
     private final CommitStrategy commitStrategy;
 
+    /** Pre-resolved constraint metadata, or null to read from the catalog at fill time. */
+    private final Map<String, ColumnConstraint> constraints;
+
     /** True when this filler handles a sub-range (one partition) of the table rather than all rows. */
     private final boolean partitioned;
     private final long rangeStartInclusive;
@@ -76,6 +79,7 @@ public class TableFiller implements Fillable {
         this.databaseConfiguration = Objects.requireNonNull(databaseConfiguration, "databaseConfiguration must not be null");
         this.table = Objects.requireNonNull(table, "table must not be null");
         this.commitStrategy = commitStrategy != null ? commitStrategy : databaseConfiguration.commitStrategy();
+        this.constraints = null;
         this.partitioned = false;
         this.rangeStartInclusive = 0;
         this.rangeEndExclusive = 0;
@@ -125,8 +129,13 @@ public class TableFiller implements Fillable {
 
         // value constraints (CHECK / enum) for this table's columns, so generated values conform
         // (issue #479). Empty for databases without support; keyed by lower-cased column name.
-        String schema = filteredColumns.isEmpty() ? null : filteredColumns.getFirst().schema();
-        Map<String, ColumnConstraint> constraints = databaseSupport.readConstraints(connection, schema, table.name());
+        // A pre-resolved map (from DatabaseFiller's per-fill cache) skips the catalog queries,
+        // which an intra-table parallel fill would otherwise repeat once per partition.
+        Map<String, ColumnConstraint> constraints = this.constraints;
+        if (constraints == null) {
+            String schema = filteredColumns.isEmpty() ? null : filteredColumns.getFirst().schema();
+            constraints = databaseSupport.readConstraints(connection, schema, table.name());
+        }
 
         for (int idx = 0; idx < columnCount; idx++) {
 
@@ -395,6 +404,7 @@ public class TableFiller implements Fillable {
 
         private Table table;
         private CommitStrategy commitStrategy;
+        private Map<String, ColumnConstraint> constraints;
         private boolean partitioned;
         private long rangeStartInclusive;
         private long rangeEndExclusive;
@@ -433,6 +443,21 @@ public class TableFiller implements Fillable {
          */
         public Builder commitStrategy(CommitStrategy commitStrategy) {
             this.commitStrategy = commitStrategy;
+            return this;
+        }
+
+        /**
+         * Supplies pre-resolved value-constraint metadata (CHECK / enum) for this table, keyed by
+         * lower-cased column name, so the fill skips its own catalog read. When unset (or null),
+         * constraints are read from the connection at fill time — the default behavior.
+         * {@link DatabaseFiller} uses this to read a table's constraints once and share them
+         * across intra-table partitions.
+         *
+         * @param constraints the constraint map to use, or null to read from the catalog
+         * @return this builder
+         */
+        public Builder constraints(Map<String, ColumnConstraint> constraints) {
+            this.constraints = constraints;
             return this;
         }
 
@@ -477,6 +502,7 @@ public class TableFiller implements Fillable {
         this.database = builder.database;
         this.databaseConfiguration = builder.databaseConfiguration;
         this.commitStrategy = builder.commitStrategy != null ? builder.commitStrategy : builder.databaseConfiguration.commitStrategy();
+        this.constraints = builder.constraints;
         this.partitioned = builder.partitioned;
         this.rangeStartInclusive = builder.rangeStartInclusive;
         this.rangeEndExclusive = builder.rangeEndExclusive;

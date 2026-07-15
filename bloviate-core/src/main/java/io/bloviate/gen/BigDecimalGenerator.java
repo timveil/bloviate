@@ -40,6 +40,11 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
     // this is the number of digits on both sides of the decimal point, can be null
     private final Integer maxPrecision;
 
+    // rebuilt on reseed(): the previous code constructed one per generate() call from the
+    // current random source, so a reseed must reach the delegate for FK replay to track the
+    // parent sequence
+    private DoubleGenerator doubleGenerator;
+
     // digits to right of decimal point (fractional digits), can be null
     private final Integer maxDigits;
 
@@ -79,7 +84,7 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
             return new BigDecimal(left + "." + right);
 
         } else {
-            return BigDecimal.valueOf(new DoubleGenerator.Builder(random).build().generate());
+            return BigDecimal.valueOf(doubleGenerator.generate());
         }
 
     }
@@ -142,9 +147,18 @@ public class BigDecimalGenerator extends AbstractDataGenerator<BigDecimal> {
         }
     }
 
+    @Override
+    public void reseed(long seed) {
+        super.reseed(seed);
+        this.doubleGenerator = new DoubleGenerator.Builder(random).build();
+    }
+
     private BigDecimalGenerator(Builder builder) {
         super(builder.random);
         this.maxDigits = builder.maxDigits;
         this.maxPrecision = builder.maxPrecision;
+        // shared with the unbounded path: constructing it draws nothing, and reusing it avoids
+        // three allocations per generated value (same draw sequence as building one per call)
+        this.doubleGenerator = new DoubleGenerator.Builder(builder.random).build();
     }
 }
