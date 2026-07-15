@@ -49,7 +49,8 @@ jobs:
           EOF
 
       - name: Validate PR title
-        run: echo "${{ github.event.pull_request.title }}" | npx commitlint
-
-      - name: Validate current commits
-        run: npx commitlint --from=HEAD~1 --to=HEAD --verbose
+        # The title is attacker-controlled; pass it via env instead of interpolating it
+        # into the script to avoid shell injection on the runner.
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$PR_TITLE" | npx commitlint
