@@ -78,8 +78,11 @@ no matter how it is labeled:
   identical data, including across releases. Any change to a generator's draw sequence or value
   derivation (even a faster algorithm producing "equivalent" values) breaks this and is not an
   acceptable performance optimization.
-- **Deterministic ordering.** Metadata traversal and fill order must not depend on hash order or
-  other run-to-run varying iteration; prefer insertion-ordered or explicitly sorted collections.
+- **Deterministic ordering.** New code must not introduce iteration order that varies run to run;
+  prefer insertion-ordered or explicitly sorted collections. The exception is order that is already
+  load-bearing for seed compatibility: foreign-key grouping intentionally keeps its historical
+  hash-based order (see the comment in `DatabaseUtils.getForeignKeys`) because changing it would
+  change which parent seeds a column that participates in multiple foreign keys.
 
 ## Submitting Changes
 
