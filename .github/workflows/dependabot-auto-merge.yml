@@ -24,6 +24,7 @@ env:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
     steps:
       - name: Dependabot metadata
@@ -78,6 +79,7 @@ jobs:
   # by the primary path above.
   auto-merge-retry:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: >
       github.event_name == 'workflow_run' &&
       github.event.workflow_run.event == 'pull_request' &&
