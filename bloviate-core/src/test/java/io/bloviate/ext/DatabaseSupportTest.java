@@ -58,6 +58,23 @@ class DatabaseSupportTest {
     }
 
     @Test
+    void defaultSupportToleratesNullColumnSize() {
+        DatabaseSupport support = new DefaultSupport();
+
+        // COLUMN_SIZE is nullable metadata; the defaults must not unbox it
+        assertInstanceOf(BitGenerator.class, generatorFor(support, JDBCType.BIT, null, "bit"));
+        assertInstanceOf(SimpleStringGenerator.class, generatorFor(support, JDBCType.VARCHAR, null, "varchar"));
+        assertInstanceOf(ByteGenerator.class, generatorFor(support, JDBCType.VARBINARY, null, "varbinary"));
+    }
+
+    @Test
+    void h2ToleratesNullColumnSizeForBinary() {
+        DatabaseSupport support = new H2Support();
+
+        assertInstanceOf(ByteGenerator.class, generatorFor(support, JDBCType.BINARY, null, "binary"));
+    }
+
+    @Test
     void defaultSupportThrowsForUnregisteredType() {
         DatabaseSupport support = new DefaultSupport();
 

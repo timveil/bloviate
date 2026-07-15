@@ -73,10 +73,13 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
 
     private void registerDefaults(Map<JDBCType, GeneratorFactory> map) {
         map.put(JDBCType.BIT, (column, random) -> {
-            if (1 == column.maxSize()) {
+            // COLUMN_SIZE is nullable metadata; an unreported size is treated as the SQL
+            // default of BIT(1), matching how a bare BIT column is declared
+            Integer maxSize = column.maxSize();
+            if (maxSize == null || maxSize == 1) {
                 return new BitGenerator.Builder(random).build();
             }
-            return new BitStringGenerator.Builder(random).size(column.maxSize()).build();
+            return new BitStringGenerator.Builder(random).size(maxSize).build();
         });
 
         map.put(JDBCType.TINYINT, (column, random) -> new ShortGenerator.Builder(random).start(0).end(255).build());
@@ -93,8 +96,15 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
         map.put(JDBCType.NUMERIC, bigDecimal);
         map.put(JDBCType.DECIMAL, bigDecimal);
 
-        GeneratorFactory string = (column, random) ->
-                new SimpleStringGenerator.Builder(random).size(column.maxSize()).build();
+        GeneratorFactory string = (column, random) -> {
+            // COLUMN_SIZE is nullable metadata; fall back to the generator's default length
+            Integer maxSize = column.maxSize();
+            SimpleStringGenerator.Builder builder = new SimpleStringGenerator.Builder(random);
+            if (maxSize != null && maxSize > 0) {
+                builder.size(maxSize);
+            }
+            return builder.build();
+        };
         map.put(JDBCType.CHAR, string);
         map.put(JDBCType.NCHAR, string);
         map.put(JDBCType.VARCHAR, string);
@@ -112,8 +122,15 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
         map.put(JDBCType.TIMESTAMP, timestamp);
         map.put(JDBCType.TIMESTAMP_WITH_TIMEZONE, timestamp);
 
-        GeneratorFactory bytes = (column, random) ->
-                new ByteGenerator.Builder(random).size(column.maxSize()).build();
+        GeneratorFactory bytes = (column, random) -> {
+            // COLUMN_SIZE is nullable metadata; fall back to the generator's default length
+            Integer maxSize = column.maxSize();
+            ByteGenerator.Builder builder = new ByteGenerator.Builder(random);
+            if (maxSize != null && maxSize > 0) {
+                builder.size(maxSize);
+            }
+            return builder.build();
+        };
         map.put(JDBCType.BINARY, bytes);
         map.put(JDBCType.VARBINARY, bytes);
         map.put(JDBCType.LONGVARBINARY, bytes);

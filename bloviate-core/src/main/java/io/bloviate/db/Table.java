@@ -45,25 +45,63 @@ import java.util.StringJoiner;
 public record Table(String name, PrimaryKey primaryKey, List<Column> columns, List<ForeignKey> foreignKeys) {
 
     /**
-     * Generates an SQL INSERT statement template for this table.
-     * 
-     * <p>Creates a parameterized INSERT statement using question mark placeholders
-     * for all non-auto-increment columns. Auto-increment columns are excluded
-     * as they are populated automatically by the database.
-     * 
+     * Generates an SQL INSERT statement template for this table with unquoted identifiers.
+     *
+     * <p>Equivalent to {@link #insertString(String) insertString(null)}. Prefer the quoting
+     * variant when a {@link java.sql.DatabaseMetaData#getIdentifierQuoteString() quote string}
+     * is available; unquoted identifiers break on reserved words, mixed-case names, and names
+     * containing special characters.
+     *
      * @return a parameterized SQL INSERT statement string
      */
     public String insertString() {
+        return insertString(null);
+    }
+
+    /**
+     * Generates an SQL INSERT statement template for this table.
+     *
+     * <p>Creates a parameterized INSERT statement using question mark placeholders
+     * for all non-auto-increment columns. Auto-increment columns are excluded
+     * as they are populated automatically by the database.
+     *
+     * <p>The table and column names come from database metadata and are emitted quoted with
+     * the supplied identifier quote string (embedded quote characters doubled), so reserved
+     * words, mixed-case, and otherwise exotic identifiers round-trip exactly as the catalog
+     * reported them and cannot alter the statement's structure. The table name is qualified
+     * with the schema its columns were introspected from, so the fill targets the introspected
+     * table even when the connection's current schema or search path differs.
+     *
+     * @param identifierQuote the identifier quote string reported by
+     *                        {@link java.sql.DatabaseMetaData#getIdentifierQuoteString()};
+     *                        {@code null} or blank (JDBC reports a single space when quoting
+     *                        is unsupported) emits unquoted identifiers
+     * @return a parameterized SQL INSERT statement string
+     */
+    public String insertString(String identifierQuote) {
         StringJoiner nameJoiner = new StringJoiner(",");
         StringJoiner valueJoiner = new StringJoiner(",");
 
         for (Column column : filteredColumns()) {
-            nameJoiner.add(column.name());
+            nameJoiner.add(quote(column.name(), identifierQuote));
             valueJoiner.add("?");
         }
 
-        return String.format("insert into %s (%s) values (%s)", name, nameJoiner, valueJoiner);
+        return String.format("insert into %s (%s) values (%s)", qualifiedName(identifierQuote), nameJoiner, valueJoiner);
 
+    }
+
+    private String qualifiedName(String identifierQuote) {
+        String schema = columns.isEmpty() ? null : columns.getFirst().schema();
+        String quotedName = quote(name, identifierQuote);
+        return schema == null ? quotedName : quote(schema, identifierQuote) + "." + quotedName;
+    }
+
+    private static String quote(String identifier, String identifierQuote) {
+        if (identifierQuote == null || identifierQuote.isBlank()) {
+            return identifier;
+        }
+        return identifierQuote + identifier.replace(identifierQuote, identifierQuote + identifierQuote) + identifierQuote;
     }
 
     /**
