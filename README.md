@@ -19,7 +19,7 @@ by seed, and runs inside your JUnit/Testcontainers pipeline.
 - [Database Support](https://bloviate.io/guides/database-support/) — PostgreSQL, MySQL, MariaDB, CockroachDB, H2, SQLite
 - [Configuration](https://bloviate.io/guides/configuration/) — per-table/column control, distributions, seeds, parallelism
 - [Generators](https://bloviate.io/guides/generators/) — registry, realistic data, composite keys, TPC-C
-- [Testing Integrations](https://bloviate.io/guides/integrations/) — JUnit 5 and Testcontainers
+- [Testing Integrations](https://bloviate.io/guides/integrations/) — JUnit Jupiter and Testcontainers
 - [File Generation](https://bloviate.io/guides/file-generation/) — CSV, TSV, pipe-delimited
 - [Architecture](https://bloviate.io/guides/architecture/) — FK dependency DAG, topological fill, deterministic seeding, extension points
 - [Benchmarks](https://bloviate.io/guides/benchmarks/) — JMH micro-benchmarks and end-to-end fill throughput
@@ -32,7 +32,7 @@ by seed, and runs inside your JUnit/Testcontainers pipeline.
 - **Per-column control** and **pluggable generators**; realistic semantic values via Datafaker
 - **Parallel & partitioned fills** for large datasets, with referential integrity preserved
 - **PostgreSQL, MySQL, MariaDB, CockroachDB, H2, SQLite**, plus CSV/TSV/pipe **flat-file** output
-- First-class **JUnit 5** and **Testcontainers** integrations
+- First-class **JUnit Jupiter** (JUnit 5/6) and **Testcontainers** integrations
 
 See the [full feature tour and guides on bloviate.io](https://bloviate.io).
 

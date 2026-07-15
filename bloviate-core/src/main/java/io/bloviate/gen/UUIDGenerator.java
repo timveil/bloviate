@@ -23,10 +23,9 @@ import java.util.UUID;
 
 /**
  * Generator for UUID (Universally Unique Identifier) values.
- * Produces version-3 (name-based, per {@link UUID#nameUUIDFromBytes}) UUIDs derived from
- * 16 seeded pseudo-random bytes, so the generated UUIDs are deterministic for a given
- * random seed. They are dummy data — not version-4 random UUIDs, and no uniqueness or
- * unguessability guarantee is made.
+ * Produces version-4-shaped UUIDs built from two seeded pseudo-random longs (with the
+ * version and IETF-variant bits set), so the generated UUIDs are deterministic for a given
+ * random seed. They are dummy data — no uniqueness or unguessability guarantee is made.
  *
  * @since 1.0.0
  */
@@ -35,12 +34,13 @@ public class UUIDGenerator extends AbstractDataGenerator<UUID> {
     @Override
     public UUID generate() {
         // Within a version, the same seed must always yield the same UUIDs. Changing this
-        // derivation (e.g. to a cheaper v4 construction from two nextLong() draws) is allowed in
-        // a new release, but it changes every generated UUID for a given seed — make it a
-        // deliberate, release-noted change and regenerate the SeedGoldenDumpTest golden file.
-        byte[] array = new byte[16];
-        random.nextBytes(array);
-        return UUID.nameUUIDFromBytes(array);
+        // derivation is allowed in a new release, but it changes every generated UUID for a
+        // given seed — make it a deliberate, release-noted change and regenerate the
+        // SeedGoldenDumpTest golden file. (Releases <= 2.18.6 derived version-3 UUIDs via an
+        // MD5 digest per value; this direct v4 construction was such a release-noted change.)
+        long msb = (random.nextLong() & 0xFFFF_FFFF_FFFF_0FFFL) | 0x0000_0000_0000_4000L;
+        long lsb = (random.nextLong() & 0x3FFF_FFFF_FFFF_FFFFL) | 0x8000_0000_0000_0000L;
+        return new UUID(msb, lsb);
     }
 
     @Override

@@ -92,7 +92,14 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
 
     @Override
     public void set(Connection connection, PreparedStatement statement, int parameterIndex, T value) throws SQLException {
-        statement.setObject(parameterIndex, value);
+        // strings are the most common cell type without a concrete override; bind them directly
+        // instead of going through the driver's setObject type dispatch on every cell (drivers
+        // delegate setObject(String) to setString, so behavior is identical)
+        if (value instanceof String string) {
+            statement.setString(parameterIndex, string);
+        } else {
+            statement.setObject(parameterIndex, value);
+        }
     }
 
     @Override

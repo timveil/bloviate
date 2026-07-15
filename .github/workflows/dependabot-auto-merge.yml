@@ -19,7 +19,7 @@ permissions:
 # path) and the PR branch name (fallback path), so the two paths can't drift.
 # Only patch & minor updates auto-merge; majors are always left for review.
 env:
-  MAVEN_ALLOWLIST: "com.zaxxer org.apache.commons com.fasterxml.jackson org.slf4j org.junit.jupiter org.testcontainers org.postgresql mysql org.jgrapht org.apache.maven.plugins org.codehaus.mojo"
+  MAVEN_ALLOWLIST: "com.zaxxer org.apache.commons com.fasterxml.jackson org.slf4j org.junit.jupiter org.testcontainers org.postgresql com.mysql mysql org.jgrapht org.apache.maven.plugins org.codehaus.mojo"
 
 jobs:
   dependabot:
@@ -47,16 +47,34 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for tok in $MAVEN_ALLOWLIST; do
-            case "$NAMES" in
-              *"$tok"*)
-                echo "Allowlisted dependency matched '$tok'; enabling auto-merge."
-                gh pr merge --auto --squash "$PR_URL"
-                exit 0
-                ;;
-            esac
+          # Every dependency in the (possibly grouped) PR must match an allowlist
+          # entry as an anchored group-id prefix. The previous substring-anywhere
+          # match let a grouped PR auto-merge when only one of its dependencies
+          # was allowlisted, and let short tokens match unrelated names.
+          # split the comma-separated names on default IFS (maven coordinates never
+          # contain spaces) — reassigning IFS here would also break the space-split
+          # of $MAVEN_ALLOWLIST in the inner loop
+          NAMES_SPLIT=$(printf '%s' "$NAMES" | tr ',' ' ')
+          ok=1
+          for name in $NAMES_SPLIT; do
+            matched=0
+            for tok in $MAVEN_ALLOWLIST; do
+              case "$name" in
+                "$tok"|"$tok":*|"$tok".*)
+                  matched=1
+                  break
+                  ;;
+              esac
+            done
+            if [ "$matched" -eq 0 ]; then
+              echo "Not allowlisted: $name"
+              ok=0
+            fi
           done
-          echo "No allowlisted dependency in: $NAMES"
+          if [ "$ok" -eq 1 ]; then
+            echo "All updated dependencies are allowlisted; enabling auto-merge."
+            gh pr merge --auto --squash "$PR_URL"
+          fi
 
       # Website (npm/pnpm) deps: auto-merge patch & minor only; majors are left
       # for manual review. --auto waits for required checks, so the required
@@ -93,9 +111,14 @@ jobs:
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Anchored to the dependabot/maven/ prefix (optionally with a directory
+          # segment) so an allowlist token can only match the dependency part of
+          # the branch name, mirroring the primary path's anchored matching.
           matched=
           for tok in $MAVEN_ALLOWLIST; do
-            case "$HEAD_BRANCH" in *"$tok"*) matched=1; break;; esac
+            case "$HEAD_BRANCH" in
+              dependabot/maven/"$tok"*|dependabot/maven/*/"$tok"*) matched=1; break;;
+            esac
           done
           if [ -z "$matched" ]; then
             echo "Branch '$HEAD_BRANCH' is not in the auto-merge allowlist; skipping."

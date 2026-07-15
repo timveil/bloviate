@@ -19,6 +19,7 @@ package io.bloviate.db;
 import io.bloviate.ext.DatabaseSupport;
 import io.bloviate.ext.GeneratorRegistry;
 
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -188,6 +189,112 @@ public record DatabaseConfiguration(int batchSize, long defaultRowCount, Databas
      */
     public DatabaseConfiguration(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport, Set<TableConfiguration> tableConfigurations, GeneratorRegistry generatorRegistry, long seed, CommitStrategy commitStrategy) {
         this(batchSize, defaultRowCount, databaseSupport, tableConfigurations, generatorRegistry, seed, commitStrategy, null);
+    }
+
+    /**
+     * Fluent builder for {@link DatabaseConfiguration} — prefer this over the positional
+     * constructors, whose overload count grows with every optional setting.
+     *
+     * <pre>{@code
+     * DatabaseConfiguration configuration = new DatabaseConfiguration.Builder(1000, 10_000, new PostgresSupport())
+     *         .seed(42L)
+     *         .tableConfigurations(tableConfigs)
+     *         .commitStrategy(CommitStrategy.perTable())
+     *         .build();
+     * }</pre>
+     */
+    public static final class Builder {
+
+        private final int batchSize;
+        private final long defaultRowCount;
+        private final DatabaseSupport databaseSupport;
+
+        private Set<TableConfiguration> tableConfigurations;
+        private GeneratorRegistry generatorRegistry;
+        private long seed;
+        private CommitStrategy commitStrategy;
+        private BulkLoadStrategy bulkLoadStrategy;
+
+        /**
+         * Creates a builder with the required settings.
+         *
+         * @param batchSize the number of rows per batch INSERT; must be {@code >= 1}
+         * @param defaultRowCount the default number of rows to generate for each table
+         * @param databaseSupport the database-specific support implementation
+         */
+        public Builder(int batchSize, long defaultRowCount, DatabaseSupport databaseSupport) {
+            this.batchSize = batchSize;
+            this.defaultRowCount = defaultRowCount;
+            this.databaseSupport = Objects.requireNonNull(databaseSupport, "databaseSupport must not be null");
+        }
+
+        /**
+         * Sets optional per-table configuration overrides.
+         *
+         * @param tableConfigurations the per-table overrides; may be null
+         * @return this builder, for chaining
+         */
+        public Builder tableConfigurations(Set<TableConfiguration> tableConfigurations) {
+            this.tableConfigurations = tableConfigurations;
+            return this;
+        }
+
+        /**
+         * Sets an optional registry of custom generator rules.
+         *
+         * @param generatorRegistry the registry; may be null
+         * @return this builder, for chaining
+         */
+        public Builder generatorRegistry(GeneratorRegistry generatorRegistry) {
+            this.generatorRegistry = generatorRegistry;
+            return this;
+        }
+
+        /**
+         * Sets the base seed for reproducible generation. Defaults to {@code 0}.
+         *
+         * @param seed the base seed; vary it for a different but reproducible dataset
+         * @return this builder, for chaining
+         */
+        public Builder seed(long seed) {
+            this.seed = seed;
+            return this;
+        }
+
+        /**
+         * Sets how the engine commits inserted rows. Defaults to
+         * {@link CommitStrategy#connectionDefault()} when unset.
+         *
+         * @param commitStrategy the commit strategy; may be null for the default
+         * @return this builder, for chaining
+         */
+        public Builder commitStrategy(CommitStrategy commitStrategy) {
+            this.commitStrategy = commitStrategy;
+            return this;
+        }
+
+        /**
+         * Sets how the engine orders fills relative to foreign-key dependencies. Defaults to
+         * {@link BulkLoadStrategy#ordered()} when unset.
+         *
+         * @param bulkLoadStrategy the bulk-load strategy; may be null for the default
+         * @return this builder, for chaining
+         */
+        public Builder bulkLoadStrategy(BulkLoadStrategy bulkLoadStrategy) {
+            this.bulkLoadStrategy = bulkLoadStrategy;
+            return this;
+        }
+
+        /**
+         * Builds the configuration.
+         *
+         * @return a new {@link DatabaseConfiguration}
+         * @throws IllegalArgumentException if {@code batchSize} is less than {@code 1}
+         */
+        public DatabaseConfiguration build() {
+            return new DatabaseConfiguration(batchSize, defaultRowCount, databaseSupport,
+                    tableConfigurations, generatorRegistry, seed, commitStrategy, bulkLoadStrategy);
+        }
     }
 
     /**

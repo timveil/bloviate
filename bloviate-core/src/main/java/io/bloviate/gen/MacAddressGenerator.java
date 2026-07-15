@@ -31,6 +31,8 @@ public class MacAddressGenerator extends AbstractDataGenerator<String> {
     private final int octets;
     private final IntegerGenerator octetGenerator;
 
+    private static final char[] HEX = "0123456789abcdef".toCharArray();
+
     @Override
     public String generate() {
         StringBuilder builder = new StringBuilder(octets * 3);
@@ -38,7 +40,10 @@ public class MacAddressGenerator extends AbstractDataGenerator<String> {
             if (i > 0) {
                 builder.append(':');
             }
-            builder.append(String.format("%02x", octetGenerator.generate()));
+            // table lookup instead of String.format("%02x", ...): identical output for the
+            // 0-255 octet range, without building a Formatter per octet on the hot path
+            int octet = octetGenerator.generate();
+            builder.append(HEX[(octet >> 4) & 0xF]).append(HEX[octet & 0xF]);
         }
         return builder.toString();
     }
