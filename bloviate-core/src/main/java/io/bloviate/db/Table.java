@@ -45,17 +45,27 @@ import java.util.StringJoiner;
 public record Table(String name, PrimaryKey primaryKey, List<Column> columns, List<ForeignKey> foreignKeys) {
 
     /**
-     * Generates an SQL INSERT statement template for this table with unquoted identifiers.
+     * Generates an SQL INSERT statement template for this table with unquoted, unqualified
+     * identifiers.
      *
-     * <p>Equivalent to {@link #insertString(String) insertString(null)}. Prefer the quoting
-     * variant when a {@link java.sql.DatabaseMetaData#getIdentifierQuoteString() quote string}
-     * is available; unquoted identifiers break on reserved words, mixed-case names, and names
-     * containing special characters.
+     * <p>This legacy form emits the bare table name (no schema qualification) and raw column
+     * names, exactly as earlier releases did. Prefer {@link #insertString(String)} when a
+     * {@link java.sql.DatabaseMetaData#getIdentifierQuoteString() quote string} is available;
+     * unquoted identifiers break on reserved words, mixed-case names, and names containing
+     * special characters.
      *
      * @return a parameterized SQL INSERT statement string
      */
     public String insertString() {
-        return insertString(null);
+        StringJoiner nameJoiner = new StringJoiner(",");
+        StringJoiner valueJoiner = new StringJoiner(",");
+
+        for (Column column : filteredColumns()) {
+            nameJoiner.add(column.name());
+            valueJoiner.add("?");
+        }
+
+        return String.format("insert into %s (%s) values (%s)", name, nameJoiner, valueJoiner);
     }
 
     /**

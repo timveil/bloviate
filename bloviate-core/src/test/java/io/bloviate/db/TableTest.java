@@ -38,6 +38,15 @@ class TableTest {
     }
 
     @Test
+    void noArgInsertStringStaysUnqualifiedWhenSchemaPresent() {
+        // the legacy no-arg form must keep emitting the bare table name for compatibility,
+        // even when column metadata carries a schema
+        Table table = new Table("orders", null, List.of(column("id", "public", false)), List.of());
+
+        assertEquals("insert into orders (id) values (?)", table.insertString());
+    }
+
+    @Test
     void insertStringQuotesAndSchemaQualifiesIdentifiers() {
         Table table = new Table("order", null,
                 List.of(column("user", "public", false), column("desc", "public", false)), List.of());
