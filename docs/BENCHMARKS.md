@@ -59,6 +59,12 @@ engine cost.
   `wide` row). Models a TPC-C `orders` → `order_line` relationship with no JDBC: `parentKeyRow`
   (composite key + child-count column) and `childKeyRow` (parent-reproducing key components + a
   per-parent sequence number, sharing one `ChildCardinality`).
+- `PositionedGenerationBenchmark` — hot-path cost of per-index derivation (issue #553): the engine
+  repositions each column's `IndexedRandom` to the absolute row index before every cell, which makes
+  values pure functions of `(columnSeed, rowIndex)` and partition seeks O(1). Three variants per
+  column type isolate the RNG algorithm swap (`legacySequentialDraws` on `L64X128MixRandom` vs
+  `indexedSequentialDraws` on the SplitMix64 stream) and the per-cell positioning overhead
+  (`positionedDraws`, the new engine pattern).
 - `MetadataBenchmark` — cost of JDBC metadata introspection (`DatabaseUtils.getMetadata`), which
   scales with *schema size*, not row count, so it is invisible in the end-to-end row/sec numbers.
   Runs against an in-memory H2 schema of `-Dmeta.tables` (default 50) tables × `-Dmeta.columns`
@@ -217,6 +223,23 @@ payload.
 
 (`GeneratorBenchmark` measures raw per-type generation and is unaffected by the dispatch change;
 slowest types in the baseline run: `VARCHAR_LONG` 0.59, `JSONB` 2.2, `UUID` 8.7, `NUMERIC` 8.0 ops/us.)
+
+### Per-index derivation (CPU, JMH, ops/us — higher is better)
+
+Per-index derivation (issue #553) repositions each column's `IndexedRandom` to the absolute row
+index before every cell. `PositionedGenerationBenchmark` isolates the two components of the change:
+the RNG swap (`L64X128MixRandom` sequential draws → the SplitMix64 stream) and the per-cell
+`position()` call. The new hot path (`positionedDraws`) is **neutral to faster** across the spread —
+the cheaper SplitMix64 draws more than pay for the reposition — while partition seeks drop from
+O(rows) replay to O(1):
+
+| Case | `legacySequentialDraws` (pre-#553) | `positionedDraws` (new hot path) | Delta |
+|------|-----------------------------------:|---------------------------------:|------:|
+| `INTEGER` | 316.7 | 329.0 | +3.9% |
+| `UUID` | 266.6 | 364.1 | +36.6% |
+| `NUMERIC` | 14.0 | 13.9 | −0.8% (within error) |
+| `VARCHAR_SHORT` | 15.8 | 21.8 | +37.7% |
+| `VARCHAR_LONG` | 1.31 | 1.79 | +36.8% |
 
 ### Stacking the strategies on one large table
 

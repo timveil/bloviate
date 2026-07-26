@@ -16,6 +16,8 @@
 
 package io.bloviate.gen;
 
+import io.bloviate.gen.tpcc.CustomerLastNameGenerator;
+import io.bloviate.util.IndexedRandom;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
@@ -122,6 +124,35 @@ class IndexedGeneratorSeekTest {
                         .groupSize(8).prefixSize(5)
                         .delegate(new SequentialIntegerGenerator.Builder(new Random()).start(100).end(199).build())
                         .build());
+    }
+
+    @Test
+    void customerLastNameSeekMatchesSequentialUnderPositioning() {
+        // hybrid positional generator: seek() restores the district-position counter, while the
+        // NURand draws come from the random source the engine positions before every row — so this
+        // test emulates the TableFiller per-row positioning contract around the seek
+        long seed = 42L;
+        IndexedRandom referenceRandom = new IndexedRandom(seed);
+        CustomerLastNameGenerator reference = new CustomerLastNameGenerator.Builder(referenceRandom)
+                .groupSize(20).enumeratedCount(10).build();
+        String[] expected = new String[TOTAL];
+        for (int i = 0; i < TOTAL; i++) {
+            referenceRandom.position(i);
+            expected[i] = reference.generate();
+        }
+
+        for (long k : SEEK_POINTS) {
+            IndexedRandom random = new IndexedRandom(seed);
+            CustomerLastNameGenerator seeker = new CustomerLastNameGenerator.Builder(random)
+                    .groupSize(20).enumeratedCount(10).build();
+            seeker.seek(k);
+            for (int i = (int) k; i < TOTAL; i++) {
+                random.position(i);
+                int row = i;
+                assertEquals(expected[i], seeker.generate(),
+                        () -> "seek(" + k + ") then generating to the end must match the sequential value at row " + row);
+            }
+        }
     }
 
     @Test

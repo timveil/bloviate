@@ -29,8 +29,11 @@ package io.bloviate.gen;
  * that key columns and the columns correlated with them stay byte-for-byte identical regardless of
  * how the rows are partitioned (preserving foreign-key validity).
  *
- * <p>Plain random generators are intentionally <em>not</em> indexed: their values carry no cross-row
- * contract, so the engine reseeds them per partition instead.
+ * <p>Plain random generators are intentionally <em>not</em> indexed: they hold no counter or cursor
+ * of their own. Their per-row values are made positional by the engine instead, which repositions
+ * each positionable column's {@link io.bloviate.util.IndexedRandom} to the absolute row index before
+ * every cell (see {@link DataGenerator#positionable()}), so a generator only needs this interface
+ * when it keeps positional state <em>outside</em> the random source.
  *
  * @since 2.10.0
  * @see DataGenerator

@@ -36,6 +36,12 @@ import java.util.random.RandomGeneratorFactory;
  * hold a {@code java.util.Random} can pass it directly anywhere a {@link RandomGenerator} is
  * expected; new code should obtain generators here so the whole engine shares one algorithm.
  *
+ * <p>Note that the database fill engine itself seeds columns with {@link IndexedRandom} (a
+ * repositionable SplitMix64 stream) rather than this factory, so that each cell is a pure function
+ * of {@code (columnSeed, rowIndex)} and partition seeks are O(1); this factory backs
+ * {@link io.bloviate.gen.DataGenerator#reseed reseed} for non-positionable generators, flat-file
+ * generation, and any caller-constructed generators.
+ *
  * @since 2.10.0
  */
 public final class RandomGenerators {

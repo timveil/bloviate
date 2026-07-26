@@ -22,7 +22,7 @@ import io.bloviate.gen.DataGenerator;
 import io.bloviate.gen.IndexedDataGenerator;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.Mixers;
-import io.bloviate.util.RandomGenerators;
+import io.bloviate.util.IndexedRandom;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.random.RandomGenerator;
 
 /**
  * Fills a database table with generated data.
@@ -117,8 +116,11 @@ public class TableFiller implements Fillable {
         DataGenerator<?>[] generators = new DataGenerator<?>[columnCount];
         long[] reseedSeeds = new long[columnCount];
         // 0 means "this column never reseeds"; a positive value is the parent row count past which
-        // a foreign-key generator must be reseeded to stay within the parent key space (wraparound)
+        // a foreign-key generator must wrap around to stay within the parent key space
         long[] maxInvocations = new long[columnCount];
+        // the column's IndexedRandom when its generator is positionable (the engine repositions it
+        // to the absolute row index before every row); null keeps the legacy sequential-draw path
+        IndexedRandom[] positionables = new IndexedRandom[columnCount];
 
         DatabaseSupport databaseSupport = databaseConfiguration.databaseSupport();
         GeneratorRegistry registry = databaseConfiguration.generatorRegistry();
@@ -164,8 +166,11 @@ public class TableFiller implements Fillable {
 
             // resolve the generator by precedence; the generator is always seeded by the engine
             // so it stays reproducible regardless of which path provides it:
-            //   per-column config > custom registry (name > typeName > JDBCType) > support default
-            RandomGenerator random = RandomGenerators.create(seed);
+            //   per-column config > custom registry (name > typeName > JDBCType) > support default.
+            // The source is an IndexedRandom so positionable generators can be repositioned to the
+            // absolute row index before every row (see the fill loop); it mutates in place, so
+            // delegates that captured the reference at construction follow automatically.
+            IndexedRandom random = new IndexedRandom(seed);
 
             ColumnConfiguration columnConfiguration = tableConfiguration != null
                     ? tableConfiguration.columnConfiguration(column.name())
@@ -206,6 +211,9 @@ public class TableFiller implements Fillable {
 
             generators[idx] = dataGenerator;
             reseedSeeds[idx] = seed;
+            if (dataGenerator.positionable()) {
+                positionables[idx] = random;
+            }
         }
 
         int batchSize = databaseConfiguration.batchSize();
@@ -246,9 +254,10 @@ public class TableFiller implements Fillable {
 
             if (partitioned) {
                 // position every generator at the partition's first absolute row so its values match
-                // the sequential fill: keys/foreign keys stay byte-identical, while non-key random
-                // columns are reseeded per partition (deterministic for the chosen partition count)
-                seekGeneratorsTo(generators, reseedSeeds, maxInvocations, startRow);
+                // the sequential fill: positionable columns are already repositioned before every row
+                // (byte-identical to the sequential fill for any partition count), so only indexed
+                // counters and legacy non-positionable generators need explicit seeking here
+                seekGeneratorsTo(generators, positionables, reseedSeeds, maxInvocations, startRow);
             }
 
             int batchesSinceCommit = 0;
@@ -260,11 +269,17 @@ public class TableFiller implements Fillable {
                     DataGenerator<?> dataGenerator = generators[col];
 
                     long maxInvocation = maxInvocations[col];
-                    if (maxInvocation > 0 && i != 0 && i % maxInvocation == 0) {
-                        // foreign-key generator has exhausted the parent key space; reseed its random
-                        // source so it replays the same parent keys and never references a non-existent
-                        // parent (positional generators ignore the unused RNG, so this is a no-op for
-                        // them; the index drives their wraparound by formula)
+                    IndexedRandom positioned = positionables[col];
+                    if (positioned != null) {
+                        // position the random source at this row's absolute index so the value is a
+                        // pure function of (columnSeed, rowIndex); a foreign-key column positions at
+                        // the parent's index instead (i mod parent rows), which both replays the
+                        // parent's exact value and makes wraparound a formula rather than a reseed
+                        positioned.position(maxInvocation > 0 ? i % maxInvocation : i);
+                    } else if (maxInvocation > 0 && i != 0 && i % maxInvocation == 0) {
+                        // legacy path (non-positionable generator): the foreign-key generator has
+                        // exhausted the parent key space; reseed its random source so it replays the
+                        // same parent keys and never references a non-existent parent
                         dataGenerator.reseed(reseedSeeds[col]);
                     }
 
@@ -355,26 +370,35 @@ public class TableFiller implements Fillable {
 
     /**
      * Positions every column generator so the next value produced is the one for absolute row
-     * {@code startRow}, using a three-way policy that keeps a partitioned fill consistent with a
-     * sequential one:
+     * {@code startRow}, keeping a partitioned fill consistent with a sequential one:
      * <ul>
      *   <li><b>Positional generators</b> ({@link IndexedDataGenerator} — keys, sequences,
-     *       permutations, prefixes) seek directly to the absolute index, so they are byte-identical
-     *       to the sequential fill regardless of partition count.</li>
-     *   <li><b>Foreign-key random-replay columns</b> ({@code maxInvocations[col] > 0}) reseed and
-     *       advance {@code startRow % maxInvocation} draws into the parent key cycle, so the partition
-     *       continues the exact parent-key sequence and never references a missing parent.</li>
-     *   <li><b>Plain non-key random columns</b> are reseeded from a partition-derived seed; their
-     *       values are deterministic for the chosen partition count but (by design) need not match a
+     *       permutations, prefixes) seek their counters directly to the absolute index, so they are
+     *       byte-identical to the sequential fill regardless of partition count.</li>
+     *   <li><b>Positionable columns</b> ({@link DataGenerator#positionable()}) need nothing further:
+     *       the fill loop repositions their {@link IndexedRandom} to the absolute row index before
+     *       every row, so seeking is O(1) and their values (foreign-key and plain random alike)
+     *       are byte-identical to the sequential fill for any partition count.</li>
+     *   <li><b>Legacy non-positionable foreign-key columns</b> ({@code maxInvocations[col] > 0})
+     *       reseed and advance {@code startRow % maxInvocation} draws into the parent key cycle —
+     *       the historical O(rows) replay, retained only for custom generators that opt out of
+     *       positioning.</li>
+     *   <li><b>Legacy non-positionable plain columns</b> are reseeded from a partition-derived seed;
+     *       their values are deterministic for the chosen partition count but need not match a
      *       different partitioning, as they carry no cross-row contract.</li>
      * </ul>
      */
-    private void seekGeneratorsTo(DataGenerator<?>[] generators, long[] reseedSeeds, long[] maxInvocations, long startRow) {
+    private void seekGeneratorsTo(DataGenerator<?>[] generators, IndexedRandom[] positionables,
+                                  long[] reseedSeeds, long[] maxInvocations, long startRow) {
         for (int col = 0; col < generators.length; col++) {
             DataGenerator<?> generator = generators[col];
             if (generator instanceof IndexedDataGenerator indexed) {
                 indexed.seek(startRow);
-            } else if (maxInvocations[col] > 0) {
+            }
+            if (positionables[col] != null || generator instanceof IndexedDataGenerator) {
+                continue;
+            }
+            if (maxInvocations[col] > 0) {
                 generator.reseed(reseedSeeds[col]);
                 long advance = startRow % maxInvocations[col];
                 for (long k = 0; k < advance; k++) {

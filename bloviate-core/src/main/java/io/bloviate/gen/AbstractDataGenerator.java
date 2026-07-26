@@ -70,6 +70,21 @@ public abstract class AbstractDataGenerator<T> implements DataGenerator<T> {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p>All built-in generators satisfy the positionable contract &mdash; they draw only from
+     * {@link #random} (directly, via {@link #randomUtils}, or via delegates built from the same
+     * instance) within each {@code generate()} call &mdash; so this base class opts in. Subclasses
+     * that keep cross-row state outside {@link IndexedDataGenerator#seek}, or that seed an internal
+     * generator from {@link #random} at construction (as the datafaker integration does), must
+     * override this to return {@code false}.
+     */
+    @Override
+    public boolean positionable() {
+        return true;
+    }
+
+    /**
      * Resets only the random source, replacing {@link #random} (and its {@link #randomUtils}
      * view) with a freshly seeded {@link RandomGenerator}. Any counter or sequence state held by
      * a subclass is intentionally left untouched, mirroring the legacy {@code Random.setSeed}

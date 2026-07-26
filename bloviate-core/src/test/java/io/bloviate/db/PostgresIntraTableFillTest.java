@@ -50,6 +50,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * the delivery-state prefix), so a partitioned fill that completes and passes
  * {@link #assertTpccColumnFidelity} proves the key and key-correlated columns stayed coherent — i.e.
  * partitioning preserved foreign-key validity and reproducibility.
+ *
+ * <p>Since per-index derivation (issue #553) every positionable column — not just keys — is a pure
+ * function of {@code (columnSeed, rowIndex)}, so this test also asserts the stronger invariant that a
+ * partitioned fill is byte-identical to an unpartitioned fill of the same seed.
  */
 class PostgresIntraTableFillTest extends BaseDatabaseTestCase {
 
@@ -61,9 +65,10 @@ class PostgresIntraTableFillTest extends BaseDatabaseTestCase {
     private static final int MAX_LINES = 15;
     private static final int NEW_ORDERS = 10;
 
-    // partition a mix of an early parent (stock), a mid parent (customer) and the largest leaf
-    // (order_line); all use positional key generators, so foreign keys stay valid under partitioning
-    private static final Set<String> PARTITIONED_TABLES = Set.of("stock", "customer", "order_line");
+    // partition a mix of an early parent (stock), a mid parent (customer), the largest leaf
+    // (order_line), and a parent with permutation/prefix columns (open_order: o_c_id, o_carrier_id);
+    // all use positional key generators, so foreign keys stay valid under partitioning
+    private static final Set<String> PARTITIONED_TABLES = Set.of("stock", "customer", "order_line", "open_order");
     private static final int PARTITIONS = 4;
 
     @Test
@@ -117,6 +122,22 @@ class PostgresIntraTableFillTest extends BaseDatabaseTestCase {
                     for (String table : tableNames) {
                         assertEquals(firstDump.get(table), secondDump.get(table),
                                 "table [" + table + "] must be identical across two partitioned fills of the same config");
+                    }
+                    truncateAll(connection, tableNames);
+                }
+
+                // third fill with the same seed but no intra-table partitioning: per-index derivation
+                // (issue #553) makes every engine-generated value a pure function of (columnSeed, row),
+                // so the partitioned dumps must be byte-identical to the unpartitioned ones
+                DatabaseConfiguration unpartitioned = new DatabaseConfiguration(256, 0, new PostgresSupport(),
+                        TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS), 42L);
+                new DatabaseFiller.Builder(dataSource, unpartitioned).threads(4).build().fill();
+
+                try (Connection connection = dataSource.getConnection()) {
+                    Map<String, List<String>> unpartitionedDump = dump(connection, tableNames);
+                    for (String table : tableNames) {
+                        assertEquals(firstDump.get(table), unpartitionedDump.get(table),
+                                "table [" + table + "] must be identical whether or not its rows were partitioned");
                     }
                 }
             }

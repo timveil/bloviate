@@ -18,6 +18,7 @@ package io.bloviate.gen.tpcc;
 
 import io.bloviate.gen.AbstractBuilder;
 import io.bloviate.gen.AbstractDataGenerator;
+import io.bloviate.gen.IndexedDataGenerator;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * — guaranteeing every distinct last name is present — and only the remaining customers
  * use {@code NURand}.
  */
-public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
+public class CustomerLastNameGenerator extends AbstractDataGenerator<String> implements IndexedDataGenerator {
 
     private static final String[] SYLLABLES = {
             "BAR", "OUGHT", "ABLE", "PRI", "PRES", "ESE", "ANTI", "CALLY", "ATION", "EING"
@@ -64,6 +65,19 @@ public class CustomerLastNameGenerator extends AbstractDataGenerator<String> {
             num = TPCCUtils.nonUniformRandom(255, C_LOAD, 0, 999, randomUtils);
         }
         return lastName(num);
+    }
+
+    /**
+     * Positions the district-position counter at the given absolute row, so a partitioned fill
+     * continues the enumerated/NURand pattern exactly where a sequential fill would be. The NURand
+     * draws themselves are covered by the engine's per-row random positioning.
+     */
+    @Override
+    public void seek(long rowIndex) {
+        if (rowIndex < 0) {
+            throw new IllegalArgumentException("rowIndex must be >= 0: " + rowIndex);
+        }
+        counter.set(rowIndex);
     }
 
     /**
