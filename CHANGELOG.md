@@ -1,3 +1,25 @@
+## [3.0.0](https://github.com/timveil/bloviate/compare/v2.19.1...v3.0.0) (2026-07-26)
+
+### ⚠ BREAKING CHANGES
+
+* generated data changes for every seed and schema. Values were
+previously drawn sequentially from a per-column L64X128MixRandom stream; they
+are now derived per row index from a SplitMix64 stream. Any dataset, golden
+file, or downstream assertion built on bloviate 2.x output will differ after
+upgrading. The same seed still reproduces the same data within this version -
+the within-version reproducibility guarantee is unchanged - and the
+SeedGoldenDumpTest golden file is regenerated in this release. Custom
+DataGenerator implementations that keep cross-row state or seed internal RNGs
+from the engine-supplied random source must override positionable() to return
+false to stay on the legacy sequential-draw semantics. Flat-file generation
+(FlatFileGenerator) is unaffected.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+### ✨ Features
+
+* derive generated values per row index for O(1) partition seeks ([#568](https://github.com/timveil/bloviate/issues/568)) ([5fd0b44](https://github.com/timveil/bloviate/commit/5fd0b447e11927812527f8eb48fdf4be230ff61a))
+
 ## [2.19.1](https://github.com/timveil/bloviate/compare/v2.19.0...v2.19.1) (2026-07-15)
 
 ### 🐛 Bug Fixes
