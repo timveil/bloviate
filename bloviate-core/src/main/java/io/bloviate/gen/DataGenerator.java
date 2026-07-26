@@ -61,6 +61,30 @@ public interface DataGenerator<T> {
     String generateAsString();
 
     /**
+     * Whether the fill engine may reposition this generator's random source per row.
+     *
+     * <p>Returning {@code true} declares the contract that each {@link #generate()} call's value
+     * depends only on immutable configuration plus draws taken from the engine-supplied
+     * {@link java.util.random.RandomGenerator} <em>during that call</em> (or, for
+     * {@link IndexedDataGenerator}s, on their own positional counter). The engine then positions the
+     * random source to the absolute row index before every row, which makes the generated value a
+     * pure function of {@code (columnSeed, rowIndex)} &mdash; the property behind O(1) partition
+     * seeks and partition-count-independent output.
+     *
+     * <p>Return {@code false} (the interface default) if the generator holds cross-row mutable state
+     * that is not restored by {@link IndexedDataGenerator#seek}, or siphons entropy from the random
+     * source into an internal generator at construction (so per-row repositioning cannot reach it).
+     * Non-positionable columns keep the legacy sequential-draw semantics: per-partition reseeds and,
+     * for foreign-key replay, an O(rows) draw replay when a partitioned fill seeks into the table.
+     *
+     * @return true if the engine may reposition this generator's random source per row
+     * @since 3.0.0
+     */
+    default boolean positionable() {
+        return false;
+    }
+
+    /**
      * Resets this generator's random source to the given seed for reproducible foreign-key
      * wraparound. Implementations must replace the underlying {@link java.util.random.RandomGenerator}
      * with a freshly seeded one (there is no in-place {@code setSeed} on

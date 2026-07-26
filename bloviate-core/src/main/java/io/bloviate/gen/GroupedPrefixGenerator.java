@@ -59,9 +59,12 @@ public class GroupedPrefixGenerator<T> extends AbstractDataGenerator<T> implemen
      *
      * <p>Setting the counter to {@code rowIndex} restores the null/non-null pattern exactly (it is a
      * pure function of the absolute position). The wrapped delegate is consulted only on prefix rows,
-     * so it is advanced to the matching delegate-call index: a positional delegate is itself
-     * {@link #seek(long) sought} (byte-identical), while a plain random delegate is reseeded
-     * deterministically for the partition (its non-key values may differ from a sequential fill).
+     * so it is positioned to match: a positional delegate is itself {@link #seek(long) sought} to the
+     * matching delegate-call index (byte-identical); a positionable delegate needs nothing, because
+     * its draws come from the engine's random source, which is repositioned to the absolute row index
+     * before every row (byte-identical for any partition count — a reseed here would detach it from
+     * that positioning); a delegate that is neither is reseeded deterministically for the partition
+     * (its values may differ from a sequential fill).
      */
     @Override
     public void seek(long rowIndex) {
@@ -74,7 +77,7 @@ public class GroupedPrefixGenerator<T> extends AbstractDataGenerator<T> implemen
         long delegateIndex = (rowIndex / groupSize) * prefixSize + Math.min(rowIndex % groupSize, prefixSize);
         if (delegate instanceof IndexedDataGenerator indexedDelegate) {
             indexedDelegate.seek(delegateIndex);
-        } else {
+        } else if (!delegate.positionable()) {
             delegate.reseed(Mixers.splitmix64(delegateIndex));
         }
     }

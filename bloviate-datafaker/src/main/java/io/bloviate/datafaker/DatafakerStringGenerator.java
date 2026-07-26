@@ -86,6 +86,19 @@ public class DatafakerStringGenerator extends AbstractDataGenerator<String> {
         this.faker = newFaker(this.random);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Always {@code false}: all randomness comes from the internal {@link Faker}'s own
+     * {@link Random}, seeded once at construction, which advances across rows and cannot be reached
+     * by repositioning the engine's random source. The engine therefore keeps this generator on the
+     * legacy per-partition reseed path.
+     */
+    @Override
+    public boolean positionable() {
+        return false;
+    }
+
     @Override
     public String get(ResultSet resultSet, int columnIndex) throws SQLException {
         return resultSet.getString(columnIndex);

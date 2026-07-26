@@ -216,19 +216,21 @@ DatabaseConfiguration config = new DatabaseConfiguration(
 new DatabaseFiller.Builder(dataSource, config).threads(8).build().fill();
 ```
 
-Partitioning is reproducible **for a given configuration, including the partition count**: key
-columns and the columns correlated with them (foreign keys, sequences, permutations) are generated
-positionally, so they are byte-for-byte identical to a sequential fill and **foreign-key validity
-always holds**. Only plain non-key random columns take different (but still deterministic) values
-when you change the partition count — they carry no cross-row contract, so this is by design and
-keeps the default path free of any per-cell cost.
+Partitioning is **byte-identical to a sequential fill of the same seed, for any partition count**:
+every built-in generator derives each value as a pure function of its column seed and the absolute
+row index (per-index derivation), so keys, foreign keys, and plain random columns alike land on
+exactly the values the sequential fill produces, **foreign-key validity always holds**, and seeking a
+worker to its starting row is O(1) no matter how large the table or its parents are. The only
+exceptions are custom generators that opt out of per-row positioning (`DataGenerator.positionable()`
+returning false, as the datafaker integration does because its values come from an internal Faker
+RNG) — those stay deterministic for a given partition count but may differ across partition counts.
 
 Size the connection pool for the total concurrent demand (`threads`, where a partitioned table
 counts as `partitions` units). One case is unsupported: partitioning a **parent** table whose
-primary key is a plain *random* generator referenced by a foreign key can orphan those references —
-partition the child table instead, or use the positional key generators (as the bundled
-TPC-C/TPC-H configurations do). A custom generator with internal positional state must implement
-`io.bloviate.gen.IndexedDataGenerator` to stay aligned under partitioning.
+primary key comes from a non-positionable custom generator referenced by a foreign key can orphan
+those references — partition the child table instead, or use the positional key generators (as the
+bundled TPC-C/TPC-H configurations do). A custom generator with internal positional state must
+implement `io.bloviate.gen.IndexedDataGenerator` to stay aligned under partitioning.
 
 ## Commit strategy
 

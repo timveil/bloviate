@@ -245,27 +245,33 @@ table's `TableConfiguration` and, on the parallel path, `DatabaseFiller` splits 
 rows into that many contiguous ranges filled concurrently, one `Connection` per range.
 
 The challenge is reproducibility: a worker starting at absolute row *N* must produce the value the
-sequential fill produces at row *N*, without replaying rows `0..N`. Counter/cursor generators solve
-this with [`IndexedDataGenerator`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/gen/IndexedDataGenerator.java),
-whose `seek(rowIndex)` positions the generator directly (the composite/sequence/permutation generators
-are closed-form O(1); the variable-cardinality child-key generator locates the owning parent via the
-`ChildCardinality` cumulative). `TableFiller` seeks each column at the partition's first row with a
-three-way policy:
+sequential fill produces at row *N*, without replaying rows `0..N`. The engine solves this with
+**per-index derivation**: each column's random source is an `IndexedRandom` that `TableFiller`
+repositions to the absolute row index before every cell, so every generated value is a pure function
+of `(columnSeed, rowIndex)`. Seeking to any row is O(1) — there is nothing to replay. A foreign-key
+column positions at the parent's index (`rowIndex % parentRows`) instead, which replays the parent's
+exact value and makes key-space wraparound a formula. Counter/cursor generators additionally implement
+[`IndexedDataGenerator`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/gen/IndexedDataGenerator.java),
+whose `seek(rowIndex)` positions their counters directly (the composite/sequence/permutation
+generators are closed-form O(1); the variable-cardinality child-key generator locates the owning
+parent via the `ChildCardinality` cumulative).
 
-| Column kind | Seek behavior | Result vs. sequential |
+| Column kind | Positioning | Result vs. sequential |
 | --- | --- | --- |
-| Positional (`IndexedDataGenerator` — keys, sequences, permutations, prefixes) | `seek(start)` | **byte-identical** |
-| Foreign-key random-replay (`maxInvocation > 0`) | reseed, then advance `start % maxInvocation` draws into the parent cycle | **byte-identical** (FK-valid) |
-| Plain non-key random | reseed from a partition-derived seed | deterministic per partition count |
+| Positionable (all built-in generators) | `IndexedRandom.position(rowIndex)` before every cell | **byte-identical**, any partition count |
+| Foreign-key on a positionable generator | `position(rowIndex % parentRows)` | **byte-identical** (FK-valid), any partition count |
+| Positional counters (`IndexedDataGenerator` — keys, sequences, permutations, prefixes) | `seek(start)` at the partition boundary | **byte-identical** |
+| Non-positionable (opt-out custom generators, datafaker) | legacy: per-partition reseed; foreign keys replay `start % parentRows` draws | deterministic per partition count |
 
-Because every column that participates in a cross-row or cross-table contract (keys and foreign keys)
-stays byte-identical, **foreign-key validity always holds** and the fill is reproducible *for a given
-configuration, including the partition count*. Only plain non-key random columns — which carry no such
-contract — take different values when you change the partition count. The default (unpartitioned) path
-never seeks and is byte-for-byte unchanged, so there is no per-cell cost for the common case. One edge
-is unsupported: partitioning a *parent* whose primary key is a plain random generator referenced by a
-foreign key (partition the child instead, or use the positional key generators). A custom generator
-with internal positional state must implement `IndexedDataGenerator` to stay aligned under partitioning.
+Because every built-in column — not just keys — is a pure function of the row index,
+**foreign-key validity always holds** and a partitioned fill is **byte-identical to the sequential
+fill of the same seed, for any partition count**. Only non-positionable columns (a custom
+`DataGenerator` that opts out of `positionable()`, such as the datafaker integration whose values
+come from an internal Faker RNG) fall back to the legacy per-partition behavior. One edge remains
+unsupported: partitioning a *parent* whose primary key comes from a non-positionable custom generator
+referenced by a foreign key (partition the child instead, or use the positional key generators). A
+custom generator with internal positional state must implement `IndexedDataGenerator` to stay aligned
+under partitioning.
 
 ### Bulk load — unordered fill with constraints disabled
 
@@ -343,19 +349,21 @@ Two important properties fall out of this design:
 Every generator — built-in, registry-supplied, or per-column override — is constructed with this
 engine-managed seed, so reproducibility holds no matter how a column's generator was chosen.
 
-The per-column seed feeds a [`java.util.random.RandomGenerator`](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/random/package-summary.html)
-created by [`RandomGenerators.create(seed)`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/util/RandomGenerators.java),
-which uses the JDK general-purpose default algorithm **`L64X128MixRandom`** rather than the legacy
-`java.util.Random` (a 48-bit LCG with a documented statistical defect and `synchronized` methods).
-The seeding architecture is unchanged — one isolated, deterministically-seeded generator per column —
-so output stays reproducible and order-independent; only the algorithm and statistical quality improve.
+The per-column seed feeds an [`IndexedRandom`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/util/IndexedRandom.java) —
+a repositionable SplitMix64 stream (the construction behind `java.util.SplittableRandom`) that the
+engine positions to the absolute row index before every cell, so each value is a pure function of
+`(columnSeed, rowIndex)`. The seeding architecture is one isolated, deterministically-seeded random
+source per column, so output is reproducible and order-independent. (Generators used outside the
+fill engine — flat files, caller-constructed — draw from
+[`RandomGenerators.create(seed)`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/util/RandomGenerators.java),
+the JDK general-purpose default **`L64X128MixRandom`**.)
 
-Because a value depends only on its column's seed and row index — never on timing or which tables fill
-alongside it — reproducibility survives concurrency. A **parallel table fill**
+Because a value depends only on its column's seed and row index — never on timing, prior rows, or
+which tables fill alongside it — reproducibility survives concurrency. A **parallel table fill**
 ([parallel fill](#parallel-fill--topological-levels)) yields the same row content as a sequential one across every deterministic column. An
 **intra-table partitioned fill** ([intra-table partitioning](#intra-table-partitioning--seeking-to-a-row-range)) is
-reproducible for a given configuration *including the partition count*: keys and foreign keys are
-byte-identical regardless of partitioning, and only plain non-key random columns vary with it.
+byte-identical to the sequential fill for any partition count across every built-in generator; only
+non-positionable custom generators vary with the partition count.
 
 ## Database support — the Strategy pattern
 
