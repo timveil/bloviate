@@ -1,3 +1,9 @@
+## [3.0.4](https://github.com/timveil/bloviate/compare/v3.0.3...v3.0.4) (2026-07-27)
+
+### 🐛 Bug Fixes
+
+* defensively copy allowedValues in the ColumnConstraint constructor ([#582](https://github.com/timveil/bloviate/issues/582)) ([031d017](https://github.com/timveil/bloviate/commit/031d017298d504f4634c5a3b91fb04fdcbb9fba5)), closes [#572](https://github.com/timveil/bloviate/issues/572) [#575](https://github.com/timveil/bloviate/issues/575)
+
 ## [3.0.3](https://github.com/timveil/bloviate/compare/v3.0.2...v3.0.3) (2026-07-27)
 
 ### ♻️ Code Refactoring
