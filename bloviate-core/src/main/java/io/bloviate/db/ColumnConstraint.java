@@ -30,7 +30,9 @@ import java.util.List;
  * reader can't interpret are not represented here — the engine warns and falls back to its type
  * default for those.
  *
- * @param allowedValues the permitted values (their text form), or null for a range constraint
+ * @param allowedValues the permitted values (their text form), or null for a range constraint;
+ *                      copied on construction, so the caller's list can be mutated afterwards
+ *                      without affecting the constraint
  * @param min the lower bound, or null if unbounded below
  * @param minInclusive whether {@code min} is inclusive
  * @param max the upper bound, or null if unbounded above
@@ -40,13 +42,26 @@ import java.util.List;
 public record ColumnConstraint(List<String> allowedValues, BigDecimal min, boolean minInclusive, BigDecimal max, boolean maxInclusive) {
 
     /**
+     * Copies {@code allowedValues} so the record is deeply immutable — constraint metadata is
+     * cached per fill and read from worker threads during parallel fills.
+     *
+     * <p>Null is preserved rather than normalised to an empty list: it is the documented marker
+     * for "this is a range constraint, not a set constraint", and {@link #hasAllowedValues()}
+     * depends on the distinction.
+     */
+    public ColumnConstraint {
+        allowedValues = allowedValues == null ? null : List.copyOf(allowedValues);
+    }
+
+    /**
      * A set-of-allowed-values constraint (categorical / enum / {@code IN}).
      *
      * @param allowedValues the permitted values (their text form); defensively copied
      * @return a constraint that admits only {@code allowedValues}
      */
     public static ColumnConstraint ofValues(List<String> allowedValues) {
-        return new ColumnConstraint(List.copyOf(allowedValues), null, false, null, false);
+        // the canonical constructor copies; copying here too would only allocate twice
+        return new ColumnConstraint(allowedValues, null, false, null, false);
     }
 
     /**

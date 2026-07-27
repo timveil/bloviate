@@ -53,22 +53,16 @@
     </Match>
 
     <!--
-        Records that hold a caller-supplied reference.
+        ColumnDefinition holds a DataGenerator: a collaborator the file writer invokes, not
+        state to defend. Copying it is not possible (DataGenerator has no copy contract) and
+        would be wrong if it were — the caller and the writer must share one generator instance
+        so the value stream stays in sequence.
 
-        ColumnConstraint's canonical constructor stores allowedValues without copying; its
-        ofValues() factory does copy (List.copyOf). ColumnDefinition holds a DataGenerator,
-        which is a collaborator to invoke rather than state to defend.
-
-        Suppressed rather than fixed because adding a compact constructor that copies is a
-        behaviour change, not a config change, and this phase is deliberately config-only.
-        Tracked as a follow-up — this is the one entry here that is worth removing rather
-        than keeping.
+        ColumnConstraint used to be listed here too. Its canonical constructor now copies
+        allowedValues, so the suppression is no longer needed for it.
     -->
     <Match>
-        <Or>
-            <Class name="io.bloviate.db.ColumnConstraint"/>
-            <Class name="io.bloviate.file.ColumnDefinition"/>
-        </Or>
+        <Class name="io.bloviate.file.ColumnDefinition"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 
