@@ -26,12 +26,12 @@ import java.util.*;
 
 /**
  * Utility class for extracting database metadata through JDBC.
- * 
+ *
  * <p>DatabaseUtils provides static methods for analyzing database structure
  * and relationships by interrogating JDBC metadata. It converts raw JDBC
  * metadata into structured {@link Database}, {@link Table}, {@link Column},
  * and key relationship objects.
- * 
+ *
  * <p>Key capabilities include:
  * <ul>
  *   <li>Database metadata extraction from connections or data sources</li>
@@ -39,11 +39,11 @@ import java.util.*;
  *   <li>Primary and foreign key relationship mapping</li>
  *   <li>Foreign key chain traversal for data generation dependencies</li>
  * </ul>
- * 
+ *
  * <p>The extracted metadata is used by {@link DatabaseFiller} to understand
  * table dependencies and generate appropriate test data that respects
  * referential integrity constraints.
- * 
+ *
  * @author Tim Veil
  * @see Database
  * @see Table
@@ -91,7 +91,7 @@ public class DatabaseUtils {
 
     /**
      * Extracts complete database metadata from a DataSource.
-     * 
+     *
      * @param dataSource the data source to analyze
      * @return a Database object containing all discovered metadata
      * @throws SQLException if database access fails
@@ -104,11 +104,11 @@ public class DatabaseUtils {
 
     /**
      * Extracts complete database metadata from a Connection.
-     * 
+     *
      * <p>Analyzes the database structure including tables, columns, primary keys,
      * and foreign key relationships. The resulting Database object provides a
      * complete view of the database schema suitable for data generation planning.
-     * 
+     *
      * @param connection the database connection to analyze
      * @return a Database object containing all discovered metadata
      * @throws SQLException if database access fails
@@ -353,14 +353,14 @@ public class DatabaseUtils {
 
     /**
      * Traverses foreign key relationships to find the root primary key column.
-     * 
+     *
      * <p>Given a column that may be part of a foreign key, this method follows
      * the foreign key chain to find the ultimate primary key column that should
      * be used as the source for generating related data values.
-     * 
+     *
      * <p>This is particularly useful for ensuring referential integrity when
      * generating test data across related tables.
-     * 
+     *
      * @param database the database containing all table metadata
      * @param table the table containing the column to analyze
      * @param column the column to find the associated primary key for
