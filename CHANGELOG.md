@@ -1,3 +1,9 @@
+## [3.0.3](https://github.com/timveil/bloviate/compare/v3.0.2...v3.0.3) (2026-07-27)
+
+### ♻️ Code Refactoring
+
+* **gen:** extract AbstractIndexedIntegerGenerator and enforce CPD ([#581](https://github.com/timveil/bloviate/issues/581)) ([5ce0c78](https://github.com/timveil/bloviate/commit/5ce0c78e26e89afb1c5bb1dbf459a6b5a59586bd)), closes [#576](https://github.com/timveil/bloviate/issues/576) [#553](https://github.com/timveil/bloviate/issues/553) [#446](https://github.com/timveil/bloviate/issues/446) [#577](https://github.com/timveil/bloviate/issues/577)
+
 ## [3.0.2](https://github.com/timveil/bloviate/compare/v3.0.1...v3.0.2) (2026-07-27)
 
 ### 🐛 Bug Fixes
