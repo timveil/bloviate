@@ -56,6 +56,10 @@ public class GeneratorBenchmark {
     private static final long SEED = 42L;
 
     /** Representative column types; JMH expands a value-less {@link Param} over every constant. */
+    // NonSerializableClass: fires because java.lang.Enum implements Serializable, so PMD treats the
+    // Column field as serialisable state. Enums serialise by name only -- instance fields are never
+    // written -- so a non-serialisable field here is harmless.
+    @SuppressWarnings("PMD.NonSerializableClass")
     public enum GenCase {
         INTEGER(BenchColumns.column("c", JDBCType.INTEGER, "int4", null, null)),
         BIGINT(BenchColumns.column("c", JDBCType.BIGINT, "int8", null, null)),

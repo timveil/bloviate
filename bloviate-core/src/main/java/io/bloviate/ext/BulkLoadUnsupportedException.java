@@ -33,6 +33,9 @@ import java.sql.SQLException;
  */
 public class BulkLoadUnsupportedException extends SQLException {
 
+    /** Pins the serialised form; SQLException is Serializable, so this type inherits that contract. */
+    private static final long serialVersionUID = 1L;
+
     /**
      * Creates the exception with a message and underlying cause.
      *

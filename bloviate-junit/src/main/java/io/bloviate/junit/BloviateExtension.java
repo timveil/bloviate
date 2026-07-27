@@ -57,6 +57,10 @@ public class BloviateExtension implements BeforeEachCallback {
     public BloviateExtension() {
     }
 
+    // CloseResource: a Connection supplied via @FillSource is owned by the test, not by this
+    // extension. Closing it here would break any test that keeps using it after the fill. The
+    // DataSource branch does close the connection it borrows, via try-with-resources.
+    @SuppressWarnings("PMD.CloseResource")
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         FillDatabase fill = resolveAnnotation(context);
@@ -96,6 +100,10 @@ public class BloviateExtension implements BeforeEachCallback {
                         context.getRequiredTestClass(), FillDatabase.class).orElse(null));
     }
 
+    // AvoidAccessibilityAlteration: reading an annotated field on the test instance is what a JUnit
+    // extension does. @FillSource fields are routinely private, and the alternative -- demanding they
+    // be public -- would leak this extension's mechanics into every test class that uses it.
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     private Object readSource(ExtensionContext context) {
         Class<?> testClass = context.getRequiredTestClass();
         Field field = locateSourceField(testClass);

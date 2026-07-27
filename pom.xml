@@ -441,15 +441,18 @@
             <!-- PMD source analysis + CPD copy-paste detection. Reports to target/pmd.xml and
                  target/cpd.xml.
 
-                 Advisory for now: failOnViolation is false so the counts are visible on every
-                 build without blocking, per the staged approach in #570. Flip both to true once
-                 the current duplication baseline has been triaged. -->
+                 PMD now fails the build: its baseline was triaged to zero, with every remaining
+                 suppression either scoped to one method in source or justified in the ruleset.
+                 CPD is still advisory — one duplication remains, tracked separately.
+
+                 The two goals need different failOnViolation values, so they are split into two
+                 executions with their own configuration rather than sharing the plugin-level
+                 block. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
                 <configuration>
                     <targetJdk>${maven.compiler.release}</targetJdk>
-                    <failOnViolation>false</failOnViolation>
                     <printFailingErrors>true</printFailingErrors>
                     <linkXRef>false</linkXRef>
                     <rulesets>
@@ -468,11 +471,22 @@
                     <execution>
                         <id>pmd-analysis</id>
                         <phase>verify</phase>
+                        <configuration>
+                            <failOnViolation>true</failOnViolation>
+                        </configuration>
                         <goals>
                             <goal>pmd</goal>
-                            <!-- check reads the report and logs each violation, so they appear
-                                 in build output even while failOnViolation is false -->
                             <goal>check</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>cpd-analysis</id>
+                        <phase>verify</phase>
+                        <configuration>
+                            <!-- advisory until the remaining duplication is collapsed -->
+                            <failOnViolation>false</failOnViolation>
+                        </configuration>
+                        <goals>
                             <goal>cpd</goal>
                             <goal>cpd-check</goal>
                         </goals>

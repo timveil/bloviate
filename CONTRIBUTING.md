@@ -52,7 +52,7 @@ fails in seconds rather than after the integration suite has started containers.
 | `maven-enforcer-plugin` | `validate` | Maven `[3.9.0,)`, Java `[25,)`, no duplicated dependency versions, dependency convergence | yes |
 | `spotless-maven-plugin` | `validate` | Apache-2.0 license header on every `.java` file, no trailing whitespace, newline at EOF | yes |
 | `spotbugs-maven-plugin` | `verify` | Bytecode analysis, `effort=Max`, `threshold=Medium` | yes |
-| `maven-pmd-plugin` (PMD) | `verify` | Source analysis against a curated ruleset | no — advisory |
+| `maven-pmd-plugin` (PMD) | `verify` | Source analysis against a curated ruleset | yes |
 | `maven-pmd-plugin` (CPD) | `verify` | Copy-paste blocks of 100+ tokens | no — advisory |
 | `jacoco-maven-plugin` | `verify` | Per-package line/branch coverage floors | yes |
 
@@ -64,13 +64,29 @@ config/spotbugs/exclude.xml   SpotBugs suppressions, each with its rationale
 license-header.txt            the canonical Apache-2.0 header
 ```
 
-PMD and CPD are deliberately advisory for now; their counts appear in the build output
-and in the CI job summary. They will be flipped to failing once the current baseline
-(38 violations, 1 duplication) has been triaged.
+CPD is still advisory; its count appears in the build output and the CI job summary, and
+it will be flipped to failing once the remaining duplication is collapsed.
 
-When adding a suppression to either config file, scope it as narrowly as the finding
-allows and say why it is safe. A pattern suppressed repository-wide hides the next
-genuine instance of it.
+When adding a suppression, scope it as narrowly as the finding allows and say why it is
+safe. A pattern suppressed repository-wide hides the next genuine instance of it. Prefer,
+in order:
+
+1. **Fix the code**, when the tool is right.
+2. **`@SuppressWarnings("PMD.RuleName")` on the smallest enclosing element**, with a comment
+   giving the reason — this keeps the rule live everywhere else.
+3. **A ruleset exclusion**, only when the pattern is deliberate across the whole codebase
+   (a builder convention, an SQL NULL fidelity requirement) rather than local to one method.
+
+Two traps worth knowing when editing `config/pmd/ruleset.xml`:
+
+- **An `<exclude>` in the wrong category block silently does nothing.** Rules live in
+  specific categories, and excluding `Foo` from `bestpractices` when it belongs to
+  `errorprone` is a no-op — the build still passes and the report still generates. PMD logs
+  `Exclude pattern 'Foo' did not match any rule in ruleset '...'`, so grep the build output
+  for `did not match any rule` after every ruleset edit.
+- **XML comments cannot contain `--`.** A comment mentioning `i--` or `--flag` makes the
+  ruleset unparseable, and the resulting failure names a generated file under
+  `target/pmd/rulesets/`, not the file you edited.
 
 If Spotless reports a violation, fix it automatically:
 

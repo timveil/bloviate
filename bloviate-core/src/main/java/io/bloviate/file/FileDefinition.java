@@ -23,6 +23,10 @@ package io.bloviate.file;
  *
  * @since 1.0.0
  */
+// AbstractClassWithoutAbstractMethod: abstract by intent rather than to force an override. A bare
+// FileDefinition describes no format, so it must not be instantiable; the concrete subtypes (CSV,
+// TSV, pipe-delimited) differ only by the FileType they pass up.
+@SuppressWarnings("PMD.AbstractClassWithoutAbstractMethod")
 public abstract class FileDefinition {
 
     private final FileType fileType;

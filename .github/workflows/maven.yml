@@ -67,7 +67,7 @@ jobs:
             echo "| Check | Findings | Gates the build |"
             echo "| --- | ---: | --- |"
             echo "| SpotBugs | ${SB} | yes |"
-            echo "| PMD | ${PMD} | no (advisory) |"
+            echo "| PMD | ${PMD} | yes |"
             echo "| CPD | ${CPD} | no (advisory) |"
           } >> "$GITHUB_STEP_SUMMARY"
 

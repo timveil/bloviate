@@ -66,6 +66,8 @@ public class PositionedGenerationBenchmark {
     private static final long SEED = 42L;
 
     /** A spread from single-draw scalars to draw-heavy strings, where positioning cost would show. */
+    // NonSerializableClass: see GeneratorBenchmark.GenCase -- enums serialise by name, never fields.
+    @SuppressWarnings("PMD.NonSerializableClass")
     public enum GenCase {
         INTEGER(BenchColumns.column("c", JDBCType.INTEGER, "int4", null, null)),
         UUID(BenchColumns.column("c", JDBCType.OTHER, "uuid", null, null)),

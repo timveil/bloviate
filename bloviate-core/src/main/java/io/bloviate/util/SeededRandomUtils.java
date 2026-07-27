@@ -164,6 +164,8 @@ public record SeededRandomUtils(RandomGenerator random) {
                     remaining++;
                     continue;
                 }
+                // every other category is a usable code point and falls through to be appended
+                default -> { /* keep the code point */ }
             }
 
             final int numberOfChars = Character.charCount(codePoint);

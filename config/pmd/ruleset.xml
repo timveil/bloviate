@@ -43,6 +43,16 @@
         -->
         <exclude name="UseVarargs"/>
 
+        <!--
+            ImplicitFunctionalInterface: @FunctionalInterface is a binding compatibility promise —
+            an interface carrying it can never gain a second abstract method without breaking every
+            lambda that implements it. DatabaseSupport is an extension point that is expected to
+            grow, and Fillable, Builder and IndexedDataGenerator are single-method today by
+            coincidence rather than by contract. Annotating them to satisfy a linter would harden an
+            API decision that has not been made.
+        -->
+        <exclude name="ImplicitFunctionalInterface"/>
+
     </rule>
 
     <!-- Re-include GuardLogStatement, scoped to trace only -->
@@ -91,6 +101,38 @@
         -->
         <exclude name="ReplaceJavaUtilDate"/>
         <exclude name="ReplaceJavaUtilCalendar"/>
+
+        <!--
+            AssignmentInOperand: 11 occurrences, all standard Java read-loop and cursor idioms:
+            `while ((line = reader.readLine()) != null)`, a post-decrement countdown in the random
+            string builder, and `tasks.get(next++)` when topping up a bounded work pipeline.
+            Splitting these into a separate assignment makes the loop longer without making it
+            clearer.
+        -->
+        <exclude name="AssignmentInOperand"/>
+
+        <!--
+            NullAssignment: 9 occurrences, and every one is null being carried deliberately rather
+            than a field being cleared. The metadata records (Table, Database, ForeignKey,
+            PrimaryKey, TableConfiguration, DatabaseConfiguration) use null-preserving defensive
+            copies in their compact constructors:
+
+                columns = columns == null ? null : List.copyOf(columns);
+
+            Collapsing null to an empty list there would erase the difference between "no foreign
+            keys" and "foreign keys not yet read from the catalog". The array generators assign null
+            for the same reason — see ReturnEmptyCollectionRatherThanNull below.
+        -->
+        <exclude name="NullAssignment"/>
+
+        <!--
+            ReturnEmptyCollectionRatherThanNull: the two sites are JDBC read paths
+            (IntegerArrayGenerator, StringArrayGenerator) returning null when ResultSet.getArray
+            reports SQL NULL. Returning an empty array instead would silently convert NULL into a
+            zero-length array, losing a distinction the database makes and this library exists to
+            reproduce faithfully. This is a correctness constraint, not a style preference.
+        -->
+        <exclude name="ReturnEmptyCollectionRatherThanNull"/>
 
     </rule>
 
