@@ -21,6 +21,68 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Fast feedback lane. The build job below has to wait on Docker and Testcontainers
+  # before it can report anything; this one skips the tests entirely, so a Spotless,
+  # enforcer, SpotBugs or PMD problem surfaces in about a minute instead of four.
+  # The plugins stay bound to verify as well, so a local `./mvnw verify` still catches
+  # everything this job does.
+  static-analysis:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          java-version: '25'
+          cache: 'maven'
+          distribution: 'temurin'
+
+      - name: Run static analysis
+        # jacoco is skipped explicitly rather than left to no-op on an empty exec file,
+        # and the source/javadoc jars are skipped because nothing here consumes them
+        run: |
+          ./mvnw -B -ntp verify \
+            -DskipTests \
+            -Djacoco.skip=true \
+            -Dmaven.source.skip=true \
+            -Dmaven.javadoc.skip=true
+
+      # Counts are read with `grep -o | wc -l` rather than `grep -c`: SpotBugs writes its
+      # report as a single line, so `grep -c` would report 1 no matter how many findings
+      # there are. PMD and CPD are counted the same way for consistency.
+      - name: Summarise findings
+        if: always()
+        run: |
+          count() { find . -path "*/target/$1" -exec grep -o "$2" {} + 2>/dev/null | wc -l | tr -d ' '; }
+          SB=$(count spotbugsXml.xml '<BugInstance ')
+          PMD=$(count pmd.xml '<violation ')
+          CPD=$(count cpd.xml '<duplication ')
+          {
+            echo "## Static analysis"
+            echo ""
+            echo "| Check | Findings | Gates the build |"
+            echo "| --- | ---: | --- |"
+            echo "| SpotBugs | ${SB} | yes |"
+            echo "| PMD | ${PMD} | no (advisory) |"
+            echo "| CPD | ${CPD} | no (advisory) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload analysis reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: static-analysis-reports
+          path: |
+            **/target/spotbugsXml.xml
+            **/target/pmd.xml
+            **/target/cpd.xml
+          if-no-files-found: warn
+          retention-days: 14
+
   build:
 
     runs-on: ubuntu-latest
@@ -39,3 +101,12 @@ jobs:
       - name: Build with Maven
         # use the wrapper so CI builds with the same pinned, checksum-verified Maven as local builds
         run: ./mvnw -B -ntp verify
+
+      - name: Upload SBOM
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom
+          path: target/bom.xml
+          if-no-files-found: warn
+          retention-days: 14

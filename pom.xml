@@ -103,6 +103,7 @@
         <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
         <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>
         <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
+        <cyclonedx-maven-plugin.version>2.9.2</cyclonedx-maven-plugin.version>
 
         <!-- Per-package test-coverage floor enforced by jacoco:check (bound to verify). Set just
              below current coverage to lock in no-regression; ratchet upward over time. Modules that
@@ -331,6 +332,11 @@
                     <artifactId>maven-pmd-plugin</artifactId>
                     <version>${maven-pmd-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.cyclonedx</groupId>
+                    <artifactId>cyclonedx-maven-plugin</artifactId>
+                    <version>${cyclonedx-maven-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -522,6 +528,39 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- CycloneDX SBOM. makeAggregateBom produces one bom.xml describing the whole
+                 reactor, so consumers and vulnerability scanners get a single component
+                 inventory rather than one per module. Test-scope dependencies are excluded:
+                 Testcontainers and the JDBC drivers are not shipped to consumers. -->
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>build-sbom</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>makeAggregateBom</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <projectType>library</projectType>
+                    <schemaVersion>1.6</schemaVersion>
+                    <includeBomSerialNumber>true</includeBomSerialNumber>
+                    <includeCompileScope>true</includeCompileScope>
+                    <includeProvidedScope>true</includeProvidedScope>
+                    <includeRuntimeScope>true</includeRuntimeScope>
+                    <includeSystemScope>true</includeSystemScope>
+                    <includeTestScope>false</includeTestScope>
+                    <includeLicenseText>false</includeLicenseText>
+                    <outputReactorProjects>true</outputReactorProjects>
+                    <outputFormat>xml</outputFormat>
+                    <outputName>bom</outputName>
+                    <verbose>false</verbose>
+                </configuration>
             </plugin>
 
             <plugin>
