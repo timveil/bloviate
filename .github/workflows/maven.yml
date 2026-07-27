@@ -68,7 +68,7 @@ jobs:
             echo "| --- | ---: | --- |"
             echo "| SpotBugs | ${SB} | yes |"
             echo "| PMD | ${PMD} | yes |"
-            echo "| CPD | ${CPD} | no (advisory) |"
+            echo "| CPD | ${CPD} | yes |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload analysis reports

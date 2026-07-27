@@ -441,13 +441,13 @@
             <!-- PMD source analysis + CPD copy-paste detection. Reports to target/pmd.xml and
                  target/cpd.xml.
 
-                 PMD now fails the build: its baseline was triaged to zero, with every remaining
-                 suppression either scoped to one method in source or justified in the ruleset.
-                 CPD is still advisory — one duplication remains, tracked separately.
+                 Both fail the build. PMD's baseline was triaged to zero, with every remaining
+                 suppression either scoped to one method in source or justified in the ruleset;
+                 CPD's single duplication was collapsed into AbstractIndexedIntegerGenerator.
 
-                 The two goals need different failOnViolation values, so they are split into two
-                 executions with their own configuration rather than sharing the plugin-level
-                 block. -->
+                 They stay in separate executions because the two goals read failOnViolation from
+                 their own configuration, and keeping them split means either can be relaxed
+                 independently without silently relaxing the other. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
@@ -483,8 +483,7 @@
                         <id>cpd-analysis</id>
                         <phase>verify</phase>
                         <configuration>
-                            <!-- advisory until the remaining duplication is collapsed -->
-                            <failOnViolation>false</failOnViolation>
+                            <failOnViolation>true</failOnViolation>
                         </configuration>
                         <goals>
                             <goal>cpd</goal>
