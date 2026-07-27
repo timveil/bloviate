@@ -41,7 +41,7 @@ class PostgresPartitionBackpressureTest extends BaseDatabaseTestCase {
 
     @Test
     void everyPartitionRunsWhenPartitionsFarExceedThreads() throws SQLException {
-        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:18-alpine")
+        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>(TestImages.POSTGRES)
                 .withDatabaseName("bloviate")) {
 
             database.start();

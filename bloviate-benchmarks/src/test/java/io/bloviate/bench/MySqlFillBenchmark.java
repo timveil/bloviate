@@ -55,7 +55,7 @@ class MySqlFillBenchmark extends AbstractFillBenchmark {
         DatabaseConfiguration configuration = new DatabaseConfiguration(
                 BATCH_SIZE, 0, new MySQLSupport(), tpccTables(), SEED);
 
-        try (MySQLContainer<?> database = new MySQLContainer<>("mysql:9.7")
+        try (MySQLContainer<?> database = new MySQLContainer<>(BenchImages.MYSQL)
                 .withConfigurationOverride("mysql-conf")
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedStatements", "true")

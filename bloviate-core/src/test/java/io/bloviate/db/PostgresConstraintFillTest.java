@@ -37,7 +37,7 @@ class PostgresConstraintFillTest extends BaseDatabaseTestCase {
         DatabaseConfiguration configuration =
                 new DatabaseConfiguration(256, 1_000, new PostgresSupport(), null, 42L);
 
-        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:18-alpine")
+        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>(TestImages.POSTGRES)
                 .withDatabaseName("bloviate")
                 .withUrlParam("stringtype", "unspecified")
                 .withInitScript("create_constraints.postgres.sql")) {

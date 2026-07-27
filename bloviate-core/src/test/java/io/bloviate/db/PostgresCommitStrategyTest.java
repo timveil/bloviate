@@ -46,7 +46,7 @@ class PostgresCommitStrategyTest extends BaseDatabaseTestCase {
     void perTableAndEveryNBatchesCommitStrategiesFillCorrectly() throws SQLException {
         Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
 
-        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:18-alpine")
+        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>(TestImages.POSTGRES)
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedInserts", "true")
                 .withUrlParam("stringtype", "unspecified")

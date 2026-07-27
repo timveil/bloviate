@@ -72,7 +72,7 @@ class PostgresBulkLoadFillTest extends BaseDatabaseTestCase {
         Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
         Set<TableConfiguration> partitioned = withPartitions(tables, PARTITIONS, PARTITIONED);
 
-        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:18-alpine")
+        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>(TestImages.POSTGRES)
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedInserts", "true")
                 .withUrlParam("stringtype", "unspecified")

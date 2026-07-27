@@ -30,7 +30,7 @@ class BaseMariaDbTest extends BaseDatabaseTestCase {
 
     protected void fillDatabase(String initScript, DatabaseConfiguration configuration, Verifier verifier) throws SQLException {
 
-        try (MariaDBContainer<?> database = new MariaDBContainer<>("mariadb:11.4")
+        try (MariaDBContainer<?> database = new MariaDBContainer<>(TestImages.MARIADB)
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedStatements", "true")
                 .withInitScript(initScript)) {

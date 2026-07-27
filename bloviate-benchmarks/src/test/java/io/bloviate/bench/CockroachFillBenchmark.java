@@ -49,7 +49,7 @@ class CockroachFillBenchmark extends AbstractFillBenchmark {
         DatabaseConfiguration configuration = new DatabaseConfiguration(
                 BATCH_SIZE, 0, new CockroachDBSupport(), tpccTables(), SEED);
 
-        try (CockroachContainer database = new CockroachContainer("cockroachdb/cockroach:latest")
+        try (CockroachContainer database = new CockroachContainer(BenchImages.COCKROACH)
                 .withUrlParam("rewriteBatchedInserts", "true")
                 .withInitScript("create_tpcc.cockroachdb.sql")
                 .withCommand("start-single-node --insecure --store=type=mem,size=.75")) {
