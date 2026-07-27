@@ -50,6 +50,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -116,7 +117,7 @@ public class DatabaseFiller implements Fillable {
 
     // per-fill cache of value-constraint metadata, keyed by table name; cleared at the start of
     // each fill() so a reused filler re-reads the catalog
-    private final ConcurrentHashMap<String, Map<String, ColumnConstraint>> constraintCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Map<String, ColumnConstraint>> constraintCache = new ConcurrentHashMap<>();
 
     /** Worker threads for parallel table fill; {@code 1} (the default) keeps the fill sequential. */
     private final int threads;
@@ -367,6 +368,9 @@ public class DatabaseFiller implements Fillable {
      * preserving the level barrier in {@link #fillParallel}. The first task failure is rethrown; the
      * surrounding {@code try-with-resources} on the executor then drains the in-flight tasks on close.
      */
+    // ForLoopCanBeForeach: false positive. The loop counts completions, it does not iterate tasks --
+    // the body indexes with `next`, not the loop variable, so a foreach would change what it submits.
+    @SuppressWarnings("PMD.ForLoopCanBeForeach")
     private void runWithBackpressure(ExecutorService executor, List<Callable<Void>> tasks, int poolSize) throws SQLException, InterruptedException {
         CompletionService<Void> completionService = new ExecutorCompletionService<>(executor);
         int inFlightCap = Math.max(1, 2 * poolSize);
@@ -387,6 +391,10 @@ public class DatabaseFiller implements Fillable {
     }
 
     /** Unwraps a worker future, re-throwing the underlying {@link SQLException} or runtime failure. */
+    // PreserveStackTrace: unwrapping is the point. ExecutionException is a transport wrapper added by
+    // the executor; the cause carries the worker thread's own stack trace, so rethrowing it directly
+    // gives a cleaner trace than re-wrapping. The fallback branch does chain the cause.
+    @SuppressWarnings("PMD.PreserveStackTrace")
     private void awaitFuture(Future<Void> future) throws SQLException {
         try {
             future.get();
