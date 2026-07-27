@@ -99,8 +99,17 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Maven
-        # use the wrapper so CI builds with the same pinned, checksum-verified Maven as local builds
-        run: ./mvnw -B -ntp verify
+        # use the wrapper so CI builds with the same pinned, checksum-verified Maven as local builds.
+        #
+        # SpotBugs, PMD and CPD are skipped here because the static-analysis job above already
+        # ran them, concurrently with this job, against the same commit. Running them twice cost
+        # ~31s of this job's wall clock and gated nothing extra. They stay bound to verify, so a
+        # local `./mvnw verify` is still one command that runs everything.
+        run: |
+          ./mvnw -B -ntp verify \
+            -Dspotbugs.skip=true \
+            -Dpmd.skip=true \
+            -Dcpd.skip=true
 
       - name: Upload SBOM
         if: always()
