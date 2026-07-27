@@ -43,14 +43,34 @@ commands run from the repository root build the whole reactor.
 
 ## Static Analysis
 
-Two checks run at the `validate` phase — before anything is compiled — so a problem
-fails in seconds rather than after the integration suite has started containers. Both
-are part of `./mvnw verify`; there is no separate command to remember.
+All of the following are part of `./mvnw verify`; there is no separate command to
+remember. The first two run at `validate`, before anything is compiled, so a problem
+fails in seconds rather than after the integration suite has started containers.
 
-| Check | Enforces |
-| --- | --- |
-| `maven-enforcer-plugin` | Maven `[3.9.0,)`, Java `[25,)`, no duplicated dependency versions, and dependency convergence |
-| `spotless-maven-plugin` | The Apache-2.0 license header on every `.java` file, no trailing whitespace, newline at EOF |
+| Check | Phase | Enforces | Fails the build |
+| --- | --- | --- | --- |
+| `maven-enforcer-plugin` | `validate` | Maven `[3.9.0,)`, Java `[25,)`, no duplicated dependency versions, dependency convergence | yes |
+| `spotless-maven-plugin` | `validate` | Apache-2.0 license header on every `.java` file, no trailing whitespace, newline at EOF | yes |
+| `spotbugs-maven-plugin` | `verify` | Bytecode analysis, `effort=Max`, `threshold=Medium` | yes |
+| `maven-pmd-plugin` (PMD) | `verify` | Source analysis against a curated ruleset | no — advisory |
+| `maven-pmd-plugin` (CPD) | `verify` | Copy-paste blocks of 100+ tokens | no — advisory |
+| `jacoco-maven-plugin` | `verify` | Per-package line/branch coverage floors | yes |
+
+Shared configuration lives at the repository root so all five modules use one copy:
+
+```
+config/pmd/ruleset.xml        PMD rules and the exclusions, each with its rationale
+config/spotbugs/exclude.xml   SpotBugs suppressions, each with its rationale
+license-header.txt            the canonical Apache-2.0 header
+```
+
+PMD and CPD are deliberately advisory for now; their counts appear in the build output
+and in the CI job summary. They will be flipped to failing once the current baseline
+(38 violations, 1 duplication) has been triaged.
+
+When adding a suppression to either config file, scope it as narrowly as the finding
+allows and say why it is safe. A pattern suppressed repository-wide hides the next
+genuine instance of it.
 
 If Spotless reports a violation, fix it automatically:
 
@@ -67,6 +87,15 @@ Dependency convergence is enforced because Bloviate is not shaded: every transit
 version is one a consumer actually inherits. When a new dependency introduces a
 conflict, resolve it with an explicit `dependencyManagement` pin in the parent
 `pom.xml` rather than relying on Maven's nearest-wins tiebreak.
+
+In CI a dedicated `static-analysis` job runs these checks without the integration
+tests, so a formatting or analysis problem reports in about a minute rather than
+waiting on Docker. The reports (`spotbugsXml.xml`, `pmd.xml`, `cpd.xml`) are uploaded
+as build artifacts, and a summary table appears on the workflow run page.
+
+A CycloneDX SBOM is generated at `package`. Each module gets its own `target/bom.xml`
+covering just that module's dependencies, and the reactor root gets an aggregate; both
+are attached to the build so releases carry a component inventory.
 
 ## Running Tests
 
