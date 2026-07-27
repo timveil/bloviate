@@ -101,6 +101,7 @@
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
         <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
         <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
+        <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>
 
         <!-- Per-package test-coverage floor enforced by jacoco:check (bound to verify). Set just
              below current coverage to lock in no-regression; ratchet upward over time. Modules that
@@ -319,6 +320,11 @@
                     <artifactId>spotless-maven-plugin</artifactId>
                     <version>${spotless-maven-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>${spotbugs-maven-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -384,6 +390,35 @@
                         <!-- validate, not verify: a missing header fails in seconds instead
                              of after Testcontainers has spun up the integration suite -->
                         <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Bytecode static analysis. Reports to target/spotbugsXml.xml; the check goal
+                 fails the build on any finding that survives config/spotbugs/exclude.xml.
+                 Enforcing rather than advisory because the whole baseline (27 findings across
+                 two well-understood patterns) was triaged when this was introduced. -->
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <configuration>
+                    <effort>Max</effort>
+                    <threshold>Medium</threshold>
+                    <xmlOutput>true</xmlOutput>
+                    <spotbugsXmlOutputDirectory>${project.build.directory}</spotbugsXmlOutputDirectory>
+                    <!-- one shared filter for all modules; resolves to the reactor root, which
+                         Maven derives from the directory holding .mvn/ -->
+                    <excludeFilterFile>${maven.multiModuleProjectDirectory}/config/spotbugs/exclude.xml</excludeFilterFile>
+                    <!-- analyse shipped code only; test sources are not part of the public surface -->
+                    <includeTests>false</includeTests>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>spotbugs-check</id>
+                        <phase>verify</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>

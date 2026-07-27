@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2021 Tim Veil
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!--
+    Shared SpotBugs exclude filter for every Bloviate module.
+
+    Every suppression below is scoped as narrowly as the finding allows and carries the
+    reason it is safe. Blanket `<Match><Bug pattern="X"/></Match>` entries are avoided on
+    purpose: a pattern suppressed everywhere hides the next genuine instance of it.
+
+    Baseline this filter was written against (effort=Max, threshold=Medium):
+      bloviate-core            26 findings
+      bloviate-testcontainers   1 finding
+      bloviate-junit            0 findings
+      bloviate-datafaker        0 findings
+    bloviate-benchmarks is not analysed at all (spotbugs.skip in its pom) — JMH's annotation
+    processor generates ~10,200 UUF_UNUSED_FIELD findings in code no human maintains.
+-->
+<FindBugsFilter
+        xmlns="https://github.com/spotbugs/filter/3.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/master/spotbugs/etc/findbugsfilter.xsd">
+
+    <!--
+        Builder setters store the caller's reference instead of copying it.
+
+        Bloviate's builders are construction-time scaffolding: a builder is populated and
+        then consumed by build() on one thread, and the built object is what callers hold.
+        Copying every List and java.util.Date on the way in would change documented aliasing
+        semantics of the public builder API and add allocation to the generator construction
+        path, which runs per column per fill.
+
+        Scoped to nested Builder classes only, so the same pattern on a non-builder type is
+        still reported.
+    -->
+    <Match>
+        <Class name="~.*\$Builder$"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!--
+        Records that hold a caller-supplied reference.
+
+        ColumnConstraint's canonical constructor stores allowedValues without copying; its
+        ofValues() factory does copy (List.copyOf). ColumnDefinition holds a DataGenerator,
+        which is a collaborator to invoke rather than state to defend.
+
+        Suppressed rather than fixed because adding a compact constructor that copies is a
+        behaviour change, not a config change, and this phase is deliberately config-only.
+        Tracked as a follow-up — this is the one entry here that is worth removing rather
+        than keeping.
+    -->
+    <Match>
+        <Or>
+            <Class name="io.bloviate.db.ColumnConstraint"/>
+            <Class name="io.bloviate.file.ColumnDefinition"/>
+        </Or>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!--
+        Constructors that validate their arguments and throw.
+
+        Every flagged constructor is a Objects.requireNonNull / IllegalStateException guard.
+        SpotBugs reports these because a partially-constructed object can be captured through
+        a finalizer attack — which requires a subclass overriding finalize(). No class in this
+        repository declares finalize(), and the flagged generator and filler constructors are
+        private (instances come from their Builder), so no subclass can exist at all.
+
+        Validating in the constructor is the correct design here; the alternative SpotBugs
+        suggests (making the class final, or moving validation to a factory) would either
+        break the builder pattern or move the check somewhere weaker.
+    -->
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+
+</FindBugsFilter>

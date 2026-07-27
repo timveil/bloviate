@@ -41,6 +41,10 @@
         <maven.source.skip>true</maven.source.skip>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <jacoco.skip>true</jacoco.skip>
+        <!-- JMH's annotation processor generates a _jmhType/_jmhTest class per benchmark method,
+             each with ~256 padding fields it never reads. That is ~10,200 UUF_UNUSED_FIELD
+             findings in code no human writes or maintains, which would bury any real finding. -->
+        <spotbugs.skip>true</spotbugs.skip>
 
         <!-- end-to-end fill runners are opt-in; the 'bench' profile flips this to false -->
         <skipBenchmarks>true</skipBenchmarks>
