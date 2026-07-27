@@ -1,3 +1,9 @@
+## [3.0.2](https://github.com/timveil/bloviate/compare/v3.0.1...v3.0.2) (2026-07-27)
+
+### 🐛 Bug Fixes
+
+* triage PMD baseline to zero and make violations fail the build ([#580](https://github.com/timveil/bloviate/issues/580)) ([3263eed](https://github.com/timveil/bloviate/commit/3263eed42f1d478d32f02a0cf43e215feb662ca2)), closes [#576](https://github.com/timveil/bloviate/issues/576)
+
 ## [3.0.1](https://github.com/timveil/bloviate/compare/v3.0.0...v3.0.1) (2026-07-27)
 
 ### ⚡ Performance Improvements
