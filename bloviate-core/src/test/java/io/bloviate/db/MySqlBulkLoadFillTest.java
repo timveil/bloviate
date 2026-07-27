@@ -76,7 +76,7 @@ class MySqlBulkLoadFillTest extends BaseDatabaseTestCase {
         Set<TableConfiguration> tables = TPCCConfiguration.build(W, I, D, C, MIN_LINES, MAX_LINES, NEW_ORDERS);
         Set<TableConfiguration> partitioned = withPartitions(tables, PARTITIONS, PARTITIONED);
 
-        try (MySQLContainer<?> database = new MySQLContainer<>("mysql:9.7")
+        try (MySQLContainer<?> database = new MySQLContainer<>(TestImages.MYSQL)
                 .withConfigurationOverride("mysql-conf")
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedStatements", "true")

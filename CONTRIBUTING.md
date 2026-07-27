@@ -141,6 +141,34 @@ Integration tests rely on [Testcontainers](https://testcontainers.com/), which s
 down database containers automatically — a running Docker daemon is the only prerequisite. There is
 nothing to start or stop by hand.
 
+### Container images
+
+**Every image tag is pinned to an explicit version — never `:latest`.** A floating tag lets a
+database release change test behaviour with no commit to this repository, so a red build has no
+diff to bisect and a CI failure may not reproduce locally once the tag has moved on. That cuts
+against the seed-reproducibility invariant below.
+
+Tags are declared in two places, not scattered across test classes:
+
+| File | Covers |
+| --- | --- |
+| `bloviate-core/src/test/java/io/bloviate/db/TestImages.java` | every `bloviate-core` integration test |
+| `bloviate-benchmarks/src/test/java/io/bloviate/bench/BenchImages.java` | the end-to-end fill benchmarks |
+
+Two single-use literals remain, in `bloviate-junit` and `bloviate-testcontainers` — a constants
+class for one reference would be noise. Sharing one class across all four modules would mean
+publishing a test-jar from `bloviate-core`, which is disproportionate for four strings.
+
+So bumping a database version means editing `TestImages`, `BenchImages`, and those two literals.
+Find them all with:
+
+```bash
+grep -rn --include='*.java' -E '"(postgres|mysql|mariadb|cockroachdb/cockroach):' bloviate-*/src
+```
+
+Keep `TestImages` and `BenchImages` in step: a benchmark measuring a different database version
+than the tests exercise produces numbers that can't be compared against them.
+
 ## Design Invariants
 
 A few properties are hard guarantees:

@@ -53,7 +53,7 @@ class PostgresBulkLoadRestoreFailureTest extends BaseDatabaseTestCase {
 
     @Test
     void abortsConnectionWhenConstraintRestoreFails() throws SQLException {
-        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:18-alpine")
+        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>(TestImages.POSTGRES)
                 .withDatabaseName("bloviate")) {
 
             database.start();

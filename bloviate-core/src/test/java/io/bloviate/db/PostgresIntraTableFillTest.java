@@ -78,7 +78,7 @@ class PostgresIntraTableFillTest extends BaseDatabaseTestCase {
         DatabaseConfiguration configuration =
                 new DatabaseConfiguration(256, 0, new PostgresSupport(), tables, 42L);
 
-        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:18-alpine")
+        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>(TestImages.POSTGRES)
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedInserts", "true")
                 .withUrlParam("stringtype", "unspecified")

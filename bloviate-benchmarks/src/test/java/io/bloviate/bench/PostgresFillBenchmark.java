@@ -40,7 +40,7 @@ import java.util.Set;
 class PostgresFillBenchmark extends AbstractFillBenchmark {
 
     private static PostgreSQLContainer<?> container(String initScript) {
-        PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:18-alpine")
+        PostgreSQLContainer<?> container = new PostgreSQLContainer<>(BenchImages.POSTGRES)
                 .withDatabaseName("bloviate")
                 .withUrlParam("stringtype", "unspecified")
                 .withInitScript(initScript);

@@ -30,7 +30,7 @@ class BaseCockroachTest extends BaseDatabaseTestCase {
 
     protected void fillDatabase(String initScript, DatabaseConfiguration configuration, Verifier verifier) throws SQLException {
 
-        try (CockroachContainer database = new CockroachContainer("cockroachdb/cockroach:latest")
+        try (CockroachContainer database = new CockroachContainer(TestImages.COCKROACH)
                 .withUrlParam("rewriteBatchedInserts", "true")
                 .withInitScript(initScript)
                 .withCommand("start-single-node --insecure --store=type=mem,size=.75")) {

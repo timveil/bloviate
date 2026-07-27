@@ -30,7 +30,7 @@ class BasePostgresTest extends BaseDatabaseTestCase {
 
     protected void fillDatabase(String initScript, DatabaseConfiguration configuration, Verifier verifier) throws SQLException {
 
-        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>("postgres:18-alpine")
+        try (PostgreSQLContainer<?> database = new PostgreSQLContainer<>(TestImages.POSTGRES)
                 .withDatabaseName("bloviate")
                 .withUrlParam("rewriteBatchedInserts", "true")
                 // let the server infer the type of string-bound parameters so values for
