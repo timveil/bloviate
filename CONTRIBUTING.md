@@ -53,7 +53,7 @@ fails in seconds rather than after the integration suite has started containers.
 | `spotless-maven-plugin` | `validate` | Apache-2.0 license header on every `.java` file, no trailing whitespace, newline at EOF | yes |
 | `spotbugs-maven-plugin` | `verify` | Bytecode analysis, `effort=Max`, `threshold=Medium` | yes |
 | `maven-pmd-plugin` (PMD) | `verify` | Source analysis against a curated ruleset | yes |
-| `maven-pmd-plugin` (CPD) | `verify` | Copy-paste blocks of 100+ tokens | no — advisory |
+| `maven-pmd-plugin` (CPD) | `verify` | Copy-paste blocks of 100+ tokens | yes |
 | `jacoco-maven-plugin` | `verify` | Per-package line/branch coverage floors | yes |
 
 Shared configuration lives at the repository root so all five modules use one copy:
@@ -64,8 +64,8 @@ config/spotbugs/exclude.xml   SpotBugs suppressions, each with its rationale
 license-header.txt            the canonical Apache-2.0 header
 ```
 
-CPD is still advisory; its count appears in the build output and the CI job summary, and
-it will be flipped to failing once the remaining duplication is collapsed.
+Every check above now gates the build; none are advisory. Counts still appear in the build
+output and the CI job summary, so a regression is visible before it is fatal.
 
 When adding a suppression, scope it as narrowly as the finding allows and say why it is
 safe. A pattern suppressed repository-wide hides the next genuine instance of it. Prefer,

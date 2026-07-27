@@ -16,12 +16,7 @@
 
 package io.bloviate.gen;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.random.RandomGenerator;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Emits a parent table's "number of children" column under variable parent-child
@@ -34,39 +29,14 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>The produced values do not depend on the random source; counter state is held by
  * the generator instance and advances on every {@link #generate()}.
  */
-public class ChildCountGenerator extends AbstractDataGenerator<Integer> implements IndexedDataGenerator {
+public class ChildCountGenerator extends AbstractIndexedIntegerGenerator {
 
     private final ChildCardinality cardinality;
-    private final AtomicLong counter = new AtomicLong(0);
 
+    /** The value is {@code cardinality.count(rowIndex)} &mdash; a pure function of the row index. */
     @Override
-    public Integer generate() {
-        return cardinality.count(counter.getAndIncrement());
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The value is {@code cardinality.count(rowIndex)}, a pure function of the row index, so
-     * seeking is O(1): the counter is set to {@code rowIndex}.
-     */
-    @Override
-    public void seek(long rowIndex) {
-        if (rowIndex < 0) {
-            throw new IllegalArgumentException("rowIndex must be non-negative: " + rowIndex);
-        }
-        counter.set(rowIndex);
-    }
-
-    @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Integer value) throws SQLException {
-        statement.setInt(parameterIndex, value);
-    }
-
-    @Override
-    public Integer get(ResultSet resultSet, int columnIndex) throws SQLException {
-        int value = resultSet.getInt(columnIndex);
-        return resultSet.wasNull() ? null : value;
+    protected Integer valueAt(long rowIndex) {
+        return cardinality.count(rowIndex);
     }
 
     /** Builder for {@link ChildCountGenerator}. */

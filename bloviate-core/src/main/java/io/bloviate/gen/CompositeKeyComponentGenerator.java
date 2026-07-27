@@ -16,12 +16,7 @@
 
 package io.bloviate.gen;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.random.RandomGenerator;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Generates one component (dimension) of a row-ordered cartesian product, which
@@ -45,42 +40,16 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>The produced values do not depend on the random source; counter state is
  * held by the generator instance and advances on every {@link #generate()}.
  */
-public class CompositeKeyComponentGenerator extends AbstractDataGenerator<Integer> implements IndexedDataGenerator {
+public class CompositeKeyComponentGenerator extends AbstractIndexedIntegerGenerator {
 
     private final int start;
     private final long repeat;
     private final int cycle;
-    private final AtomicLong counter = new AtomicLong(0);
 
+    /** The value is the closed form {@code start + ((rowIndex / repeat) % cycle)}. */
     @Override
-    public Integer generate() {
-        long n = counter.getAndIncrement();
-        return start + (int) ((n / repeat) % cycle);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The value is a closed form of the row index ({@code start + ((rowIndex / repeat) % cycle)}),
-     * so seeking is O(1): the counter is simply set to {@code rowIndex}.
-     */
-    @Override
-    public void seek(long rowIndex) {
-        if (rowIndex < 0) {
-            throw new IllegalArgumentException("rowIndex must be non-negative: " + rowIndex);
-        }
-        counter.set(rowIndex);
-    }
-
-    @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Integer value) throws SQLException {
-        statement.setInt(parameterIndex, value);
-    }
-
-    @Override
-    public Integer get(ResultSet resultSet, int columnIndex) throws SQLException {
-        int value = resultSet.getInt(columnIndex);
-        return resultSet.wasNull() ? null : value;
+    protected Integer valueAt(long rowIndex) {
+        return start + (int) ((rowIndex / repeat) % cycle);
     }
 
     /** Builder for {@link CompositeKeyComponentGenerator}. */

@@ -18,12 +18,7 @@ package io.bloviate.gen;
 
 import io.bloviate.util.Mixers;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.random.RandomGenerator;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Emits a deterministic random <em>permutation</em> of {@code [start, start + groupSize)} within
@@ -44,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * <p>Supports group sizes up to {@code 2^30}.
  */
-public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> implements IndexedDataGenerator {
+public class GroupedPermutationGenerator extends AbstractIndexedIntegerGenerator {
 
     private static final int ROUNDS = 4;
 
@@ -53,30 +48,17 @@ public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> 
     private final long seed;
     private final int halfBits;
     private final long halfMask;
-    private final AtomicLong counter = new AtomicLong(0);
-
-    @Override
-    public Integer generate() {
-        long n = counter.getAndIncrement();
-        long group = n / groupSize;
-        int position = (int) (n % groupSize);
-        long key = Mixers.splitmix64(seed + group);
-        return start + permute(position, key);
-    }
 
     /**
-     * {@inheritDoc}
-     *
-     * <p>The value is a pure function of the row index (the permutation is keyed by
-     * {@code rowIndex / groupSize} and applied to {@code rowIndex % groupSize}), so seeking is O(1):
-     * the counter is set to {@code rowIndex}.
+     * The permutation is keyed by {@code rowIndex / groupSize} and applied to
+     * {@code rowIndex % groupSize}, so the value is a pure function of the row index.
      */
     @Override
-    public void seek(long rowIndex) {
-        if (rowIndex < 0) {
-            throw new IllegalArgumentException("rowIndex must be non-negative: " + rowIndex);
-        }
-        counter.set(rowIndex);
+    protected Integer valueAt(long rowIndex) {
+        long group = rowIndex / groupSize;
+        int position = (int) (rowIndex % groupSize);
+        long key = Mixers.splitmix64(seed + group);
+        return start + permute(position, key);
     }
 
     // cycle-walking: a Feistel permutation on [0, 2^(2*halfBits)) restricted to [0, groupSize)
@@ -99,17 +81,6 @@ public class GroupedPermutationGenerator extends AbstractDataGenerator<Integer> 
             right = nextRight;
         }
         return (left << halfBits) | right;
-    }
-
-    @Override
-    public void set(Connection connection, PreparedStatement statement, int parameterIndex, Integer value) throws SQLException {
-        statement.setInt(parameterIndex, value);
-    }
-
-    @Override
-    public Integer get(ResultSet resultSet, int columnIndex) throws SQLException {
-        int value = resultSet.getInt(columnIndex);
-        return resultSet.wasNull() ? null : value;
     }
 
     /** Builder for {@link GroupedPermutationGenerator}. */
