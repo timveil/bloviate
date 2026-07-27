@@ -41,6 +41,33 @@ commands run from the repository root build the whole reactor.
 ./mvnw clean compile
 ```
 
+## Static Analysis
+
+Two checks run at the `validate` phase — before anything is compiled — so a problem
+fails in seconds rather than after the integration suite has started containers. Both
+are part of `./mvnw verify`; there is no separate command to remember.
+
+| Check | Enforces |
+| --- | --- |
+| `maven-enforcer-plugin` | Maven `[3.9.0,)`, Java `[25,)`, no duplicated dependency versions, and dependency convergence |
+| `spotless-maven-plugin` | The Apache-2.0 license header on every `.java` file, no trailing whitespace, newline at EOF |
+
+If Spotless reports a violation, fix it automatically:
+
+```bash
+./mvnw spotless:apply
+```
+
+The canonical header lives in `license-header.txt` at the repository root; new source
+files must start with it verbatim. Spotless is deliberately configured for headers and
+whitespace only — it does **not** impose a Java formatter, so existing code layout and
+`git blame` history are left alone.
+
+Dependency convergence is enforced because Bloviate is not shaded: every transitive
+version is one a consumer actually inherits. When a new dependency introduces a
+conflict, resolve it with an explicit `dependencyManagement` pin in the parent
+`pom.xml` rather than relying on Maven's nearest-wins tiebreak.
+
 ## Running Tests
 
 The project uses TestContainers for integration testing against real databases, so

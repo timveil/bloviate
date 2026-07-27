@@ -29,7 +29,7 @@ import java.util.random.RandomGenerator;
 
 /**
  * Database-specific support interface for data generation and SQL handling.
- * 
+ *
  * <p>This interface defines the single contract for database-specific implementations:
  * mapping a {@link Column} to an appropriate {@link DataGenerator}. The cross-database
  * defaults and the per-{@link java.sql.JDBCType} registry live in

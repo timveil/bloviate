@@ -73,6 +73,11 @@
         <junit-jupiter.version>6.1.2</junit-jupiter.version>
         <datafaker.version>2.7.0</datafaker.version>
 
+        <!-- transitive-only: jackson-dataformat-yaml and datafaker disagree (2.5 vs 2.6).
+             Pinned to the higher so enforcer's dependencyConvergence rule has a single
+             answer instead of relying on Maven's nearest-wins tiebreak. -->
+        <snakeyaml.version>2.6</snakeyaml.version>
+
         <!-- test / integration dependency versions -->
         <testcontainers.version>1.21.4</testcontainers.version>
         <hikaricp.version>7.1.0</hikaricp.version>
@@ -94,6 +99,8 @@
         <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
+        <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
+        <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
 
         <!-- Per-package test-coverage floor enforced by jacoco:check (bound to verify). Set just
              below current coverage to lock in no-regression; ratchet upward over time. Modules that
@@ -145,6 +152,11 @@
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
                 <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>${snakeyaml.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -297,10 +309,87 @@
                     <artifactId>versions-maven-plugin</artifactId>
                     <version>${versions-maven-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>${spotless-maven-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
         <plugins>
+
+            <!-- Build-environment guard rails. Runs at validate in every module, so a
+                 stale JDK or a duplicated dependency version fails before anything is
+                 compiled rather than midway through the reactor. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-build-environment</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <!-- matches the pinned wrapper (3.9.16); the floor is the
+                                     oldest Maven that still resolves this reactor -->
+                                <requireMavenVersion>
+                                    <version>[3.9.0,)</version>
+                                </requireMavenVersion>
+                                <!-- maven.compiler.release is 25; building on an older JDK
+                                     fails later and less legibly than it does here -->
+                                <requireJavaVersion>
+                                    <version>[25,)</version>
+                                </requireJavaVersion>
+                                <banDuplicatePomDependencyVersions/>
+                                <!-- Bloviate is not shaded, so every transitive version is one
+                                     a consumer actually inherits. Enforced rather than left to
+                                     Maven's nearest-wins tiebreak; resolving a new conflict
+                                     means an explicit dependencyManagement pin (see snakeyaml). -->
+                                <dependencyConvergence/>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- License-header enforcement. Header-only by design: all 213 source files
+                 already carry a byte-identical Apache-2.0 header, so this locks in what is
+                 already true without a reformat that would rewrite every line's git blame.
+                 Adding a full Java formatter is a separate, deliberate decision. -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <configuration>
+                    <java>
+                        <licenseHeader>
+                            <!-- multiModuleProjectDirectory, not basedir: one shared header
+                                 file at the reactor root serves all five modules -->
+                            <file>${maven.multiModuleProjectDirectory}/license-header.txt</file>
+                        </licenseHeader>
+                        <trimTrailingWhitespace/>
+                        <endWithNewline/>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>spotless-check</id>
+                        <!-- validate, not verify: a missing header fails in seconds instead
+                             of after Testcontainers has spun up the integration suite -->
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
             <plugin>
                 <groupId>org.jacoco</groupId>
