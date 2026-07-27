@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright (c) 2021 Tim Veil
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<ruleset name="Bloviate Ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+
+    <description>
+        Shared PMD ruleset for every Bloviate module. Inherits Best Practices and Error Prone,
+        with exclusions scoped to patterns that are deliberate in a seeded data generator.
+    </description>
+
+    <!-- =========================================================================
+         Best Practices
+         ========================================================================= -->
+    <rule ref="category/java/bestpractices.xml">
+
+        <!--
+            GuardLogStatement: the codebase uses SLF4J 2.x parameterized logging throughout
+            (logger.debug("msg {}", var)), which already defers formatting. Excluded here and
+            re-included below scoped to trace level, where an explicit guard does pay off.
+        -->
+        <exclude name="GuardLogStatement"/>
+
+        <!--
+            UseVarargs: converting a trailing array parameter to varargs is a
+            binary-incompatible change for downstream callers of a published library.
+        -->
+        <exclude name="UseVarargs"/>
+
+    </rule>
+
+    <!-- Re-include GuardLogStatement, scoped to trace only -->
+    <rule ref="category/java/bestpractices.xml/GuardLogStatement">
+        <properties>
+            <property name="logLevels" value="trace"/>
+            <property name="guardsMethods" value="isTraceEnabled"/>
+        </properties>
+    </rule>
+
+    <!-- =========================================================================
+         Error Prone
+         ========================================================================= -->
+    <rule ref="category/java/errorprone.xml">
+
+        <!--
+            AvoidFieldNameMatchingMethodName: fires 72 times, every one of them the fluent
+            builder idiom this library's public API is built on:
+
+                private Integer seed;
+                public Builder seed(Integer seed) { this.seed = seed; return this; }
+
+            Renaming either side would change the documented builder API. At 65% of the
+            total baseline this rule alone would bury every other finding.
+        -->
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
+
+        <!--
+            AvoidDuplicateLiterals: the SQL type-name tables in io.bloviate.ext repeat type
+            keywords across the four DatabaseSupport implementations. Naming each one adds
+            indirection without making the mapping tables easier to read.
+        -->
+        <exclude name="AvoidDuplicateLiterals"/>
+
+        <!--
+            AvoidLiteralsInIfCondition: bounds and size checks in the generators are
+            intentional and self-documenting (e.g. scale == 0, length < 1). Extracting them
+            to constants would obscure rather than clarify.
+        -->
+        <exclude name="AvoidLiteralsInIfCondition"/>
+
+        <!--
+            ReplaceJavaUtilDate / ReplaceJavaUtilCalendar: java.sql.Date, Time and Timestamp
+            all extend java.util.Date, and the JDBC PreparedStatement/ResultSet signatures
+            these generators must satisfy are defined in terms of them. Not changeable.
+        -->
+        <exclude name="ReplaceJavaUtilDate"/>
+        <exclude name="ReplaceJavaUtilCalendar"/>
+
+    </rule>
+
+</ruleset>
