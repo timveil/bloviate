@@ -1,3 +1,9 @@
+## [3.0.1](https://github.com/timveil/bloviate/compare/v3.0.0...v3.0.1) (2026-07-27)
+
+### ⚡ Performance Improvements
+
+* **ci:** parallelise the core test suite and stop duplicating analysis ([#578](https://github.com/timveil/bloviate/issues/578)) ([a20d022](https://github.com/timveil/bloviate/commit/a20d022401d0d230134690e497e49db527954a85)), closes [#574](https://github.com/timveil/bloviate/issues/574) [#570](https://github.com/timveil/bloviate/issues/570)
+
 ## [3.0.0](https://github.com/timveil/bloviate/compare/v2.19.1...v3.0.0) (2026-07-26)
 
 ### ⚠ BREAKING CHANGES

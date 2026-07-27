@@ -23,7 +23,7 @@
     <parent>
         <groupId>io.bloviate</groupId>
         <artifactId>bloviate-parent</artifactId>
-        <version>3.0.0</version>
+        <version>3.0.1</version>
     </parent>
 
     <artifactId>bloviate-junit</artifactId>
