@@ -164,5 +164,22 @@ class BigQueryFillerTest extends BaseDatabaseTestCase {
         // BIGNUMERIC is bound as NUMERIC, so its values must sit inside NUMERIC's range
         assertCount(connection, String.format(
                 "select count(*) from %s where abs(c_bignumeric) >= 1e29", standard), 0);
+
+        // The four server-constructed types actually landed as their declared type rather than as
+        // text. Each of these functions only accepts the real type, so a row that arrived as a
+        // STRING could not have been written at all -- but assert non-null so a silently skipped
+        // column cannot pass either.
+        assertCount(connection, String.format(
+                "select count(*) from %s where c_datetime is null or c_json is null "
+                        + "or c_geography is null or c_interval is null", standard), 0);
+        assertCount(connection, String.format(
+                "select count(*) from %s where extract(year from c_datetime) is null", standard), 0);
+        assertCount(connection, String.format(
+                "select count(*) from %s where st_x(c_geography) not between -180 and 180", standard), 0);
+        assertCount(connection, String.format(
+                "select count(*) from %s where st_y(c_geography) not between -90 and 90", standard), 0);
+        // JSON_TYPE errors on a non-JSON argument, so reaching a count at all proves the column
+        assertCount(connection, String.format(
+                "select count(*) from %s where json_type(c_json) <> 'object'", standard), 0);
     }
 }

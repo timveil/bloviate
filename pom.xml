@@ -92,6 +92,12 @@
           green without it. To run the BigQuery integration test, either `./mvnw clean install` the
           driver repo or drop its GitHub Releases jar into ~/.m2. Dependabot and versions:display
           cannot resolve this coordinate; bump it by hand.
+
+          4.3.0 is the functional floor. 4.4.0 collapses a batch whose VALUES tuple wraps a
+          placeholder (PARSE_JSON(?), CAST(? AS DATETIME)), which BigQuerySupport emits for JSON,
+          GEOGRAPHY, INTERVAL and DATETIME columns; without it those tables still fill correctly,
+          just one query job per row. 4.4.0 is merged but unreleased, so this stays at 4.3.0;
+          bump it once 4.4.0 ships.
         -->
         <tbc-bq-jdbc.version>4.3.0</tbc-bq-jdbc.version>
 

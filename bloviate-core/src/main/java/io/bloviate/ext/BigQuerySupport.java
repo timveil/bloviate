@@ -20,7 +20,12 @@ import io.bloviate.db.Column;
 import io.bloviate.db.Database;
 import io.bloviate.gen.BigDecimalGenerator;
 import io.bloviate.gen.ByteGenerator;
+import io.bloviate.gen.DataGenerator;
+import io.bloviate.gen.IntervalGenerator;
+import io.bloviate.gen.JsonbGenerator;
 import io.bloviate.gen.SimpleStringGenerator;
+import io.bloviate.gen.SqlExpressionGenerator;
+import io.bloviate.gen.WktPointGenerator;
 
 import java.sql.Connection;
 import java.sql.JDBCType;
@@ -30,7 +35,8 @@ import java.util.Map;
 /**
  * Google BigQuery-specific {@link DatabaseSupport}, written against the
  * <a href="https://github.com/Two-Bear-Capital/tbc-bq-jdbc">tbc-bq-jdbc</a> driver
- * (<code>vc.tbc:tbc-bq-jdbc</code>, 4.3.0 or later).
+ * (<code>vc.tbc:tbc-bq-jdbc</code>, 4.3.0 or later; 4.4.0 or later is strongly recommended once
+ * released &mdash; see the value-expression note below).
  *
  * <p>BigQuery is an analytical engine, and it diverges from the OLTP databases Bloviate
  * otherwise targets in three ways this class has to account for:
@@ -47,26 +53,30 @@ import java.util.Map;
  *       {@code JSON}, {@code GEOGRAPHY} and {@code INTERVAL} back as {@link JDBCType#VARCHAR} and
  *       {@code DATETIME} as {@link JDBCType#TIMESTAMP}, but has no parameter binding that produces
  *       those types, and BigQuery will not implicitly coerce a {@code STRING}/{@code TIMESTAMP}
- *       parameter into them. Filling those columns needs SQL-side construction
- *       ({@code PARSE_JSON(?)}, {@code ST_GEOGFROMTEXT(?)}, {@code CAST(? AS DATETIME)}), which is
- *       not yet wired through the fill engine, so they are rejected here with an actionable
- *       message rather than generated and rejected by the server mid-batch.</li>
+ *       parameter into them. Their values are therefore generated as text and constructed by the
+ *       server through a {@link io.bloviate.gen.DataGenerator#valueExpression() value expression}
+ *       &mdash; see {@link #VALUE_EXPRESSIONS}. This works on any supported driver version, but
+ *       is much faster from 4.4.0: earlier versions only collapse a batch whose {@code VALUES}
+ *       tuple is placeholders-only, so a table with one of these columns degrades to one query job
+ *       per row &mdash; correct, but slow enough to matter and expensive on a large fill.</li>
  *   <li><strong>Keys are always {@code NOT ENFORCED}.</strong> BigQuery accepts declarative
  *       {@code PRIMARY KEY}/{@code FOREIGN KEY} constraints but never enforces them, and the driver
  *       surfaces them through {@code getPrimaryKeys}/{@code getImportedKeys}. Bloviate's FK-aware
  *       ordering therefore works, and {@link #supportsBulkLoad()} is safe to enable.</li>
  * </ul>
  *
- * <p><strong>Supported types:</strong> {@code STRING}, {@code BYTES}, {@code INT64},
- * {@code FLOAT64}, {@code NUMERIC}, {@code BIGNUMERIC} (within {@code NUMERIC} range),
- * {@code BOOL}, {@code DATE}, {@code TIME}, {@code TIMESTAMP}.
+ * <p><strong>Supported types:</strong> every scalar type &mdash; {@code STRING}, {@code BYTES},
+ * {@code INT64}, {@code FLOAT64}, {@code NUMERIC}, {@code BIGNUMERIC} (within {@code NUMERIC}
+ * range), {@code BOOL}, {@code DATE}, {@code TIME}, {@code TIMESTAMP}, {@code DATETIME},
+ * {@code JSON}, {@code GEOGRAPHY} and {@code INTERVAL}.
  *
- * <p><strong>Unsupported types:</strong> {@code DATETIME}, {@code JSON}, {@code GEOGRAPHY},
- * {@code INTERVAL}, {@code RANGE}, {@code ARRAY}, {@code STRUCT}. Supply a per-column generator
- * through {@code ColumnConfiguration} or
- * {@link GeneratorRegistry.Builder#registerColumnNamePattern} to fill them; the driver implements
- * {@link Connection#createArrayOf} and {@link Connection#createStruct}, so a hand-written generator
- * can write composites today.
+ * <p><strong>Unsupported types:</strong> the composite ones &mdash; {@code ARRAY}, {@code STRUCT}
+ * and {@code RANGE}. {@code ARRAY} and {@code STRUCT} need a shape Bloviate has no representation
+ * for; {@code RANGE} would need two parameters for one column, which the fill engine's
+ * one-parameter-per-column binding cannot express. Supply a per-column generator through
+ * {@code ColumnConfiguration} or {@link GeneratorRegistry.Builder#registerColumnNamePattern} to
+ * fill them; the driver implements {@link Connection#createArrayOf} and
+ * {@link Connection#createStruct}, so a hand-written generator can write composites today.
  *
  * <p><strong>Required driver settings:</strong> {@code includeStructFields=false} (the default) and
  * {@code metadataLazyLoad=false} (the default). With struct fields spliced in, {@code getColumns}
@@ -112,24 +122,55 @@ public class BigQuerySupport extends AbstractDatabaseSupport {
      */
     public static final int MAX_NUMERIC_SCALE = 9;
 
+    /**
+     * SQL that constructs a value for each type the driver cannot bind, keyed by BigQuery type name.
+     *
+     * <p>These are the types whose {@code getColumns} shape is indistinguishable from a bindable one
+     * &mdash; {@code JSON}, {@code GEOGRAPHY} and {@code INTERVAL} all read back as
+     * {@link JDBCType#VARCHAR}, {@code DATETIME} as {@link JDBCType#TIMESTAMP} &mdash; but which
+     * have no parameter type of their own, and which BigQuery will not implicitly coerce into. The
+     * value is generated as text (or, for {@code DATETIME}, as a timestamp) and turned into the
+     * column's type by the server.
+     *
+     * <p>Wrapping costs the batch collapse: tbc-bq-jdbc keeps a batch whose {@code VALUES} tuple is
+     * not placeholders-only off its NDJSON load-job path, since that path writes bound values
+     * directly and would drop the wrapping. The DML collapse itself still applies, but only from
+     * driver 4.4.0 &mdash; earlier versions require a placeholders-only tuple and fall back to one
+     * query job per row, which is correct but very slow.
+     */
+    private static final Map<String, String> VALUE_EXPRESSIONS = Map.of(
+            "JSON", "PARSE_JSON(?)",
+            "GEOGRAPHY", "ST_GEOGFROMTEXT(?)",
+            "INTERVAL", "CAST(? AS INTERVAL)",
+            "DATETIME", "CAST(? AS DATETIME)");
+
     /** Creates the BigQuery support with its default configuration. */
     public BigQuerySupport() {
+    }
+
+    /**
+     * Wraps a generator so its text is turned into {@code typeName} by the server.
+     *
+     * @param delegate the generator producing the value's text
+     * @param typeName the BigQuery type name, which must have a {@link #VALUE_EXPRESSIONS} entry
+     * @return the wrapped generator
+     */
+    private static DataGenerator<?> constructed(DataGenerator<?> delegate, String typeName) {
+        return SqlExpressionGenerator.of(delegate, VALUE_EXPRESSIONS.get(typeName));
     }
 
     @Override
     protected void configure(Map<JDBCType, GeneratorFactory> registry) {
 
-        // STRING, and the three types the driver reads back as VARCHAR but cannot bind.
+        // STRING, plus the three types the driver reads back as VARCHAR but cannot bind: their
+        // values are generated as text and constructed server-side (see VALUE_EXPRESSIONS).
         registry.put(JDBCType.VARCHAR, (column, random) -> switch (baseTypeName(column)) {
             case "STRING" -> new SimpleStringGenerator.Builder(random)
                     .size(clamp(column.maxSize(), MAX_STRING_LENGTH))
                     .build();
-            case "JSON" -> throw unsupported(column,
-                    "the driver binds strings as STRING and BigQuery will not coerce STRING to JSON");
-            case "GEOGRAPHY" -> throw unsupported(column,
-                    "the driver binds strings as STRING and BigQuery will not coerce STRING to GEOGRAPHY");
-            case "INTERVAL" -> throw unsupported(column,
-                    "the driver binds strings as STRING and BigQuery will not coerce STRING to INTERVAL");
+            case "JSON" -> constructed(new JsonbGenerator.Builder(random).build(), "JSON");
+            case "GEOGRAPHY" -> constructed(new WktPointGenerator.Builder(random).build(), "GEOGRAPHY");
+            case "INTERVAL" -> constructed(new IntervalGenerator.Builder(random).build(), "INTERVAL");
             default -> throw unsupported(column, "no generator is registered for this type");
         });
 
@@ -159,14 +200,13 @@ public class BigQuerySupport extends AbstractDatabaseSupport {
         registry.put(JDBCType.NUMERIC, bigDecimal);
         registry.put(JDBCType.DECIMAL, bigDecimal);
 
-        // TIMESTAMP and DATETIME both arrive as JDBC TIMESTAMP; only TIMESTAMP can be bound.
+        // TIMESTAMP and DATETIME both arrive as JDBC TIMESTAMP. Only TIMESTAMP can be bound, so a
+        // DATETIME column takes the same generated instant and casts it server-side. The cast is
+        // interpreted in UTC, which is deterministic and therefore reproducible.
         GeneratorFactory inheritedTimestamp = registry.get(JDBCType.TIMESTAMP);
         registry.put(JDBCType.TIMESTAMP, (column, random) -> {
-            if ("DATETIME".equals(baseTypeName(column))) {
-                throw unsupported(column, "the driver has no DATETIME parameter type and BigQuery "
-                        + "will not coerce TIMESTAMP to DATETIME");
-            }
-            return inheritedTimestamp.create(column, random);
+            DataGenerator<?> timestamp = inheritedTimestamp.create(column, random);
+            return "DATETIME".equals(baseTypeName(column)) ? constructed(timestamp, "DATETIME") : timestamp;
         });
 
         // RANGE<...> is the only type the driver maps to OTHER.

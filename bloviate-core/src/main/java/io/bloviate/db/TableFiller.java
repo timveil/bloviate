@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -101,10 +102,6 @@ public class TableFiller implements Fillable {
      */
     @Override
     public void fill() throws SQLException {
-
-        String sql = table.insertString(connection.getMetaData().getIdentifierQuoteString());
-
-        logger.trace("{}", sql);
 
         // The fill loop is the hot path: it runs once per cell (rowCount * columnCount times).
         // To keep it allocation- and lookup-free, everything is resolved up front into arrays
@@ -215,6 +212,19 @@ public class TableFiller implements Fillable {
                 positionables[idx] = random;
             }
         }
+
+        // Built after generator resolution, not before: a generator decides how its value is bound,
+        // and a type the driver cannot bind directly must be constructed in SQL instead (BigQuery's
+        // PARSE_JSON(?) / ST_GEOGFROMTEXT(?)). Nearly always this is the same all-placeholder
+        // statement as before, since DataGenerator.valueExpression() defaults to "?".
+        List<String> valueExpressions = new ArrayList<>(columnCount);
+        for (DataGenerator<?> generator : generators) {
+            valueExpressions.add(generator.valueExpression());
+        }
+
+        String sql = table.insertString(connection.getMetaData().getIdentifierQuoteString(), valueExpressions);
+
+        logger.trace("{}", sql);
 
         int batchSize = databaseConfiguration.batchSize();
 

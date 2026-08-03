@@ -19,9 +19,12 @@ package io.bloviate.db;
 import org.junit.jupiter.api.Test;
 
 import java.sql.JDBCType;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TableTest {
 
@@ -44,6 +47,61 @@ class TableTest {
         Table table = new Table("orders", null, List.of(column("id", "public", false)), List.of());
 
         assertEquals("insert into orders (id) values (?)", table.insertString());
+    }
+
+    @Test
+    void insertStringSubstitutesValueExpressions() {
+        Table table = new Table("events", null,
+                List.of(column("id", null, false), column("payload", null, false)), List.of());
+
+        assertEquals("insert into `events` (`id`,`payload`) values (?,PARSE_JSON(?))",
+                table.insertString("`", List.of("?", "PARSE_JSON(?)")));
+    }
+
+    @Test
+    void insertStringWithNullExpressionsMatchesThePlainForm() {
+        // the overload is what the engine always calls now, so its no-expression behavior must be
+        // byte-identical to the form it replaced
+        Table table = new Table("orders", null,
+                List.of(column("id", "public", false), column("qty", null, false)), List.of());
+
+        assertEquals(table.insertString("\""), table.insertString("\"", null));
+    }
+
+    @Test
+    void insertStringRejectsAnExpressionWithoutExactlyOnePlaceholder() {
+        // one parameter is bound per column by position, so any other count shifts every later
+        // column's value onto the wrong parameter -- silent corruption rather than an error
+        Table table = new Table("events", null,
+                List.of(column("id", null, false), column("payload", null, false)), List.of());
+
+        for (String bad : List.of("PARSE_JSON('x')", "RANGE(?, ?)")) {
+            IllegalStateException e = assertThrows(IllegalStateException.class,
+                    () -> table.insertString("`", List.of("?", bad)));
+            assertTrue(e.getMessage().contains("payload"), e.getMessage());
+        }
+
+        assertThrows(IllegalStateException.class,
+                () -> table.insertString("`", Arrays.asList("?", null)));
+    }
+
+    @Test
+    void insertStringRejectsAMismatchedExpressionCount() {
+        Table table = new Table("events", null,
+                List.of(column("id", null, false), column("payload", null, false)), List.of());
+
+        assertThrows(IllegalArgumentException.class, () -> table.insertString("`", List.of("?")));
+    }
+
+    @Test
+    void insertStringCountsExpressionsAgainstFilteredColumns() {
+        // auto-increment columns are excluded from the INSERT, so expressions align with the
+        // filtered list rather than every column
+        Table table = new Table("orders", null,
+                List.of(column("id", null, true), column("qty", null, false)), List.of());
+
+        assertEquals("insert into `orders` (`qty`) values (CAST(? AS INT64))",
+                table.insertString("`", List.of("CAST(? AS INT64)")));
     }
 
     @Test
