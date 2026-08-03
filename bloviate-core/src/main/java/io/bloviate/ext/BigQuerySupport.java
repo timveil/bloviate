@@ -35,7 +35,8 @@ import java.util.Map;
 /**
  * Google BigQuery-specific {@link DatabaseSupport}, written against the
  * <a href="https://github.com/Two-Bear-Capital/tbc-bq-jdbc">tbc-bq-jdbc</a> driver
- * (<code>vc.tbc:tbc-bq-jdbc</code>, <strong>4.4.0 or later</strong> — see the value-expression note below).
+ * (<code>vc.tbc:tbc-bq-jdbc</code>, 4.3.0 or later; 4.4.0 or later is strongly recommended once
+ * released &mdash; see the value-expression note below).
  *
  * <p>BigQuery is an analytical engine, and it diverges from the OLTP databases Bloviate
  * otherwise targets in three ways this class has to account for:
@@ -54,9 +55,10 @@ import java.util.Map;
  *       those types, and BigQuery will not implicitly coerce a {@code STRING}/{@code TIMESTAMP}
  *       parameter into them. Their values are therefore generated as text and constructed by the
  *       server through a {@link io.bloviate.gen.DataGenerator#valueExpression() value expression}
- *       &mdash; see {@link #VALUE_EXPRESSIONS}. This requires tbc-bq-jdbc <strong>4.4.0 or
- *       later</strong>: earlier versions only collapse a batch whose {@code VALUES} tuple is
- *       placeholders-only, so a wrapped column silently degrades to one query job per row.</li>
+ *       &mdash; see {@link #VALUE_EXPRESSIONS}. This works on any supported driver version, but
+ *       is much faster from 4.4.0: earlier versions only collapse a batch whose {@code VALUES}
+ *       tuple is placeholders-only, so a table with one of these columns degrades to one query job
+ *       per row &mdash; correct, but slow enough to matter and expensive on a large fill.</li>
  *   <li><strong>Keys are always {@code NOT ENFORCED}.</strong> BigQuery accepts declarative
  *       {@code PRIMARY KEY}/{@code FOREIGN KEY} constraints but never enforces them, and the driver
  *       surfaces them through {@code getPrimaryKeys}/{@code getImportedKeys}. Bloviate's FK-aware

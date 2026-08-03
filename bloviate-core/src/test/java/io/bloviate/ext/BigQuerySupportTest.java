@@ -237,9 +237,12 @@ class BigQuerySupportTest {
         DataGenerator<?> generator = generatorFor(JDBCType.VARCHAR, null, "INTERVAL");
 
         assertEquals("CAST(? AS INTERVAL)", generator.valueExpression());
-        // BigQuery's interval literal is Y-M D H:M:S, which IntervalGenerator already emits
-        assertTrue(((String) generator.generate()).matches("-?\\d+-\\d+ -?\\d+ \\d+:\\d+:\\d+"),
-                (String) generator.generate());
+
+        // BigQuery's interval literal is Y-M D H:M:S, which IntervalGenerator already emits.
+        // Drawn once and reused, so a failure reports the value that actually failed rather than
+        // a fresh (possibly valid) one.
+        String interval = (String) generator.generate();
+        assertTrue(interval.matches("-?\\d+-\\d+ -?\\d+ \\d+:\\d+:\\d+"), interval);
     }
 
     @Test

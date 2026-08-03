@@ -93,10 +93,11 @@
           driver repo or drop its GitHub Releases jar into ~/.m2. Dependabot and versions:display
           cannot resolve this coordinate; bump it by hand.
 
-          BigQuerySupport documents a floor of 4.4.0, which collapses a batch whose VALUES tuple
-          wraps a placeholder (PARSE_JSON(?), CAST(? AS DATETIME)). This pin trails that floor until
-          4.4.0 is released; against 4.3.0 those tables still fill correctly, just one query job per
-          row. Bump this to 4.4.0 once it ships.
+          4.3.0 is the functional floor. 4.4.0 collapses a batch whose VALUES tuple wraps a
+          placeholder (PARSE_JSON(?), CAST(? AS DATETIME)), which BigQuerySupport emits for JSON,
+          GEOGRAPHY, INTERVAL and DATETIME columns; without it those tables still fill correctly,
+          just one query job per row. 4.4.0 is merged but unreleased, so this stays at 4.3.0;
+          bump it once 4.4.0 ships.
         -->
         <tbc-bq-jdbc.version>4.3.0</tbc-bq-jdbc.version>
 

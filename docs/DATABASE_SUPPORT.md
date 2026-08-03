@@ -48,9 +48,10 @@ graph regardless.
 ## BigQuery
 
 Requires the [tbc-bq-jdbc](https://github.com/Two-Bear-Capital/tbc-bq-jdbc) driver
-(`vc.tbc:tbc-bq-jdbc`, **4.4.0 or later** — see [server-constructed
-values](#server-constructed-values)), which is not yet on Maven Central — install it locally with
-`./mvnw clean install` in that repo, or use its GitHub Releases jar.
+(`vc.tbc:tbc-bq-jdbc`, 4.3.0 or later), which is not yet on Maven Central — install it locally with
+`./mvnw clean install` in that repo, or use its GitHub Releases jar. Version 4.4.0 is strongly
+recommended once it is released, for the reason given under [server-constructed
+values](#server-constructed-values).
 
 ```java
 String url = "jdbc:bigquery:my-project/my_dataset?authType=ADC";
@@ -84,10 +85,12 @@ Those four are therefore generated as text and turned into the column's type by 
 | `INTERVAL` | `Y-M D H:M:S` | `CAST(? AS INTERVAL)` |
 | `DATETIME` | a timestamp | `CAST(? AS DATETIME)` (interpreted as UTC) |
 
-This is why the driver floor is 4.4.0. Earlier versions collapse a JDBC batch into a multi-row
-`INSERT` only when the `VALUES` tuple is placeholders-only, so a table with any of these columns
-would silently fall back to **one query job per row** — correct, but slow enough to matter and
-expensive on a large fill.
+This is why 4.4.0 matters. It is not required — these columns fill correctly on 4.3.0 — but earlier
+versions collapse a JDBC batch into a multi-row `INSERT` only when the `VALUES` tuple is
+placeholders-only, so a table with any of these columns falls back to **one query job per row**.
+That is correct, but slow enough to matter and expensive on a large fill.
+
+At the time of writing 4.4.0 is merged but unreleased, so `tbc-bq-jdbc.version` still pins 4.3.0.
 
 Two further consequences:
 
