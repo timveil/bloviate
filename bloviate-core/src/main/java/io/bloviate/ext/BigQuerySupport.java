@@ -240,10 +240,15 @@ public class BigQuerySupport extends AbstractDatabaseSupport {
     }
 
     /**
-     * Not overridden deliberately: rewriting a batch into a multi-row {@code INSERT} is
-     * unconditional in tbc-bq-jdbc, so there is no URL parameter to recommend. Load-job tuning
-     * ({@code batchLoadThreshold}) is documented rather than advertised here, because this hook's
-     * contract is a batch-rewrite toggle.
+     * Returns {@code null}: rewriting a batch into a multi-row {@code INSERT} is unconditional in
+     * tbc-bq-jdbc, so there is no URL parameter to recommend and the fill engine should stay quiet
+     * rather than warn about a missing one.
+     *
+     * <p>This overrides nothing behaviorally &mdash; the interface default is already {@code null}
+     * &mdash; but it is stated explicitly so the reasoning is recorded where someone would look for
+     * it. In particular, load-job tuning ({@code batchLoadThreshold}) does <em>not</em> belong here:
+     * this hook's contract is a batch-rewrite toggle, and that property takes an integer, so
+     * advertising it would make the engine emit wrong advice.
      *
      * @return always {@code null}
      */

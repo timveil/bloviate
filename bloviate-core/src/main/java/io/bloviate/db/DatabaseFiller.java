@@ -589,6 +589,13 @@ public class DatabaseFiller implements Fillable {
      * Bulk loading needs per-worker session control, so it only applies to the {@code threads > 1}
      * {@link DataSource} path; elsewhere the engine fills in dependency order.
      */
+    private void warnIfBulkIgnored() {
+        if (configuration.bulkLoadStrategy().isUnordered()) {
+            logger.warn("UNORDERED_BULK is ignored on the sequential fill path; use the DataSource "
+                    + "constructor with threads(n) > 1 for unordered bulk loading");
+        }
+    }
+
     /**
      * Warns once per fill when an explicit commit strategy is configured against a support that
      * would rather the engine stayed out of transaction management. The caller's choice is still
@@ -603,13 +610,6 @@ public class DatabaseFiller implements Fillable {
                             + "which may be slower and can disable driver bulk-load paths",
                     configuration.databaseSupport().getClass().getSimpleName(),
                     configuration.commitStrategy().mode());
-        }
-    }
-
-    private void warnIfBulkIgnored() {
-        if (configuration.bulkLoadStrategy().isUnordered()) {
-            logger.warn("UNORDERED_BULK is ignored on the sequential fill path; use the DataSource "
-                    + "constructor with threads(n) > 1 for unordered bulk loading");
         }
     }
 

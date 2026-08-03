@@ -83,11 +83,19 @@ and `Connection.createStruct`, so a hand-written generator can write composites 
 ### Generated value sizes
 
 BigQuery reports `COLUMN_SIZE` as the *type* maximum, not a declared width: a bare `STRING` reports
-2,097,152 and a bare `BYTES` reports 10,485,760. Sizes are therefore clamped downward — 256
-characters and 128 bytes respectively — while a declared `STRING(20)` is honored exactly. Similarly,
-`BIGNUMERIC` reports precision 76 and scale 38, but the driver binds every `BigDecimal` as `NUMERIC`,
-so generated values are clamped to `NUMERIC`'s (38, 9); a `NUMERIC`-range value is always valid in a
-`BIGNUMERIC` column.
+2,097,152 and a bare `BYTES` reports 10,485,760. Sizes are therefore clamped downward — to 256
+characters and 128 bytes — while a declared `STRING(20)` is honored exactly.
+
+Those caps are ceilings, not target lengths, and the generators impose their own limits underneath:
+`SimpleStringGenerator` never exceeds 2000 characters and `ByteGenerator` never exceeds 25 bytes. So
+the string clamp is a further ~8x reduction that you will observe, whereas the `BYTES` clamp sits
+above the generator's own limit and does not currently change any generated value. It is stated as a
+bound so the intent survives a change to that generator.
+
+`BIGNUMERIC` is clamped for a different reason: it reports precision 76 and scale 38, but the driver
+binds every `BigDecimal` as `NUMERIC`, so generated values are clamped to `NUMERIC`'s (38, 9). The
+binding is what forces this, not the destination column — a `NUMERIC`-range value is always valid in
+a `BIGNUMERIC` column.
 
 ### Required driver settings
 
