@@ -1,3 +1,9 @@
+## [3.1.0](https://github.com/timveil/bloviate/compare/v3.0.4...v3.1.0) (2026-08-03)
+
+### ✨ Features
+
+* **ext:** add Google BigQuery database support ([#569](https://github.com/timveil/bloviate/issues/569)) ([#593](https://github.com/timveil/bloviate/issues/593)) ([7758988](https://github.com/timveil/bloviate/commit/7758988f3349dcda68da1798f8b5d5193336ca2c))
+
 ## [3.0.4](https://github.com/timveil/bloviate/compare/v3.0.3...v3.0.4) (2026-07-27)
 
 ### 🐛 Bug Fixes
