@@ -4,9 +4,11 @@
 -- concurrent runs never collide). Every table carries a 2-hour expiration so a failed run cannot
 -- leave billable tables behind.
 --
--- Only natively bindable types appear here. DatabaseFiller fills every table in the dataset, so a
--- single DATETIME/JSON/GEOGRAPHY/ARRAY/STRUCT column would fail the whole fill; rejection of those
--- is covered by BigQuerySupportTest instead.
+-- Every scalar type appears here, including the four the driver cannot bind directly
+-- (DATETIME, JSON, GEOGRAPHY, INTERVAL), which are constructed server-side from generated text.
+-- The composite types (ARRAY, STRUCT, RANGE) are deliberately absent: DatabaseFiller fills every
+-- table in the dataset, so one unsupported column would fail the whole fill. Their rejection is
+-- covered by BigQuerySupportTest instead.
 --
 -- Keys are declared NOT ENFORCED, which is the only form BigQuery accepts. They are never enforced
 -- at write time, but the driver surfaces them through getPrimaryKeys/getImportedKeys, which is what
@@ -43,7 +45,13 @@ CREATE TABLE `${dataset}.standard_types_${suffix}` (
     c_bytes_sized    BYTES(16),
     c_date           DATE,
     c_time           TIME,
-    c_timestamp      TIMESTAMP
+    c_timestamp      TIMESTAMP,
+    -- constructed server-side: none of these has a parameter binding, and BigQuery will not
+    -- coerce a STRING or TIMESTAMP parameter into them
+    c_datetime       DATETIME,
+    c_json           JSON,
+    c_geography      GEOGRAPHY,
+    c_interval       INTERVAL
 ) OPTIONS(expiration_timestamp = TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 2 HOUR));
 
 -- Any real BigQuery table is partitioned and clustered; this proves the batch/DML path works

@@ -85,6 +85,37 @@ public interface DataGenerator<T> {
     }
 
     /**
+     * The SQL this generator's value occupies inside an {@code INSERT ... VALUES} tuple.
+     *
+     * <p>The default {@code "?"} binds the generated value directly, which is what almost every
+     * generator wants. Override it when the value has to be <em>constructed</em> in SQL because the
+     * driver cannot bind the column's type &mdash; BigQuery's {@code JSON} and {@code GEOGRAPHY}
+     * have no parameter binding and the server will not coerce a {@code STRING} into them, so a
+     * generator emitting JSON text declares {@code "PARSE_JSON(?)"} and one emitting WKT declares
+     * {@code "ST_GEOGFROMTEXT(?)"}.
+     *
+     * <p>This lives on the generator rather than on {@link io.bloviate.ext.DatabaseSupport} because
+     * the generator is what knows the shape of the text it produces. It also means a generator
+     * supplied through {@link io.bloviate.ext.GeneratorRegistry} or a
+     * {@link io.bloviate.ext.GeneratorPlugin} carries its own wrapping with no support involvement.
+     *
+     * <p><strong>Must contain exactly one {@code ?}.</strong> The fill engine binds one parameter
+     * per column by position, so any other count would silently misalign every subsequent
+     * parameter; {@link io.bloviate.db.Table#insertString(String, java.util.List)} rejects it rather
+     * than emit such a statement. To wrap an existing generator without subclassing it, use
+     * {@link SqlExpressionGenerator}.
+     *
+     * <p>Note that a wrapped value may cost throughput: a driver that collapses a JDBC batch into a
+     * multi-row {@code INSERT} may decline to do so for a tuple that is not placeholders-only.
+     *
+     * @return the SQL expression for this value, containing exactly one {@code ?}
+     * @since 3.2.0
+     */
+    default String valueExpression() {
+        return "?";
+    }
+
+    /**
      * Resets this generator's random source to the given seed for reproducible foreign-key
      * wraparound. Implementations must replace the underlying {@link java.util.random.RandomGenerator}
      * with a freshly seeded one (there is no in-place {@code setSeed} on

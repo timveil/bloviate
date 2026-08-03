@@ -16,6 +16,7 @@
 
 package io.bloviate.ext;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.bloviate.db.Column;
 import io.bloviate.gen.BigDecimalGenerator;
 import io.bloviate.gen.BooleanGenerator;
@@ -31,10 +32,12 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.sql.JDBCType;
+import java.sql.Timestamp;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -190,24 +193,76 @@ class BigQuerySupportTest {
     // ------------------------------------------------------------------------ rejected types
 
     @Test
-    void rejectsDatetimeWhichIsIndistinguishableFromTimestampByJdbcTypeAlone() {
-        UnsupportedOperationException e = rejectionFor(JDBCType.TIMESTAMP, "DATETIME");
-
-        assertTrue(e.getMessage().contains("DATETIME"));
-        assertTrue(e.getMessage().contains("ColumnConfiguration"));
-    }
-
-    @Test
     void rejectsTypesWithNoParameterBinding() {
         Map<JDBCType, String> rejected = new LinkedHashMap<>();
         rejected.put(JDBCType.OTHER, "RANGE<DATE>");
         rejected.put(JDBCType.ARRAY, "ARRAY<INT64>");
         rejected.put(JDBCType.STRUCT, "STRUCT<a INT64, b STRING>");
 
-        for (String typeName : new String[]{"JSON", "GEOGRAPHY", "INTERVAL"}) {
-            assertRejected(JDBCType.VARCHAR, typeName);
-        }
         rejected.forEach(this::assertRejected);
+    }
+
+    // ------------------------------------------------------- server-constructed (Phase 2) types
+
+    @Test
+    void constructsJsonServerSide() {
+        // the driver binds text as STRING and BigQuery will not coerce that into JSON, so the
+        // value has to be built by the server
+        DataGenerator<?> generator = generatorFor(JDBCType.VARCHAR, null, "JSON");
+
+        assertEquals("PARSE_JSON(?)", generator.valueExpression());
+        assertDoesNotThrow(() -> new ObjectMapper().readTree((String) generator.generate()));
+    }
+
+    @Test
+    void constructsGeographyFromWellKnownText() {
+        DataGenerator<?> generator = generatorFor(JDBCType.VARCHAR, null, "GEOGRAPHY");
+
+        assertEquals("ST_GEOGFROMTEXT(?)", generator.valueExpression());
+
+        for (int i = 0; i < DRAWS; i++) {
+            String wkt = (String) generator.generate();
+            assertTrue(wkt.startsWith("POINT(") && wkt.endsWith(")"), wkt);
+
+            // WKT orders coordinates longitude-first, so the wider bound comes first
+            String[] coordinates = wkt.substring(6, wkt.length() - 1).split(" ");
+            assertEquals(2, coordinates.length, wkt);
+            assertTrue(Math.abs(Double.parseDouble(coordinates[0])) <= 180, wkt);
+            assertTrue(Math.abs(Double.parseDouble(coordinates[1])) <= 90, wkt);
+        }
+    }
+
+    @Test
+    void constructsIntervalServerSide() {
+        DataGenerator<?> generator = generatorFor(JDBCType.VARCHAR, null, "INTERVAL");
+
+        assertEquals("CAST(? AS INTERVAL)", generator.valueExpression());
+        // BigQuery's interval literal is Y-M D H:M:S, which IntervalGenerator already emits
+        assertTrue(((String) generator.generate()).matches("-?\\d+-\\d+ -?\\d+ \\d+:\\d+:\\d+"),
+                (String) generator.generate());
+    }
+
+    @Test
+    void constructsDatetimeFromTheTimestampGenerator() {
+        // DATETIME and TIMESTAMP are indistinguishable by JDBC type, so the type name decides;
+        // both draw the same instant and only DATETIME is cast server-side
+        DataGenerator<?> datetime = generatorFor(JDBCType.TIMESTAMP, null, "DATETIME");
+        DataGenerator<?> timestamp = generatorFor(JDBCType.TIMESTAMP, null, "TIMESTAMP");
+
+        assertEquals("CAST(? AS DATETIME)", datetime.valueExpression());
+        assertEquals("?", timestamp.valueExpression());
+        assertInstanceOf(Timestamp.class, datetime.generate());
+    }
+
+    @Test
+    void leavesEveryOtherTypeBoundDirectly() {
+        // a wrapped tuple costs the driver's load-job path, so nothing should be wrapped that does
+        // not have to be
+        assertEquals("?", generatorFor(JDBCType.VARCHAR, 20, "STRING(20)").valueExpression());
+        assertEquals("?", generatorFor(JDBCType.VARBINARY, null, "BYTES").valueExpression());
+        assertEquals("?", generatorFor(JDBCType.NUMERIC, 38, 9, "NUMERIC").valueExpression());
+        assertEquals("?", generatorFor(JDBCType.BIGINT, null, "INT64").valueExpression());
+        assertEquals("?", generatorFor(JDBCType.DATE, null, "DATE").valueExpression());
     }
 
     private void assertRejected(JDBCType jdbcType, String typeName) {

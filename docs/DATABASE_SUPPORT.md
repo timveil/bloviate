@@ -12,7 +12,7 @@ explicitly, or let Bloviate detect it from the connection.
 | MariaDB | `MariaDBSupport` | Extends `MySQLSupport` (MariaDB speaks the MySQL wire protocol) |
 | H2 | `H2Support` | Standard JDBC types **plus** `UUID` and `JSON` (embedded; no Docker) |
 | SQLite | `SQLiteSupport` | Standard JDBC types via type affinity (embedded; no Docker) |
-| BigQuery | `BigQuerySupport` | Scalar types only — see [BigQuery](#bigquery) for what is excluded |
+| BigQuery | `BigQuerySupport` | All scalar types **incl.** `JSON`, `GEOGRAPHY`, `INTERVAL`, `DATETIME`; no composites |
 | Generic JDBC | `DefaultSupport` | Standard JDBC types only |
 
 All of them resolve the cross-database defaults for the common JDBC types (integers, decimals,
@@ -48,28 +48,60 @@ graph regardless.
 ## BigQuery
 
 Requires the [tbc-bq-jdbc](https://github.com/Two-Bear-Capital/tbc-bq-jdbc) driver
-(`vc.tbc:tbc-bq-jdbc`, 4.3.0 or later), which is not yet on Maven Central — install it locally with
+(`vc.tbc:tbc-bq-jdbc`, **4.4.0 or later** — see [server-constructed
+values](#server-constructed-values)), which is not yet on Maven Central — install it locally with
 `./mvnw clean install` in that repo, or use its GitHub Releases jar.
 
 ```java
 String url = "jdbc:bigquery:my-project/my_dataset?authType=ADC";
 ```
 
-**Supported:** `STRING`, `BYTES`, `INT64`, `FLOAT64`, `NUMERIC`, `BIGNUMERIC`, `BOOL`, `DATE`,
-`TIME`, `TIMESTAMP`.
+**Supported:** every scalar type — `STRING`, `BYTES`, `INT64`, `FLOAT64`, `NUMERIC`, `BIGNUMERIC`,
+`BOOL`, `DATE`, `TIME`, `TIMESTAMP`, `DATETIME`, `JSON`, `GEOGRAPHY`, `INTERVAL`.
 
-**Not supported:** `DATETIME`, `JSON`, `GEOGRAPHY`, `INTERVAL`, `RANGE`, `ARRAY`, `STRUCT`. These
-fail fast with a message naming the column, before any rows are written.
-
-The reason is that BigQuery's *write* surface is narrower than its read surface. The driver reads
-`JSON`/`GEOGRAPHY`/`INTERVAL` back as `VARCHAR` and `DATETIME` as `TIMESTAMP`, but has no parameter
-binding that produces those types, and BigQuery will not implicitly coerce a `STRING` or `TIMESTAMP`
-parameter into them. Filling them requires SQL-side construction (`PARSE_JSON(?)`,
-`ST_GEOGFROMTEXT(?)`, `CAST(? AS DATETIME)`), which the fill engine does not yet emit.
+**Not supported:** the composite types — `ARRAY`, `STRUCT`, `RANGE`. These fail fast with a message
+naming the column, before any rows are written. `ARRAY` and `STRUCT` need a shape Bloviate has no
+representation for, and `RANGE` would need two parameters for one column, which the engine's
+one-parameter-per-column binding cannot express.
 
 To fill one anyway, supply a per-column generator through `ColumnConfiguration` or
 `GeneratorRegistry.registerColumnNamePattern`. The driver does implement `Connection.createArrayOf`
 and `Connection.createStruct`, so a hand-written generator can write composites today.
+
+### Server-constructed values
+
+BigQuery's *write* surface is narrower than its read surface. The driver reads `JSON`, `GEOGRAPHY`
+and `INTERVAL` back as `VARCHAR` and `DATETIME` as `TIMESTAMP`, but has no parameter binding that
+produces any of them, and BigQuery will not implicitly coerce a `STRING` or `TIMESTAMP` parameter
+into them.
+
+Those four are therefore generated as text and turned into the column's type by the server:
+
+| Type | Generated as | Written as |
+|------|--------------|------------|
+| `JSON` | a JSON object literal | `PARSE_JSON(?)` |
+| `GEOGRAPHY` | a WKT point, `POINT(lon lat)` | `ST_GEOGFROMTEXT(?)` |
+| `INTERVAL` | `Y-M D H:M:S` | `CAST(? AS INTERVAL)` |
+| `DATETIME` | a timestamp | `CAST(? AS DATETIME)` (interpreted as UTC) |
+
+This is why the driver floor is 4.4.0. Earlier versions collapse a JDBC batch into a multi-row
+`INSERT` only when the `VALUES` tuple is placeholders-only, so a table with any of these columns
+would silently fall back to **one query job per row** — correct, but slow enough to matter and
+expensive on a large fill.
+
+Two further consequences:
+
+- A table containing one of these columns never takes the driver's NDJSON load-job path, even above
+  `batchLoadThreshold`. That path writes bound values directly and never sees the SQL, so it would
+  drop the wrapping and store the wrong thing; the driver keeps such batches on DML deliberately.
+- The mechanism is general, not BigQuery-specific: any generator can declare its own
+  `DataGenerator.valueExpression()`, and `SqlExpressionGenerator` wraps an existing generator
+  without subclassing it. A custom PostGIS generator can use the same seam.
+
+`BIGNUMERIC` is *not* in that table. It has no parameter binding either, but unlike the four above
+it does not need one: the driver binds every `BigDecimal` as `NUMERIC`, and a `NUMERIC`-range value
+is always valid in a `BIGNUMERIC` column. Values are therefore clamped rather than constructed —
+see below.
 
 > `GeneratorRegistry.registerTypeName` is a poor fit here: it matches type names exactly, and
 > BigQuery reports the raw `INFORMATION_SCHEMA` text (`string(20)`, `numeric(10, 2)`,
@@ -96,6 +128,11 @@ bound so the intent survives a change to that generator.
 binds every `BigDecimal` as `NUMERIC`, so generated values are clamped to `NUMERIC`'s (38, 9). The
 binding is what forces this, not the destination column — a `NUMERIC`-range value is always valid in
 a `BIGNUMERIC` column.
+
+That clamp is a deliberate limit rather than a gap to close. `BigDecimalGenerator` already caps
+itself at 25 significant digits on every database, on the grounds that enormous precision is not
+useful test data (CockroachDB reports 131,089), so generating true 76-digit `BIGNUMERIC` values
+would contradict that. If you need them, supply a per-column generator.
 
 ### Required driver settings
 
@@ -131,6 +168,11 @@ auto-commit to stay on, which is why `BigQuerySupport` opts out of engine-manage
 `setAutoCommit(false)` starts a BigQuery session and silently disables it. **Leave
 `CommitStrategy` at its default** — each `executeBatch` is already one atomic job, so an explicit
 strategy buys nothing and costs the load path. Bloviate logs a warning if you set one anyway.
+
+The load path is also unavailable to any table holding a `JSON`, `GEOGRAPHY`, `INTERVAL` or
+`DATETIME` column, for the reason given under [server-constructed
+values](#server-constructed-values). Such tables still collapse into multi-row `INSERT` statements
+on driver 4.4.0 and later; they simply stay on DML.
 
 > Filling a BigQuery dataset writes real data to real storage and runs real jobs. Both cost money.
 
