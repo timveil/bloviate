@@ -1,3 +1,9 @@
+## [3.2.0](https://github.com/timveil/bloviate/compare/v3.1.0...v3.2.0) (2026-08-03)
+
+### ✨ Features
+
+* **gen:** construct values in SQL when a driver cannot bind the type ([#594](https://github.com/timveil/bloviate/issues/594)) ([60a1681](https://github.com/timveil/bloviate/commit/60a1681e2c5552aae032dd8a7ed1bde7d2b3e01f))
+
 ## [3.1.0](https://github.com/timveil/bloviate/compare/v3.0.4...v3.1.0) (2026-08-03)
 
 ### ✨ Features
