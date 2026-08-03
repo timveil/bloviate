@@ -168,4 +168,30 @@
 
     </dependencies>
 
+    <profiles>
+        <!--
+          BigQuery Support (live Google Cloud project, no Docker, no emulator)
+
+          Opt-in only. tbc-bq-jdbc is not on Maven Central yet, so declaring it here rather than in
+          <dependencies> keeps the default build resolvable for everyone. BigQuerySupport itself
+          needs no driver on the compile classpath, and BigQueryFillerTest talks only to
+          java.sql/DriverManager, so both compile without this profile; the test simply skips.
+
+              ./mvnw clean install                     # in the tbc-bq-jdbc repo, once
+              export BLOVIATE_BQ_PROJECT=my-gcp-project
+              gcloud auth application-default login
+              ./mvnw verify -Pbigquery -pl bloviate-core
+        -->
+        <profile>
+            <id>bigquery</id>
+            <dependencies>
+                <dependency>
+                    <groupId>vc.tbc</groupId>
+                    <artifactId>tbc-bq-jdbc</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
 </project>

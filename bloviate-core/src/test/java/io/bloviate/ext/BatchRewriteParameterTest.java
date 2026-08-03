@@ -43,4 +43,12 @@ class BatchRewriteParameterTest {
     void defaultSupportHasNoBatchRewriteParameter() {
         assertNull(new DefaultSupport().batchRewriteUrlParameter());
     }
+
+    @Test
+    void bigQueryHasNoBatchRewriteParameter() {
+        // tbc-bq-jdbc rewrites batches into multi-row INSERTs unconditionally, so there is no URL
+        // parameter to recommend -- advertising batchLoadThreshold here would emit wrong advice,
+        // since it takes an integer rather than acting as a toggle
+        assertNull(new BigQuerySupport().batchRewriteUrlParameter());
+    }
 }

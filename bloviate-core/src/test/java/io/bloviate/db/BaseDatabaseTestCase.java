@@ -22,10 +22,17 @@ import io.bloviate.gen.tpcc.CustomerLastNameGenerator;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
 import javax.sql.DataSource;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -47,6 +54,56 @@ public class BaseDatabaseTestCase {
     @FunctionalInterface
     protected interface Verifier {
         void verify(Connection connection) throws SQLException;
+    }
+
+    /**
+     * Executes a semicolon-delimited SQL script loaded from the test classpath. Line comments
+     * ({@code --}) are stripped; statements are split on {@code ;} at end of line.
+     */
+    protected static void runScript(Connection connection, String resource) throws SQLException {
+        runScript(connection, resource, Map.of());
+    }
+
+    /**
+     * As {@link #runScript(Connection, String)}, but first replaces {@code ${name}} tokens in the
+     * script with the supplied values. Databases without transactional DDL or throwaway instances
+     * (BigQuery) need per-run table names so repeated or concurrent runs cannot collide.
+     */
+    protected static void runScript(Connection connection, String resource, Map<String, String> tokens) throws SQLException {
+        String sql = readResource(resource);
+        for (Map.Entry<String, String> token : tokens.entrySet()) {
+            sql = sql.replace("${" + token.getKey() + "}", token.getValue());
+        }
+        try (Statement statement = connection.createStatement()) {
+            for (String stmt : sql.split(";\\s*\\n")) {
+                String trimmed = stmt.strip();
+                if (!trimmed.isEmpty()) {
+                    statement.execute(trimmed);
+                }
+            }
+        }
+    }
+
+    private static String readResource(String resource) {
+        try (InputStream in = BaseDatabaseTestCase.class.getClassLoader().getResourceAsStream(resource)) {
+            if (in == null) {
+                throw new IllegalArgumentException("init script not found on classpath: " + resource);
+            }
+            StringBuilder builder = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    int comment = line.indexOf("--");
+                    if (comment >= 0) {
+                        line = line.substring(0, comment);
+                    }
+                    builder.append(line).append('\n');
+                }
+            }
+            return builder.toString();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     protected static void assertRowCount(Connection connection, String table, long expected) throws SQLException {

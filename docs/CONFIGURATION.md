@@ -263,6 +263,15 @@ applies there too.
 > correctly-parameterized URL if you construct the `DataSource` yourself. CockroachDB ignores the
 > parameter, so no warning is emitted there.
 
+> **Tip — BigQuery.** Rewriting is unconditional in tbc-bq-jdbc, so there is no parameter to set and
+> no warning to emit. Instead, size `batchSize` against BigQuery's limit of 10,000 query parameters
+> per query: the effective rows per job is `10_000 / columnCount`, so the default 128 leaves most of
+> a job unused. Start from `batchSize = 5000`, and set the driver's `batchLoadThreshold` to match to
+> move large batches onto its NDJSON load-job path. Leave `CommitStrategy` at its default —
+> `BigQuerySupport` opts out of engine-managed transactions because `setAutoCommit(false)` starts a
+> BigQuery session and silently disables that load path, and each `executeBatch` is already one
+> atomic job. Bloviate logs a warning if a commit strategy is configured anyway.
+
 ## Bulk load (unordered fill)
 
 The parallel path normally barriers between topological levels, so a **deep, narrow foreign-key
