@@ -162,6 +162,8 @@ public class DatabaseFiller implements Fillable {
 
         visualizeGraph(reversedGraph, database.catalog());
 
+        warnIfEngineManagedCommitDiscouraged();
+
         // recommend the driver batch-rewrite URL parameter once per fill if it is missing
         if (connection != null) {
             warnIfBatchRewriteMissing(connection);
@@ -595,6 +597,23 @@ public class DatabaseFiller implements Fillable {
     }
 
     /**
+     * Warns once per fill when an explicit commit strategy is configured against a support that
+     * would rather the engine stayed out of transaction management. The caller's choice is still
+     * honored — this only surfaces the cost, which is otherwise invisible (on BigQuery, an engine-
+     * managed transaction opens a session and silently disables the driver's load-job path).
+     */
+    private void warnIfEngineManagedCommitDiscouraged() {
+        if (configuration.databaseSupport().prefersConnectionDefaultCommit()
+                && configuration.commitStrategy().managesTransaction()) {
+            logger.warn("{} recommends leaving transaction management to the connection, but commit "
+                            + "strategy [{}] was configured; the engine will manage transactions as asked, "
+                            + "which may be slower and can disable driver bulk-load paths",
+                    configuration.databaseSupport().getClass().getSimpleName(),
+                    configuration.commitStrategy().mode());
+        }
+    }
+
+    /**
      * The commit strategy used by parallel workers. A pooled worker connection must not be left on
      * the connection's autocommit (that would commit per batch and lose the engine-managed
      * transaction), so {@link CommitStrategy.Mode#CONNECTION_DEFAULT} maps to a bounded
@@ -603,12 +622,22 @@ public class DatabaseFiller implements Fillable {
      * large partition open in one server-side transaction (unbounded WAL/undo growth and lock
      * accumulation), which is the scale failure the parallel/bulk path most needs to avoid. Any
      * explicitly configured strategy (including {@link CommitStrategy#perTable()}) is honored as-is.
+     *
+     * <p>A {@link io.bloviate.ext.DatabaseSupport#prefersConnectionDefaultCommit() support that
+     * prefers the connection's own commit behavior} suppresses the upgrade, so
+     * {@code CONNECTION_DEFAULT} stays as configured. That is for engines where an engine-managed
+     * transaction is pure cost rather than protection — see the hook's documentation.
+     *
+     * <p>Package-private so the mapping can be unit-tested without a database.
      */
-    private CommitStrategy effectiveParallelCommitStrategy() {
+    CommitStrategy effectiveParallelCommitStrategy() {
         CommitStrategy configured = configuration.commitStrategy();
-        return configured.mode() == CommitStrategy.Mode.CONNECTION_DEFAULT
-                ? CommitStrategy.everyNBatches(DEFAULT_PARALLEL_COMMIT_BATCHES)
-                : configured;
+        if (configured.mode() != CommitStrategy.Mode.CONNECTION_DEFAULT) {
+            return configured;
+        }
+        return configuration.databaseSupport().prefersConnectionDefaultCommit()
+                ? configured
+                : CommitStrategy.everyNBatches(DEFAULT_PARALLEL_COMMIT_BATCHES);
     }
 
     /**

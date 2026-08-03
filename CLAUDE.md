@@ -44,7 +44,7 @@ This is a Maven-based Java 25 project. Run `./mvnw` from the repository root to 
    - `TableFiller`: Handles filling individual tables with generated data
 
 2. **Database Support (`io.bloviate.ext`)**:
-   - Database-specific implementations: `PostgresSupport`, `MySQLSupport`, `CockroachDBSupport`, `DefaultSupport`
+   - Database-specific implementations: `PostgresSupport`, `MySQLSupport`, `MariaDBSupport`, `CockroachDBSupport`, `H2Support`, `SQLiteSupport`, `BigQuerySupport`, `DefaultSupport`
    - Each provides database-specific SQL generation and data type mapping
 
 3. **Data Generators (`io.bloviate.gen`)**:

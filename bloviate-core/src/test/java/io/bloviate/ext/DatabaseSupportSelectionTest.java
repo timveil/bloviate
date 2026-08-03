@@ -60,11 +60,25 @@ class DatabaseSupportSelectionTest {
     }
 
     @Test
+    void selectsBigQueryByProductName() {
+        // the tbc-bq-jdbc driver reports this exact string
+        assertInstanceOf(BigQuerySupport.class, DatabaseSupport.forProduct("BigQuery (TBC Driver)"));
+    }
+
+    @Test
+    void selectsBigQueryForOtherBigQueryDrivers() {
+        // Simba's driver reports "Google BigQuery"; the substring match catches it, which is
+        // usually what you want -- see the documented caveat about its differing type names.
+        assertInstanceOf(BigQuerySupport.class, DatabaseSupport.forProduct("Google BigQuery"));
+    }
+
+    @Test
     void matchingIsCaseInsensitive() {
         assertInstanceOf(MySQLSupport.class, DatabaseSupport.forProduct("mysql"));
         assertInstanceOf(PostgresSupport.class, DatabaseSupport.forProduct("POSTGRESQL"));
         assertInstanceOf(MariaDBSupport.class, DatabaseSupport.forProduct("mariadb"));
         assertInstanceOf(SQLiteSupport.class, DatabaseSupport.forProduct("SQLITE"));
+        assertInstanceOf(BigQuerySupport.class, DatabaseSupport.forProduct("BIGQUERY"));
     }
 
     @Test

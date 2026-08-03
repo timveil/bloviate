@@ -132,8 +132,40 @@ Docker must be running.
 ```
 
 Test schemas live under `bloviate-core/src/test/resources/` (TPCC, AuctionMark, Wikipedia, and
-others). `BaseDatabaseTestCase` provides the shared `DataSource` plumbing and the
-fidelity assertions used by the TPC-C tests.
+others). `BaseDatabaseTestCase` provides the shared `DataSource` plumbing, the classpath script
+runner, and the fidelity assertions used by the TPC-C tests.
+
+### BigQuery
+
+`BigQueryFillerTest` is the one test Docker cannot cover. BigQuery has no usable emulator — the
+tbc-bq-jdbc driver deliberately removed its emulator tier because the emulator diverged far enough
+from the service to hide real defects — so the test needs a live Google Cloud project, and it is
+**skipped by default**.
+
+It is gated twice, and both gates must pass:
+
+1. `BLOVIATE_BQ_PROJECT` is set (with Application Default Credentials available), and
+2. the driver is on the classpath, which only happens under `-Pbigquery`.
+
+The second gate exists so that setting the env var without the profile skips cleanly instead of
+failing with "No suitable driver". `vc.tbc:tbc-bq-jdbc` is not on Maven Central yet, which is why it
+is declared in an opt-in profile rather than as an ordinary test dependency — a default build must
+stay resolvable for everyone. Bump `tbc-bq-jdbc.version` in the root POM by hand; Dependabot and
+`versions:display-dependency-updates` cannot resolve that coordinate.
+
+```bash
+# once, in a clone of https://github.com/Two-Bear-Capital/tbc-bq-jdbc
+./mvnw clean install
+
+gcloud auth application-default login
+export BLOVIATE_BQ_PROJECT=my-gcp-project
+
+./mvnw verify -Pbigquery -pl bloviate-core -Dtest=BigQueryFillerTest
+```
+
+Each run creates its own dataset and drops it afterwards (with a one-day default table expiration as
+a backstop), because `DatabaseFiller` fills **every** table it finds in the connection's schema.
+Running it writes real data and runs real jobs, both of which cost money.
 
 ## Databases for Testing
 

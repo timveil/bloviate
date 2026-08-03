@@ -99,6 +99,33 @@ public interface DatabaseSupport {
     }
 
     /**
+     * Whether the fill engine should leave transaction management to the connection rather than
+     * imposing one of its own. The default is {@code false}: on a parallel or unordered fill,
+     * {@link io.bloviate.db.DatabaseFiller} upgrades a
+     * {@link io.bloviate.db.CommitStrategy.Mode#CONNECTION_DEFAULT} strategy to a periodic commit so
+     * a long-running partition never sits in one unbounded transaction. A support that returns
+     * {@code true} suppresses that upgrade, so {@code CONNECTION_DEFAULT} stays
+     * {@code CONNECTION_DEFAULT} on every path and the engine never touches auto-commit.
+     *
+     * <p>This exists for engines where an engine-managed transaction is pure cost. On BigQuery each
+     * {@code executeBatch} is already a single atomic query job, while {@code setAutoCommit(false)}
+     * lazily starts a session (per-connection overhead and quota) and disables the driver's fastest
+     * bulk-insert path. Analytical engines without real transaction support are the other case.
+     *
+     * <p>An <em>explicitly configured</em> commit strategy always wins: this hook only affects the
+     * engine's own default, never a choice the caller made. It is also only effective if the pool
+     * leaves auto-commit on &mdash; a {@link javax.sql.DataSource} configured with
+     * {@code autoCommit=false} still hands out connections in a transaction, which Bloviate cannot
+     * override.
+     *
+     * @return whether the engine should defer to the connection's own commit behavior
+     * @since 3.1.0
+     */
+    default boolean prefersConnectionDefaultCommit() {
+        return false;
+    }
+
+    /**
      * Whether this support can disable and re-enable foreign-key enforcement for an
      * {@code UNORDERED_BULK} fill (see {@link io.bloviate.db.BulkLoadStrategy}). The default is
      * {@code false}; callers must check this before invoking {@link #disableConstraints} and fall back
@@ -164,9 +191,9 @@ public interface DatabaseSupport {
      * <p>Matching is case-insensitive and substring-based: names containing
      * {@code "cockroach"} map to {@link CockroachDBSupport}, {@code "mariadb"} to
      * {@link MariaDBSupport}, {@code "mysql"} to {@link MySQLSupport}, {@code "postgres"} to
-     * {@link PostgresSupport}, {@code "h2"} to {@link H2Support}, and {@code "sqlite"} to
-     * {@link SQLiteSupport}. Anything else (including {@code null}) falls back to
-     * {@link DefaultSupport}.
+     * {@link PostgresSupport}, {@code "h2"} to {@link H2Support}, {@code "sqlite"} to
+     * {@link SQLiteSupport}, and {@code "bigquery"} to {@link BigQuerySupport}. Anything else
+     * (including {@code null}) falls back to {@link DefaultSupport}.
      *
      * <p><strong>CockroachDB note:</strong> CockroachDB is typically reached through the
      * PostgreSQL JDBC driver, which reports its product name as {@code "PostgreSQL"}, so such
@@ -181,6 +208,12 @@ public interface DatabaseSupport {
      * which case this resolves to {@link MySQLSupport}; that is acceptable because
      * {@link MariaDBSupport} extends {@link MySQLSupport} and the inherited type handling
      * works against MariaDB.
+     *
+     * <p><strong>BigQuery note:</strong> {@link BigQuerySupport} is written against the
+     * tbc-bq-jdbc driver, which reports {@code "BigQuery (TBC Driver)"}. The substring also matches
+     * Simba's {@code "Google BigQuery"}, which is usually what you want &mdash; but that driver
+     * reports type names differently, and {@link BigQuerySupport} discriminates on the raw
+     * {@code INFORMATION_SCHEMA} type text, so some columns may not resolve.
      *
      * @param productName the database product name, may be null
      * @return the matching support, or {@link DefaultSupport} if none matches
@@ -205,6 +238,9 @@ public interface DatabaseSupport {
             }
             if (name.contains("h2")) {
                 return new H2Support();
+            }
+            if (name.contains("bigquery")) {
+                return new BigQuerySupport();
             }
         }
         return new DefaultSupport();
