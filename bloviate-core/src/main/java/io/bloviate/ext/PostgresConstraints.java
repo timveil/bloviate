@@ -17,6 +17,7 @@
 package io.bloviate.ext;
 
 import io.bloviate.db.ColumnConstraint;
+import io.bloviate.gen.TruncatedDateGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,10 +50,49 @@ final class PostgresConstraints {
 
     private static final Logger logger = LoggerFactory.getLogger(PostgresConstraints.class);
 
-    // a number following a comparison operator, ignoring wrapping parens/casts: ">= (0)::numeric", "<= 5"
-    private static final Pattern GREATER = Pattern.compile(">=?\\s*\\(?\\s*(-?\\d+(?:\\.\\d+)?)");
-    private static final Pattern LESS = Pattern.compile("<=?\\s*\\(?\\s*(-?\\d+(?:\\.\\d+)?)");
-    private static final Pattern SINGLE_QUOTED = Pattern.compile("'((?:[^']|'')*)'");
+    private static final Pattern SINGLE_QUOTED = Pattern.compile("'(?:[^']|'')*'");
+    private static final Pattern CONSTRAINT_FLAGS = Pattern.compile("(?i)(?:\\s+(?:NOT VALID|NO INHERIT))+\\s*$");
+    private static final Pattern QUOTED_IDENTIFIER = Pattern.compile("\"(?:[^\"]|\"\")+\"");
+
+    // a name followed by "(" that is neither a keyword nor a type with a length: a function call
+    private static final Pattern FUNCTION_CALL = Pattern.compile(
+            "(?<![\\w$])(?!(?:check|in|any|all|some|and|or|not|array|varying|varchar|char|character|bpchar|numeric|decimal"
+                    + "|bit|time|timestamp|timestamptz|interval|float)\\b)[a-z_][a-z0-9_$]*\\s*\\(");
+
+    // pg_get_constraintdef building blocks (the verbose, normalised text PostgreSQL stores)
+    private static final String IDENT = "(\"(?:[^\"]|\"\")+\"|[A-Za-z_][A-Za-z0-9_$]*)";
+    private static final String TYPE = "(?:character varying|double precision|(?:timestamp|time) with(?:out)? time zone"
+            + "|bit varying|[A-Za-z_][A-Za-z0-9_]*)(?:\\(\\s*\\d+(?:\\s*,\\s*\\d+)?\\s*\\))?(?:\\[\\])?";
+    private static final String CAST = "(?:\\s*::\\s*" + TYPE + ")?";
+    /** A bare column, optionally parenthesised and cast: {@code status}, {@code (status)::text}. */
+    private static final String COLUMN = "\\(*\\s*" + IDENT + "\\s*\\)*" + CAST;
+    /** A quoted or numeric literal with an optional cast. */
+    private static final String LITERAL = "(?:'(?:[^']|'')*'|-?\\d+(?:\\.\\d+)?)" + CAST;
+    private static final String LIST_ITEMS = "(?<list>(?:" + LITERAL + "\\s*,\\s*)*" + LITERAL + ")";
+
+    private static final Pattern DATE_TRUNC = Pattern.compile(
+            "(?is)\\s*CHECK\\s*\\(+\\s*date_trunc\\(\\s*'([a-z]+)'" + CAST + "\\s*,\\s*" + COLUMN + "\\s*\\)\\s*=\\s*" + COLUMN
+                    + "\\s*\\)+");
+    private static final Pattern EXTRACT_DAY = Pattern.compile(
+            "(?is)\\s*CHECK\\s*\\(+\\s*(?:EXTRACT\\(\\s*day\\s+FROM\\s+" + COLUMN + "\\s*\\)"
+                    + "|date_part\\(\\s*'day'" + CAST + "\\s*,\\s*" + COLUMN + "\\s*\\))"
+                    + "\\s*=\\s*\\(*\\s*1(?:\\.0+)?\\s*\\)*" + CAST + "\\s*\\)+");
+
+    private static final Pattern ANY_ARRAY = Pattern.compile(
+            "(?is)\\s*CHECK\\s*\\(+\\s*" + COLUMN + "\\s*=\\s*ANY\\s*\\(+\\s*ARRAY\\[\\s*" + LIST_ITEMS
+                    + "\\s*\\]\\s*\\)*" + CAST + "\\s*\\)+");
+    private static final Pattern IN_LIST = Pattern.compile(
+            "(?is)\\s*CHECK\\s*\\(+\\s*" + COLUMN + "\\s+IN\\s*\\(\\s*" + LIST_ITEMS + "\\s*\\)\\s*\\)+");
+    private static final Pattern EQUALS_LITERAL = Pattern.compile(
+            "(?is)\\s*CHECK\\s*\\(+\\s*" + COLUMN + "\\s*=\\s*(?<list>" + LITERAL + ")\\s*\\)+");
+    // one literal (quoted text in group 1, or a number in group 2), with any cast skipped
+    private static final Pattern LIST_ITEM = Pattern.compile("'((?:[^']|'')*)'" + CAST + "|(-?\\d+(?:\\.\\d+)?)" + CAST);
+
+    // one comparison of the bare column against a number: "(amount >= (0)::numeric)", "rating <= 5"
+    private static final Pattern COMPARISON = Pattern.compile(
+            COLUMN + "\\s*(>=|<=|>|<)\\s*\\(*\\s*'?(-?\\d+(?:\\.\\d+)?)'?\\s*\\)*" + CAST);
+    private static final Pattern RANGE_STRUCTURE = Pattern.compile(
+            "(?is)[\\s()]*CHECK[\\s()]*(?:AND[\\s()]*)*");
 
     private PostgresConstraints() {
     }
@@ -127,100 +167,144 @@ final class PostgresConstraints {
 
     /**
      * Parses a PostgreSQL {@code pg_get_constraintdef} string into a {@link ColumnConstraint}, or
-     * returns null for forms that can't be safely honored (negations, disjunctions, patterns,
-     * one-sided ranges, multi-column expressions).
+     * returns null for forms that can't be safely honored.
+     *
+     * <p>Only the exact shapes below are recognised; <strong>anything else &mdash; in particular any
+     * expression containing a function call &mdash; returns null</strong> so the engine falls back to
+     * the column's type default with a warning (issue #619: {@code date_trunc('month', d) = d} used to
+     * be read as the allowed value {@code month}):
+     * <ul>
+     *   <li>{@code col IN (...)}, {@code col = ANY (ARRAY[...])} and {@code col = 'literal'} against
+     *       literals, where {@code col} is the bare column, optionally cast ({@code (status)::text});</li>
+     *   <li>closed numeric ranges: {@code >=}/{@code >} paired with {@code <=}/{@code <} against numeric
+     *       literals on the bare column ({@code BETWEEN} is stored in this form);</li>
+     *   <li>first-of-period dates: {@code date_trunc('month'|'quarter'|'year', col) = col} and
+     *       {@code EXTRACT(day FROM col) = 1} (or the older {@code date_part('day', col) = 1}).</li>
+     * </ul>
+     * Negations, disjunctions, patterns, one-sided ranges, arithmetic and multi-column expressions are
+     * rejected.
      */
-    static ColumnConstraint parseCheck(String def) {
-        if (def == null) {
+    static ColumnConstraint parseCheck(String rawDef) {
+        if (rawDef == null) {
             return null;
         }
-        String lower = def.toLowerCase(Locale.ROOT);
+        // pg_get_constraintdef may append a validity / inheritance flag; it says nothing about the values
+        String def = CONSTRAINT_FLAGS.matcher(rawDef).replaceFirst("");
+        // literals and quoted identifiers are opaque: what is inside them must never be read as syntax
+        String scrubbed = QUOTED_IDENTIFIER.matcher(SINGLE_QUOTED.matcher(def).replaceAll("''")).replaceAll("id")
+                .toLowerCase(Locale.ROOT);
         // bail on anything we can't safely satisfy by construction
-        if (lower.contains("<>") || lower.contains("!=") || lower.contains(" or ")
-                || lower.contains(" not ") || lower.contains("~~") || lower.contains(" like ")) {
+        if (scrubbed.contains("<>") || scrubbed.contains("!=") || scrubbed.contains(" or ")
+                || scrubbed.contains(" not ") || scrubbed.contains("~~") || scrubbed.contains(" like ")) {
             return null;
         }
 
-        // categorical: IN (...) / = ANY (ARRAY[...]) / a set of quoted literals
-        if (lower.contains("array[") || lower.contains(" in (") || (def.indexOf('\'') >= 0 && !hasComparison(def))) {
-            List<String> values = extractValues(def);
-            return values.isEmpty() ? null : ColumnConstraint.ofValues(values);
+        TruncatedDateGenerator.Unit unit = parseFirstOfPeriod(def);
+        if (unit != null) {
+            return ColumnConstraint.ofDateTruncation(unit);
         }
 
-        // numeric range: pair a lower bound (>= / >) with an upper bound (<= / <)
-        BigDecimal min = firstNumber(GREATER, def);
-        BigDecimal max = firstNumber(LESS, def);
-        boolean minInclusive = min != null && containsInclusive(def, ">=");
-        boolean maxInclusive = max != null && containsInclusive(def, "<=");
-        if (min != null && max != null) {
-            return new ColumnConstraint(null, min, minInclusive, max, maxInclusive);
+        // a function call anywhere means the check is about a computed value, not the column itself
+        if (FUNCTION_CALL.matcher(scrubbed).find()) {
+            return null;
         }
-        return null; // one-sided or unrecognized
+
+        ColumnConstraint categorical = parseCategorical(def);
+        return categorical != null ? categorical : parseRange(def);
     }
 
-    private static boolean hasComparison(String def) {
-        return def.contains(">") || def.contains("<");
-    }
-
-    private static boolean containsInclusive(String def, String operator) {
-        return def.contains(operator);
-    }
-
-    private static BigDecimal firstNumber(Pattern pattern, String def) {
-        Matcher matcher = pattern.matcher(def);
-        if (matcher.find()) {
-            return new BigDecimal(matcher.group(1));
+    /**
+     * The unit of a first-of-period check, or null. Accepts the stored forms
+     * {@code date_trunc('month'::text, (c)::timestamp with time zone) = c},
+     * {@code date_trunc('month'::text, c) = c} and {@code EXTRACT(day FROM c) = (1)::numeric}.
+     */
+    private static TruncatedDateGenerator.Unit parseFirstOfPeriod(String def) {
+        Matcher trunc = DATE_TRUNC.matcher(def);
+        if (trunc.matches()) {
+            // both sides must name the same column
+            if (!unquote(trunc.group(2)).equals(unquote(trunc.group(3)))) {
+                return null;
+            }
+            return switch (trunc.group(1).toLowerCase(Locale.ROOT)) {
+                case "month" -> TruncatedDateGenerator.Unit.MONTH;
+                case "quarter" -> TruncatedDateGenerator.Unit.QUARTER;
+                case "year" -> TruncatedDateGenerator.Unit.YEAR;
+                default -> null;
+            };
         }
-        return null;
+        return EXTRACT_DAY.matcher(def).matches() ? TruncatedDateGenerator.Unit.MONTH : null;
     }
 
-    /** Extracts the literal values from an {@code IN (...)} / {@code ARRAY[...]} list or bare equality. */
-    private static List<String> extractValues(String def) {
-        List<String> values = new ArrayList<>();
-        // prefer the contents of ARRAY[ ... ] or IN ( ... ); else fall back to every quoted literal
-        String list = between(def, "array[", "]");
+    /** Normalises an identifier the way PostgreSQL compares it: quoted as written, bare folded to lower case. */
+    private static String unquote(String identifier) {
+        String id = identifier.strip();
+        if (id.length() >= 2 && id.startsWith("\"") && id.endsWith("\"")) {
+            return id.substring(1, id.length() - 1).replace("\"\"", "\"");
+        }
+        return id.toLowerCase(Locale.ROOT);
+    }
+
+    /** {@code col IN (...)}, {@code col = ANY (ARRAY[...])} or {@code col = 'literal'} on the bare column. */
+    private static ColumnConstraint parseCategorical(String def) {
+        String list = null;
+        for (Pattern shape : List.of(ANY_ARRAY, IN_LIST, EQUALS_LITERAL)) {
+            Matcher shapeMatcher = shape.matcher(def);
+            if (shapeMatcher.matches()) {
+                list = shapeMatcher.group("list");
+                break;
+            }
+        }
         if (list == null) {
-            list = between(def, " in (", ")");
-        }
-        if (list != null) {
-            for (String raw : list.split(",")) {
-                String value = cleanItem(raw);
-                if (value != null) {
-                    values.add(value);
-                }
-            }
-            if (!values.isEmpty()) {
-                return values;
-            }
-        }
-        // bare equality or unhandled list shape: take every single-quoted literal
-        Matcher matcher = SINGLE_QUOTED.matcher(def);
-        while (matcher.find()) {
-            values.add(matcher.group(1).replace("''", "'"));
-        }
-        return values;
-    }
-
-    /** Strips a trailing {@code ::type} cast and surrounding quotes from one list item. */
-    private static String cleanItem(String raw) {
-        String item = raw.strip();
-        int cast = item.indexOf("::");
-        if (cast >= 0) {
-            item = item.substring(0, cast).strip();
-        }
-        if (item.length() >= 2 && item.startsWith("'") && item.endsWith("'")) {
-            item = item.substring(1, item.length() - 1).replace("''", "'");
-        }
-        return item.isEmpty() ? null : item;
-    }
-
-    private static String between(String text, String open, String close) {
-        int start = text.toLowerCase(Locale.ROOT).indexOf(open);
-        if (start < 0) {
             return null;
         }
-        int from = start + open.length();
-        int end = text.indexOf(close, from);
-        return end < 0 ? null : text.substring(from, end);
+        // the shape regex has already proved every item is a literal, so just pull them out
+        List<String> values = new ArrayList<>();
+        Matcher item = LIST_ITEM.matcher(list);
+        while (item.find()) {
+            values.add(item.group(1) != null ? item.group(1).replace("''", "'") : item.group(2));
+        }
+        return values.isEmpty() ? null : ColumnConstraint.ofValues(values);
+    }
+
+    /** A closed range built from comparisons of one bare column against numeric literals, and nothing else. */
+    private static ColumnConstraint parseRange(String def) {
+        Matcher matcher = COMPARISON.matcher(def);
+        BigDecimal min = null;
+        BigDecimal max = null;
+        boolean minInclusive = false;
+        boolean maxInclusive = false;
+        String column = null;
+        StringBuilder remainder = new StringBuilder();
+        int last = 0;
+        while (matcher.find()) {
+            remainder.append(def, last, matcher.start());
+            last = matcher.end();
+            String comparedColumn = unquote(matcher.group(1));
+            if (column != null && !column.equals(comparedColumn)) {
+                return null;
+            }
+            column = comparedColumn;
+            BigDecimal number = new BigDecimal(matcher.group(3));
+            String operator = matcher.group(2);
+            if (operator.startsWith(">")) {
+                if (min != null) {
+                    return null; // two lower bounds
+                }
+                min = number;
+                minInclusive = ">=".equals(operator);
+            } else {
+                if (max != null) {
+                    return null; // two upper bounds
+                }
+                max = number;
+                maxInclusive = "<=".equals(operator);
+            }
+        }
+        remainder.append(def, last, def.length());
+        // whatever surrounds the comparisons may only be structure: CHECK, parentheses, AND
+        if (min == null || max == null || !RANGE_STRUCTURE.matcher(remainder).matches()) {
+            return null; // one-sided or unrecognized
+        }
+        return new ColumnConstraint(null, min, minInclusive, max, maxInclusive);
     }
 }

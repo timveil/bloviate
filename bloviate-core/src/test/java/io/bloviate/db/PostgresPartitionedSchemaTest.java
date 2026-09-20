@@ -46,7 +46,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * enforcement genuinely on (see {@link PostgresSchemaFixture#assertForeignKeysEnforced}), so passing
  * means the data is valid, not that validation was skipped.
  *
- * <p>Observed on PostgreSQL 18 when #614 was written (the {@code @Disabled} tests fail this way today):
+ * <p>Observed on PostgreSQL 18 when #614 was written (the {@code @Disabled} tests fail this way today,
+ * except the two {@code CHECK} cases, which #619 has since fixed and enabled):
  * <ul>
  *   <li>a leaf partition filled directly: {@code new row for relation "orders_2024_01" violates
  *       partition constraint} (the generated {@code placed_at} was 2019-12-15);</li>
@@ -238,12 +239,11 @@ class PostgresPartitionedSchemaTest extends BaseDatabaseTestCase {
     }
 
     /**
-     * Desired outcome for #619: a {@code date_trunc('month', d) = d} column is filled with first-of-month
-     * dates. Today the quoted argument is read as the allowed value {@code month} and the engine binds
-     * the string to a {@code date}, which PostgreSQL rejects.
+     * #619: a {@code date_trunc('month', d) = d} column is filled with first-of-month dates. The quoted
+     * argument used to be read as the allowed value {@code month}, which the engine bound to a
+     * {@code date} and PostgreSQL rejected.
      */
     @Test
-    @Disabled("#619: date_trunc('month', d) = d is misread as the allowed value 'month' and bound to a date column")
     void dateTruncFirstOfMonthCheckIsSatisfied() throws SQLException {
         fixture.fillSequential("check_trunc", configuration());
 
@@ -253,12 +253,11 @@ class PostgresPartitionedSchemaTest extends BaseDatabaseTestCase {
     }
 
     /**
-     * Desired outcome for #619: an {@code EXTRACT(day FROM d) = 1} column is filled with first-of-month
-     * dates. Today the expression is (correctly) not parsed, so a random date is generated and the
-     * insert violates the check.
+     * #619: an {@code EXTRACT(day FROM d) = 1} column is filled with first-of-month dates. The
+     * expression used to be (correctly) not parsed, so a random date was generated and the insert
+     * violated the check.
      */
     @Test
-    @Disabled("#619: EXTRACT(day FROM d) = 1 is not recognised, so random dates violate the CHECK")
     void extractDayFirstOfMonthCheckIsSatisfied() throws SQLException {
         fixture.fillSequential("check_extract", configuration());
 
@@ -273,11 +272,11 @@ class PostgresPartitionedSchemaTest extends BaseDatabaseTestCase {
 
     /**
      * End-to-end target for the umbrella: the whole {@code saas} schema fills with enforcement on.
-     * It needs #615 (orders), #617 (tenant FKs) and #619 (invoices), so it can only be enabled once
-     * all three have landed. The {@code rollup} table is filled like any other; it is not derived.
+     * It needs #615 (orders) and #617 (tenant FKs), so it can only be enabled once both have landed
+     * (#619, the invoices' first-of-month CHECKs, has). The {@code rollup} table is filled like any other; it is not derived.
      */
     @Test
-    @Disabled("#613: needs #615 (partitioned orders), #617 (tenant-scoped FKs) and #619 (first-of-month CHECKs)")
+    @Disabled("#613: needs #615 (partitioned orders) and #617 (tenant-scoped FKs); the first-of-month CHECKs (#619) are done")
     void wholeMotivatingSchemaIsFilled() throws SQLException {
         fixture.fillSequential("saas", configuration());
 

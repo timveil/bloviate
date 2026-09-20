@@ -270,6 +270,40 @@ building blocks behind `TPCCConfiguration` — `CompositeKeyComponentGenerator`,
 columns) — live in `io.bloviate.gen` and can be composed for other benchmark schemas (TPC-H,
 TPC-DS, and so on).
 
+## First-of-month dates
+
+`TruncatedDateGenerator` (since 3.4.0) produces the first day of a month, quarter or year, for a
+column guarded by a check such as `CHECK (date_trunc('month', billing_month) = billing_month)` or
+`CHECK (EXTRACT(day FROM period_start) = 1)`. On PostgreSQL the engine picks it for you when it reads
+such a check (see [Constraint conformance](./CONFIGURATION.md#constraint-conformance)); use it
+directly to override a column explicitly, or on a database that isn't read for constraints:
+
+```java
+import io.bloviate.db.*;
+import io.bloviate.gen.TruncatedDateGenerator;
+import io.bloviate.gen.TruncatedDateGenerator.Unit;
+import java.time.LocalDate;
+import java.util.Set;
+
+Set<ColumnConfiguration> columns = Set.of(
+    // a DATE column: some first of a month between 2022 and 2024
+    new ColumnConfiguration("billing_month", random -> new TruncatedDateGenerator.Builder(random)
+        .start(LocalDate.of(2022, 1, 1)).end(LocalDate.of(2025, 1, 1)).build()),
+    // a TIMESTAMP or TIMESTAMPTZ column: midnight on the first of a quarter
+    new ColumnConfiguration("period_start", random -> new TruncatedDateGenerator.Builder(random)
+        .unit(Unit.QUARTER).timestamp(true).build()));
+
+new TableConfiguration("invoices", 1_000, columns);
+```
+
+- The range is `[start, end)`: the generator draws uniformly from the period starts that fall in it.
+  The default is the ten years from 2015-01-01 up to (excluding) 2025-01-01, anchored to a fixed
+  reference date rather than the wall clock, so the same seed gives the same data on every run.
+- A `DATE` column is bound as a `LocalDate`. With `timestamp(true)` a `TIMESTAMP` or
+  `TIMESTAMP WITH TIME ZONE` column is bound as a zone-less midnight, which the database reads in its
+  *session* time zone &mdash; the zone a `date_trunc` check is evaluated in &mdash; so the check holds
+  whatever that zone is. (A zone whose clocks skip midnight on the first is the one exception.)
+
 ## Data generator types
 
 Bloviate includes generators for all common database types:
@@ -289,6 +323,11 @@ new UUIDGenerator.Builder(random).build()
 new DateGenerator.Builder(random).build()
 new SqlTimestampGenerator.Builder(random).build()
 new InstantGenerator.Builder(random).build()
+
+// First day of a month / quarter / year, for columns that only admit such dates (since 3.4.0)
+new TruncatedDateGenerator.Builder(random).build()                                 // DATE, first of a month
+new TruncatedDateGenerator.Builder(random).unit(Unit.QUARTER).build()              // Jan/Apr/Jul/Oct 1st
+new TruncatedDateGenerator.Builder(random).timestamp(true).build()                 // TIMESTAMP[TZ], midnight on the 1st
 
 // Boolean and specialized generators
 new BooleanGenerator.Builder(random).build()
