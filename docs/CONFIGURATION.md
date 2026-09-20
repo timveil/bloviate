@@ -131,14 +131,36 @@ CREATE TABLE orders (
 forms are honored: `IN (...)`, `BETWEEN`, and `>=`/`<=`/`>`/`<` comparisons, for integer, numeric,
 floating, and text columns, plus enum/domain allowed values.
 
+Dates that must fall on the first of a period are honored too, on `DATE`, `TIMESTAMP` and
+`TIMESTAMP WITH TIME ZONE` columns (since 3.5.0):
+
+```sql
+CREATE TABLE invoices (
+    billing_month date CHECK (date_trunc('month', billing_month) = billing_month),
+    period_start  timestamptz CHECK (EXTRACT(day FROM period_start) = 1)
+);
+```
+
+`date_trunc('month' | 'quarter' | 'year', col) = col` and `EXTRACT(day FROM col) = 1` get a
+[`TruncatedDateGenerator`](./GENERATORS.md#first-of-month-dates): the first day of a random month in
+a fixed window (2015 up to 2025 by default; the same seed gives the same data), or midnight on that
+day for a timestamp. A `timestamptz` value is midnight in the *session* time zone, which is the zone
+the check is evaluated in, so the fill works whatever the connection's zone is.
+
 Notes:
 
-- A `CHECK` form that can't be safely satisfied (negation, `OR`, `LIKE` patterns, a one-sided
-  bound) is **skipped with a warning**, and the column falls back to its type default.
+- The parser only recognises the exact forms above: a bare column, optionally cast, compared with
+  literals. A `CHECK` that calls a function on the column (`lower(status) IN (...)`, `length(name) >= 1`),
+  does arithmetic, or takes any other form is **skipped with a warning**, and the column falls back to
+  its type default. That includes negation, `OR`, `LIKE` patterns, a one-sided bound, other
+  `date_trunc` units (`day`, `week`, ...), and **`CHECK`s over more than one column**.
+- Before 3.5.0 a quoted function argument was read as an allowed value, so
+  `date_trunc('month', d) = d` made the fill fail with `invalid input syntax for type date: "month"`.
 - A per-column override or a [registry](./GENERATORS.md#custom-generator-registry) rule always
   wins, so you can still take full control of a constrained column.
 - Open the connection with `stringtype=unspecified` (already required for PostgreSQL's extension
-  types) so enum/`IN` values bind. Constraint reading is PostgreSQL-only today.
+  types) so enum/`IN` values bind. Constraint reading is PostgreSQL-only today: CockroachDB (and
+  every other database) reads no `CHECK`s, so give those columns an explicit generator.
 
 ## Reproducible data with seeds
 

@@ -422,10 +422,12 @@ behavior.)
 
 `DatabaseSupport` also reads **value constraints** for a table — `DatabaseSupport.readConstraints(...)`.
 The default is none; `PostgresSupport` queries `pg_constraint`/`pg_enum`, parses the common `CHECK`
-forms (`IN`, `BETWEEN`, comparisons) and enum labels into a `ColumnConstraint`, and `TableFiller` then
-prefers a constraint-satisfying generator (categorical or bounded numeric) over the type default —
-so generated values conform instead of being rejected. Forms that can't be honored are logged and
-skipped.
+forms (`IN`, `BETWEEN`, comparisons, first-of-month `date_trunc`/`EXTRACT` on dates) and enum labels
+into a `ColumnConstraint`, and `TableFiller` then prefers a constraint-satisfying generator
+(categorical, bounded numeric, or `TruncatedDateGenerator`) over the type default — so generated
+values conform instead of being rejected. The parser recognises only exact forms (a bare, optionally
+cast, column against literals; never an expression containing a function call other than the
+first-of-month spellings); anything else is logged and skipped.
 
 ## Pluggable generators — Registry + ServiceLoader
 

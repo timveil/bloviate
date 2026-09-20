@@ -21,6 +21,7 @@ import io.bloviate.gen.DoubleGenerator;
 import io.bloviate.gen.IntegerGenerator;
 import io.bloviate.gen.LongGenerator;
 import io.bloviate.gen.ScaledBigDecimalGenerator;
+import io.bloviate.gen.TruncatedDateGenerator;
 import io.bloviate.gen.WeightedCategoricalGenerator;
 
 import java.math.BigDecimal;
@@ -29,7 +30,8 @@ import java.util.random.RandomGenerator;
 
 /**
  * Builds a generator that satisfies a {@link ColumnConstraint}: a categorical generator over the
- * allowed values, or a numeric generator bounded to the constraint's range. Returns {@code null} when
+ * allowed values, a numeric generator bounded to the constraint's range, or a
+ * {@link TruncatedDateGenerator} for a first-day-of-period date. Returns {@code null} when
  * the constraint cannot be honored for the column's type, so the caller falls back to the type default.
  *
  * @since 2.14.0
@@ -50,7 +52,23 @@ final class ConstraintGenerators {
         if (constraint.hasBoundedRange()) {
             return range(column, constraint, random);
         }
+        if (constraint.hasDateTruncation()) {
+            return dateTruncation(column, constraint, random);
+        }
         return null;
+    }
+
+    /** First-of-period dates for a date or timestamp column; null for any other type. */
+    private static DataGenerator<?> dateTruncation(Column column, ColumnConstraint constraint, RandomGenerator random) {
+        if (column.jdbcType() == null) {
+            return null;
+        }
+        return switch (column.jdbcType()) {
+            case DATE -> new TruncatedDateGenerator.Builder(random).unit(constraint.dateTruncation()).build();
+            case TIMESTAMP, TIMESTAMP_WITH_TIMEZONE -> new TruncatedDateGenerator.Builder(random)
+                    .unit(constraint.dateTruncation()).timestamp(true).build();
+            default -> null;
+        };
     }
 
     private static DataGenerator<?> range(Column column, ColumnConstraint constraint, RandomGenerator random) {

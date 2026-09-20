@@ -16,6 +16,8 @@
 
 package io.bloviate.db;
 
+import io.bloviate.gen.TruncatedDateGenerator;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -24,10 +26,12 @@ import java.util.List;
  * or an {@code ENUM}/domain's allowed values — so the fill engine can generate values that satisfy it
  * instead of values a constraint would reject (issue #479).
  *
- * <p>A constraint is one of two shapes: a <strong>set of allowed values</strong> (from
- * {@code col IN (...)}, {@code = ANY (ARRAY[...])}, or an enum's labels) or a <strong>numeric
- * range</strong> (from {@code BETWEEN} / {@code >=} / {@code <=} / {@code >} / {@code <}). Forms the
- * reader can't interpret are not represented here — the engine warns and falls back to its type
+ * <p>A constraint is one of three shapes: a <strong>set of allowed values</strong> (from
+ * {@code col IN (...)}, {@code = ANY (ARRAY[...])}, or an enum's labels), a <strong>numeric
+ * range</strong> (from {@code BETWEEN} / {@code >=} / {@code <=} / {@code >} / {@code <}), or a
+ * <strong>date truncation</strong> &mdash; the column must be the first day of a month, quarter or
+ * year (from {@code date_trunc('month', col) = col} or {@code EXTRACT(day FROM col) = 1}, issue
+ * #619). Forms the reader can't interpret are not represented here — the engine warns and falls back to its type
  * default for those.
  *
  * @param allowedValues the permitted values (their text form), or null for a range constraint;
@@ -37,9 +41,26 @@ import java.util.List;
  * @param minInclusive whether {@code min} is inclusive
  * @param max the upper bound, or null if unbounded above
  * @param maxInclusive whether {@code max} is inclusive
+ * @param dateTruncation for a date/timestamp column that must hold the first day of a period, that
+ *                       period; null otherwise (added in 3.5.0)
  * @since 2.14.0
  */
-public record ColumnConstraint(List<String> allowedValues, BigDecimal min, boolean minInclusive, BigDecimal max, boolean maxInclusive) {
+public record ColumnConstraint(List<String> allowedValues, BigDecimal min, boolean minInclusive, BigDecimal max, boolean maxInclusive,
+                               TruncatedDateGenerator.Unit dateTruncation) {
+
+    /**
+     * The constructor as it was before date truncation was added (3.5.0): a set-of-values or numeric
+     * range constraint, with no {@link #dateTruncation()}.
+     *
+     * @param allowedValues the permitted values (their text form), or null for a range constraint
+     * @param min the lower bound, or null if unbounded below
+     * @param minInclusive whether {@code min} is inclusive
+     * @param max the upper bound, or null if unbounded above
+     * @param maxInclusive whether {@code max} is inclusive
+     */
+    public ColumnConstraint(List<String> allowedValues, BigDecimal min, boolean minInclusive, BigDecimal max, boolean maxInclusive) {
+        this(allowedValues, min, minInclusive, max, maxInclusive, null);
+    }
 
     /**
      * Copies {@code allowedValues} so the record is deeply immutable — constraint metadata is
@@ -61,7 +82,19 @@ public record ColumnConstraint(List<String> allowedValues, BigDecimal min, boole
      */
     public static ColumnConstraint ofValues(List<String> allowedValues) {
         // the canonical constructor copies; copying here too would only allocate twice
-        return new ColumnConstraint(allowedValues, null, false, null, false);
+        return new ColumnConstraint(allowedValues, null, false, null, false, null);
+    }
+
+    /**
+     * A first-day-of-period constraint: the column must hold the first day of a month, quarter or
+     * year ({@code date_trunc('month', col) = col}).
+     *
+     * @param unit the period whose first day the column must hold
+     * @return a constraint that admits only first days of {@code unit}
+     * @since 3.5.0
+     */
+    public static ColumnConstraint ofDateTruncation(TruncatedDateGenerator.Unit unit) {
+        return new ColumnConstraint(null, null, false, null, false, unit);
     }
 
     /**
@@ -72,7 +105,7 @@ public record ColumnConstraint(List<String> allowedValues, BigDecimal min, boole
      * @return a constraint that admits values in {@code [min, max]}
      */
     public static ColumnConstraint ofRange(BigDecimal min, BigDecimal max) {
-        return new ColumnConstraint(null, min, true, max, true);
+        return new ColumnConstraint(null, min, true, max, true, null);
     }
 
     /**
@@ -91,5 +124,15 @@ public record ColumnConstraint(List<String> allowedValues, BigDecimal min, boole
      */
     public boolean hasBoundedRange() {
         return min != null && max != null;
+    }
+
+    /**
+     * True if the column must hold the first day of a period (month, quarter or year).
+     *
+     * @return whether a date truncation is present
+     * @since 3.5.0
+     */
+    public boolean hasDateTruncation() {
+        return dateTruncation != null;
     }
 }
