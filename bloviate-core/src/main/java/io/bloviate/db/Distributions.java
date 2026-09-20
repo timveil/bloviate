@@ -18,6 +18,7 @@ package io.bloviate.db;
 
 import io.bloviate.gen.NormalDoubleGenerator;
 import io.bloviate.gen.NormalIntegerGenerator;
+import io.bloviate.gen.RelativeWindow;
 import io.bloviate.gen.SkewedTimestampGenerator;
 import io.bloviate.gen.WeightedCategoricalGenerator;
 import io.bloviate.gen.ZipfianIntegerGenerator;
@@ -136,5 +137,20 @@ public final class Distributions {
     public static ColumnGeneratorFactory recentTimestamps(Instant start, Instant end, double skew) {
         return random -> new SkewedTimestampGenerator.Builder(random)
                 .start(start).end(end).skew(skew).build();
+    }
+
+    /**
+     * Recency-skewed timestamps over a window relative to the fill's {@code asOf} anchor, for example
+     * "mostly in the last 90 days, weighted toward yesterday". The window is resolved once per fill; give
+     * the fill a pinned {@code asOf} for reproducible output.
+     *
+     * @param window the window, relative to the anchor; its end is exclusive
+     * @param skew   the recency skew ({@code 1.0} = uniform, larger &rArr; more weight toward the end)
+     * @return a factory for a {@link SkewedTimestampGenerator}
+     * @since 3.7.0
+     */
+    public static ColumnGeneratorFactory recentTimestamps(RelativeWindow window, double skew) {
+        return ColumnGeneratorFactory.relative(window,
+                (random, resolved) -> new SkewedTimestampGenerator.Builder(random).window(resolved).skew(skew).build());
     }
 }

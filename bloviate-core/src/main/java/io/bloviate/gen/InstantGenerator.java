@@ -91,6 +91,23 @@ public class InstantGenerator extends AbstractDataGenerator<Instant> {
             return this;
         }
 
+        /**
+         * Draws from a {@link RelativeWindow} resolved against the fill's anchor instead of from
+         * explicit bounds: sets the inclusive start and exclusive end from the window, so the range is
+         * {@code [window.start(), window.end())}. Equivalent to calling {@link #start} and {@link #end}
+         * with the window's bounds.
+         *
+         * @param window the resolved window, for example
+         *               {@code RelativeWindow.withinLast("90d").resolve(context.asOf())}
+         * @return this builder, for chaining
+         * @since 3.7.0
+         */
+        public Builder window(RelativeWindow.Resolved window) {
+            this.startInclusive = window.start();
+            this.endExclusive = window.end();
+            return this;
+        }
+
         @Override
         public InstantGenerator build() {
             return new InstantGenerator(this);

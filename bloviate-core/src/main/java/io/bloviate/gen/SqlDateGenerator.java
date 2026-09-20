@@ -18,6 +18,7 @@ package io.bloviate.gen;
 
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.random.RandomGenerator;
 
@@ -27,11 +28,16 @@ import java.util.random.RandomGenerator;
  * end exclusive). By default the range is centered on {@link AbstractBuilder#DEFAULT_REFERENCE},
  * spanning from 100 days before it up to (but excluding) 100 days after it. Backed by the builder's
  * seeded {@link java.util.random.RandomGenerator}, so the same seed yields identical output.
+ *
+ * <p>Drawing from a {@link Builder#window(RelativeWindow.Resolved) window} works in whole calendar
+ * days instead: each value is one of the UTC dates in the window, whichever time zone the JVM runs in.
  */
 public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
+    // the bounds of the draw: epoch milliseconds, or epoch days when drawing from a window
     private final long startMillisInclusive;
     private final long endMillisExclusive;
+    private final boolean wholeDays;
     private LongGenerator longGenerator;
 
     @Override
@@ -39,7 +45,9 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
         Long randomTime = longGenerator.generate();
 
-        return new Date(randomTime);
+        // Date.valueOf is the JVM zone's midnight of that calendar date, which the driver renders back
+        // as exactly that date
+        return wholeDays ? Date.valueOf(LocalDate.ofEpochDay(randomTime)) : new Date(randomTime);
     }
 
     @Override
@@ -59,6 +67,9 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
         private Date startInclusive = new Date(DEFAULT_REFERENCE.minus(100, ChronoUnit.DAYS).toEpochMilli());
         private Date endExclusive = new Date(DEFAULT_REFERENCE.plus(100, ChronoUnit.DAYS).toEpochMilli());
+        private boolean wholeDays;
+        private long startDay;
+        private long endDay;
 
         /**
          * Constructs a new builder.
@@ -78,6 +89,7 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
          */
         public Builder start(Date start) {
             this.startInclusive = start;
+            this.wholeDays = false;
             return this;
         }
 
@@ -90,6 +102,35 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
          */
         public Builder end(Date end) {
             this.endExclusive = end;
+            this.wholeDays = false;
+            return this;
+        }
+
+        /**
+         * Draws from a {@link RelativeWindow} resolved against the fill's anchor instead of from
+         * explicit bounds. A {@code DATE} has no time of day, so the window is read as whole UTC calendar
+         * days: the value is one of the dates {@code d} with {@code window.startDate() <= d <
+         * window.endDate()} (see {@link RelativeWindow.Resolved#startDate()}), drawn uniformly, and the
+         * column holds exactly that date whatever time zone the JVM or the session uses. Calling
+         * {@link #start} or {@link #end} afterwards returns to drawing from instants.
+         *
+         * @param window the resolved window, for example
+         *               {@code RelativeWindow.withinLast("90d").resolve(context.asOf())}
+         * @return this builder, for chaining
+         * @throws IllegalArgumentException if the window contains no whole date, such as a few hours in
+         *                                  the middle of a day
+         * @since 3.7.0
+         */
+        public Builder window(RelativeWindow.Resolved window) {
+            LocalDate first = window.startDate();
+            LocalDate end = window.endDate();
+            if (!first.isBefore(end)) {
+                throw new IllegalArgumentException("the window [" + window.start() + ", " + window.end()
+                        + ") contains no whole date");
+            }
+            this.startDay = first.toEpochDay();
+            this.endDay = end.toEpochDay();
+            this.wholeDays = true;
             return this;
         }
 
@@ -101,8 +142,9 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
     private SqlDateGenerator(Builder builder) {
         super(builder.random);
-        this.startMillisInclusive = builder.startInclusive.getTime();
-        this.endMillisExclusive = builder.endExclusive.getTime();
+        this.wholeDays = builder.wholeDays;
+        this.startMillisInclusive = wholeDays ? builder.startDay : builder.startInclusive.getTime();
+        this.endMillisExclusive = wholeDays ? builder.endDay : builder.endExclusive.getTime();
         buildDelegates();
     }
 

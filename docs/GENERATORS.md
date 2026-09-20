@@ -310,6 +310,38 @@ new TableConfiguration("invoices", 1_000, columns);
   whose text form is not `yyyy-MM-dd[ HH:mm[:ss[.f]][offset]]` falls back to `getObject`, which is exact
   only if the driver reports the zone the value was bound in.
 
+## Relative date windows
+
+The temporal generators can draw from a window relative to the fill's `asOf` anchor (since 3.7.0)
+instead of fixed dates, so a column can be "within the last 90 days" and still be reproducible. The
+generator builders take a resolved window with `window(...)`:
+
+```java
+import io.bloviate.db.*;
+import io.bloviate.gen.*;
+import java.util.Set;
+
+Set<ColumnConfiguration> columns = Set.of(
+    // TIMESTAMP[TZ]: uniform over [asOf - 90d, asOf)
+    ColumnConfiguration.relative("placed_at", RelativeWindow.withinLast("90d"),
+        (random, window) -> new SqlTimestampGenerator.Builder(random).window(window).build()),
+    // DATE: one of the UTC dates from 30 days ago up to, excluding, 7 days ahead
+    ColumnConfiguration.relative("due_on", RelativeWindow.between("-30d", "+7d"),
+        (random, window) -> new SqlDateGenerator.Builder(random).window(window).build()),
+    // first of a month in the last six months
+    ColumnConfiguration.relative("billing_month", RelativeWindow.withinLast("6M"),
+        (random, window) -> new TruncatedDateGenerator.Builder(random).window(window).build()),
+    // mostly recent: skewed toward the end of the last 90 days
+    new ColumnConfiguration("last_login", Distributions.recentTimestamps(RelativeWindow.withinLast("90d"), 3.0)));
+```
+
+`window(...)` exists on `SqlTimestampGenerator`, `SqlDateGenerator` (whole UTC dates), `DateGenerator`,
+`InstantGenerator`, `SkewedTimestampGenerator` (end-exclusive, like the others) and
+`TruncatedDateGenerator`. A generator that needs the anchor for something else builds itself from the
+`GenerationContext`, through `ColumnGeneratorFactory.contextual(...)` or, in a registry rule,
+`GeneratorFactory.contextual(...)`. Offset syntax, boundary semantics and the rule that makes the output
+reproducible (pin `asOf`) are in [Relative date ranges and asOf](./CONFIGURATION.md#relative-date-ranges-and-asof).
+
 ## Data generator types
 
 Bloviate includes generators for all common database types:
@@ -329,6 +361,9 @@ new UUIDGenerator.Builder(random).build()
 new DateGenerator.Builder(random).build()
 new SqlTimestampGenerator.Builder(random).build()
 new InstantGenerator.Builder(random).build()
+
+// ... within a window relative to the fill's asOf anchor (since 3.7.0)
+new SqlTimestampGenerator.Builder(random).window(RelativeWindow.withinLast("90d").resolve(asOf)).build()
 
 // First day of a month / quarter / year, for columns that only admit such dates (since 3.5.0)
 new TruncatedDateGenerator.Builder(random).build()                                 // DATE, first of a month

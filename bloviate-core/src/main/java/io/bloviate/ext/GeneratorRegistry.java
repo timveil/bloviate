@@ -17,6 +17,7 @@
 package io.bloviate.ext;
 
 import io.bloviate.db.Column;
+import io.bloviate.db.GenerationContext;
 import io.bloviate.gen.DataGenerator;
 
 import java.sql.JDBCType;
@@ -91,7 +92,9 @@ public final class GeneratorRegistry {
 
     /**
      * Resolves the custom generator for a column, honouring the documented precedence
-     * (name pattern &gt; vendor typeName &gt; JDBCType).
+     * (name pattern &gt; vendor typeName &gt; JDBCType). A rule built with
+     * {@link GeneratorFactory#contextual} reads an {@linkplain GenerationContext#unpinned() unpinned}
+     * context here; the fill engine calls {@link #resolve(Column, RandomGenerator, GenerationContext)}.
      *
      * @param column the column metadata to match against
      * @param random the engine-seeded random source to construct the generator with
@@ -99,11 +102,24 @@ public final class GeneratorRegistry {
      * the {@link DatabaseSupport} default)
      */
     public DataGenerator<?> resolve(Column column, RandomGenerator random) {
+        return resolve(column, random, GenerationContext.unpinned());
+    }
+
+    /**
+     * As {@link #resolve(Column, RandomGenerator)}, handing the fill's context to the matching rule.
+     *
+     * @param column  the column metadata to match against
+     * @param random  the engine-seeded random source to construct the generator with
+     * @param context the fill's context, shared by every table and worker
+     * @return the matching generator, or {@code null} if no rule applies
+     * @since 3.7.0
+     */
+    public DataGenerator<?> resolve(Column column, RandomGenerator random, GenerationContext context) {
         String name = column.name();
         if (name != null) {
             for (NameRule rule : nameRules) {
                 if (rule.pattern().matcher(name).matches()) {
-                    return rule.factory().create(column, random);
+                    return rule.factory().create(column, random, context);
                 }
             }
         }
@@ -112,13 +128,13 @@ public final class GeneratorRegistry {
         if (typeName != null) {
             GeneratorFactory byTypeName = typeNameRules.get(typeName.toLowerCase(Locale.ROOT));
             if (byTypeName != null) {
-                return byTypeName.create(column, random);
+                return byTypeName.create(column, random, context);
             }
         }
 
         GeneratorFactory byJdbcType = jdbcTypeRules.get(column.jdbcType());
         if (byJdbcType != null) {
-            return byJdbcType.create(column, random);
+            return byJdbcType.create(column, random, context);
         }
 
         return null;
