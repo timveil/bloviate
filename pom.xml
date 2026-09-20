@@ -87,7 +87,7 @@
         <mysql.version>9.7.0</mysql.version>
         <mariadb.version>3.5.10</mariadb.version>
         <h2.version>2.4.240</h2.version>
-        <sqlite.version>3.53.2.0</sqlite.version>
+        <sqlite.version>3.53.4.0</sqlite.version>
         <!--
           BigQuery driver. NOT on Maven Central yet, so this is deliberately only referenced from
           bloviate-core's opt-in `bigquery` profile: a default build never resolves it and CI stays
