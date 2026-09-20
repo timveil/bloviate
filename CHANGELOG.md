@@ -1,3 +1,9 @@
+## [3.5.1](https://github.com/timveil/bloviate/compare/v3.5.0...v3.5.1) (2026-09-20)
+
+### 🐛 Bug Fixes
+
+* **core:** name the table in a failed insert ([#635](https://github.com/timveil/bloviate/issues/635)) ([de5aa64](https://github.com/timveil/bloviate/commit/de5aa64c36ff7e10bcb1d1cf03eb3c2a0a70000b))
+
 ## [3.5.0](https://github.com/timveil/bloviate/compare/v3.4.0...v3.5.0) (2026-09-20)
 
 ### ✨ Features
