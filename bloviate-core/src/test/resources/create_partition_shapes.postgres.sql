@@ -108,3 +108,26 @@ CREATE TABLE part_rel.payments (
     PRIMARY KEY (id),
     FOREIGN KEY (invoice_id, issued_at) REFERENCES part_rel.invoices (id, issued_at)
 );
+
+-- A foreign key aimed directly at a partition, on a column that also references the partitioned parent:
+-- child.a -> root(id) (which PostgreSQL clones onto each partition) beside child.a -> part(code), the
+-- partition's own unique column. The clones are dropped from the metadata; the direct foreign key is not.
+CREATE SCHEMA part_direct;
+
+CREATE TABLE part_direct.root (
+    id   bigint NOT NULL,
+    code bigint NOT NULL,
+    PRIMARY KEY (id)
+) PARTITION BY RANGE (id);
+
+CREATE TABLE part_direct.part  PARTITION OF part_direct.root FOR VALUES FROM (0) TO (1000000);
+CREATE TABLE part_direct.part2 PARTITION OF part_direct.root FOR VALUES FROM (1000000) TO (2000000);
+ALTER TABLE part_direct.part ADD CONSTRAINT part_code_key UNIQUE (code);
+
+CREATE TABLE part_direct.child (
+    id bigint NOT NULL,
+    a  bigint NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (a) REFERENCES part_direct.root (id),
+    FOREIGN KEY (a) REFERENCES part_direct.part (code)
+);

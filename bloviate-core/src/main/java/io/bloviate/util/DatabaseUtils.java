@@ -286,30 +286,49 @@ public class DatabaseUtils {
      * own. Only the original, against the partitioned table itself, is a relationship to fill; the copies
      * would point at partitions, which are not tables being filled.
      *
-     * <p>A copy is a foreign key to a partition that has the same columns as another foreign key of the
-     * same table to that partition's top-level table. A foreign key to a partition with no such original
-     * is the user's own, aimed at a partition directly; it cannot be honoured (a partition is never
-     * filled), so it is kept (the fill then fails clearly, saying the referenced table is not being
-     * filled) and logged.
+     * <p>A copy is a foreign key to a partition that is <em>identical</em> to another foreign key of the
+     * same table to that partition's top-level table: the same referencing columns and the same
+     * referenced columns, pairwise and in the same order, in the same referenced schema and catalog
+     * (a clone is the original re-pointed at a partition, so only the table differs). Comparing the
+     * referencing columns alone would mistake a foreign key the user aimed at a partition for a copy
+     * whenever the same referencing column also references the parent, for example
+     * {@code child.a -> root(id)} beside {@code child.a -> partition(code)}. The metadata carries no
+     * update/delete rules to compare, so a direct foreign key that mirrors the parent's exactly (same
+     * columns against a same-named column of the partition) cannot be told from a copy and is dropped.
+     *
+     * <p>A foreign key to a partition with no such original is the user's own, aimed at a partition
+     * directly; it cannot be honoured (a partition is never filled), so it is kept (the fill then fails
+     * clearly, saying the referenced table is not being filled) and logged.
      */
     private static boolean referencesPartition(List<Key> keys, Collection<List<Key>> allKeys, Map<String, String> partitions,
                                                String tableName) {
-        String referenced = keys.getFirst().primaryTableName();
+        Key first = keys.getFirst();
+        String referenced = first.primaryTableName();
         String root = partitions.get(referenced);
         if (root == null) {
             return false;
         }
-        List<String> columns = keys.stream().map(Key::foreignColumnName).toList();
         for (List<Key> other : allKeys) {
-            if (root.equals(other.getFirst().primaryTableName())
-                    && columns.equals(other.stream().sorted(Comparator.comparing(Key::sequence)).map(Key::foreignColumnName).toList())) {
+            Key otherFirst = other.getFirst();
+            if (root.equals(otherFirst.primaryTableName())
+                    && Objects.equals(first.primaryTableSchema(), otherFirst.primaryTableSchema())
+                    && Objects.equals(first.primaryTableCatalog(), otherFirst.primaryTableCatalog())
+                    && columnPairs(keys).equals(columnPairs(other))) {
                 return true;
             }
         }
         logger.warn("table [{}] has a foreign key [{}] that references [{}], a partition of [{}]; a partition is never filled on "
                 + "its own, so this key cannot be honoured. Reference the partitioned table instead",
-                tableName, keys.getFirst().name(), referenced, root);
+                tableName, first.name(), referenced, root);
         return false;
+    }
+
+    /** The (referencing column, referenced column) pairs of one foreign key, in key-sequence order. */
+    private static List<List<String>> columnPairs(List<Key> keys) {
+        return keys.stream()
+                .sorted(Comparator.comparing(Key::sequence))
+                .map(key -> List.of(key.foreignColumnName(), key.primaryColumnName()))
+                .toList();
     }
 
     /**

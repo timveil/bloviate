@@ -69,7 +69,7 @@ class PostgresPartitionShapesTest extends BaseDatabaseTestCase {
 
     @BeforeEach
     void emptySchemas() throws SQLException {
-        for (String schema : List.of("part_list", "part_hash", "part_default", "part_multi", "part_rel")) {
+        for (String schema : List.of("part_list", "part_hash", "part_default", "part_multi", "part_rel", "part_direct")) {
             fixture.reset(schema);
         }
     }
@@ -249,6 +249,41 @@ class PostgresPartitionShapesTest extends BaseDatabaseTestCase {
             assertEquals(List.of("id", "issued_at"),
                     database.getTable("invoices").primaryKey().keyColumns().stream().map(key -> key.column().name()).toList());
         }
+    }
+
+    /**
+     * PostgreSQL clones {@code child.a -> root(id)} onto each partition of {@code root} (two here), and the
+     * driver lists every clone. They are the same foreign key re-pointed at a partition and are dropped;
+     * {@code child.a -> part(code)} shares the referencing column but references a different column of a
+     * partition, is the user's own, and must not be mistaken for a clone.
+     */
+    @Test
+    void aForeignKeyDirectlyToAPartitionIsKeptWhileTheClonesOfTheParentKeyAreDropped() throws SQLException {
+        try (HikariDataSource dataSource = fixture.dataSource("part_direct");
+             Connection connection = dataSource.getConnection()) {
+            assertEquals(4, fixture.queryLong("select count(*) from pg_constraint c join pg_namespace n on n.oid = c.connamespace "
+                    + "where c.contype = 'f' and n.nspname = 'part_direct'"),
+                    "root(id), its two clones, and the direct key to part(code)");
+
+            List<ForeignKey> foreignKeys = DatabaseUtils.getMetadata(connection).getTable("child").foreignKeys();
+
+            assertEquals(List.of("part", "root"),
+                    foreignKeys.stream().map(key -> key.primaryKey().tableName()).sorted().toList(),
+                    "one key to the parent (its clones dropped) and the direct key to the partition");
+        }
+    }
+
+    @Test
+    void aForeignKeyDirectlyToAPartitionFailsTheFillNamingThePartition() throws SQLException {
+        try (HikariDataSource dataSource = fixture.dataSource("part_direct");
+             Connection connection = dataSource.getConnection()) {
+            IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+                    () -> new DatabaseFiller.Builder(connection, configuration()).build().fill());
+
+            assertTrue(failure.getMessage().contains("references table [part]"), failure.getMessage());
+            assertTrue(failure.getMessage().contains("Nothing was written"), failure.getMessage());
+        }
+        assertEquals(0, fixture.count("part_direct.root"));
     }
 
     private static void verifyPartRel() throws SQLException {

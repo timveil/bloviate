@@ -590,9 +590,11 @@ ERROR: no partition of relation "orders" found for row
   Detail: Partition key of the failing row contains (placed_at) = (2020-03-19 09:46:32.763).
 ```
 
-Nothing is skipped silently. With the default connection-managed transaction, rows written before the
-failure stay committed (as for any other failure); a [commit strategy](#commit-strategy) of
-`perTable()` rolls the failing table back.
+Nothing is skipped silently. Under the default `CommitStrategy.connectionDefault()` the engine leaves
+your connection's autocommit alone, so what survives the failure is up to it: on an autocommit
+connection, the batches already executed (earlier tables, and earlier batches of the failing one) stay
+committed, as for any other failure; on a connection with autocommit off, they are still uncommitted and
+you can `rollback()`. A [commit strategy](#commit-strategy) of `perTable()` rolls the failing table back.
 
 **Selecting and configuring.** Use the partitioned table's name everywhere: `includeTables("orders")`,
 `excludeTables("orders")` and `new TableConfiguration("orders", ...)`. Bloviate warns, and otherwise
@@ -621,8 +623,10 @@ the rows equal those of a sequential fill.
 - Legacy inheritance partitioning (`CREATE TABLE ... INHERITS`) is not declarative partitioning: those
   tables are filled as the ordinary tables they are.
 - A foreign key that references **one partition directly** cannot be honoured, since a partition is never
-  filled: Bloviate logs a warning and the fill fails naming the missing parent. Reference the partitioned
-  table instead.
+  filled: Bloviate logs a warning and the fill fails, before writing anything, naming the referenced partition
+  as a table that is not being filled. Reference the partitioned table instead. (A direct foreign key that
+  exactly mirrors one to the parent, the same columns against the same-named column of a partition, cannot
+  be told apart from the copies PostgreSQL makes and is treated as one.)
 - Bloviate does not create partitions or choose a partition key range for you; an anchored, relative
   range for the key is planned separately.
 
