@@ -279,6 +279,9 @@ is the recency-skewed shorthand. Anything else that needs the anchor takes the f
 where `context.asOf()` is the anchor. Existing factories (plain lambdas) are unchanged and ignore the
 context.
 
+- A relative window is the way to keep the key of a [partitioned table](#partitioned-tables) inside its
+  existing partitions; configure it on the partitioned parent, which is what Bloviate fills (see
+  [Keeping the partition key inside existing partitions](#keeping-the-partition-key-inside-existing-partitions)).
 - A per-column relative configuration takes precedence over a `CHECK` constraint, a registry rule and
   the support default, like any other per-column override.
 - `SqlDateGenerator` reads its window as whole UTC calendar days, so a `DATE` column holds exactly the
@@ -662,7 +665,9 @@ against the parent).
 
 **Constrain the partition key.** Generated values default to a window around 2020 for timestamps and
 dates, and to arbitrary text or numbers otherwise, none of which is likely to fall in your partitions.
-Give the partition key a `ColumnConfiguration` whose range the partitions cover:
+Give the partition key a `ColumnConfiguration` whose range the partitions cover. For date and timestamp
+keys whose partitions follow the calendar, prefer a [relative window](#relative-date-ranges-and-asof)
+(see [below](#keeping-the-partition-key-inside-existing-partitions)) over hard-coded dates:
 
 ```java
 import io.bloviate.gen.SqlTimestampGenerator;
@@ -734,14 +739,40 @@ the rows equal those of a sequential fill.
   as a table that is not being filled. Reference the partitioned table instead. (A direct foreign key that
   exactly mirrors one to the parent, the same columns against the same-named column of a partition, cannot
   be told apart from the copies PostgreSQL makes and is treated as one.)
-- Bloviate does not create partitions or choose a partition key range for you; an anchored, relative
-  range for the key is planned separately.
+- Bloviate does not create partitions or choose a partition key range for you. To keep the key inside
+  the partitions you have, give it a window relative to a pinned `asOf` (see
+  [below](#keeping-the-partition-key-inside-existing-partitions)).
 
 > **Behaviour change (3.6.0).** Before partitioned tables were supported, Bloviate skipped the parent and
 > filled each partition as an independent table with unconstrained values, which fails unless the
 > partitions happen to accept them. A schema whose partitions do accept the default values (for example
 > a table partitioned to cover 2020) used to fill leaf-by-leaf and now fills through the parent: the same
 > seed produces different rows there. Schemas without partitioned tables are unaffected.
+
+### Keeping the partition key inside existing partitions
+
+Partitions are usually cut by the calendar: this month, this quarter. A key drawn from fixed dates
+misses them as time passes. A [relative window](#relative-date-ranges-and-asof) resolved against a
+pinned `asOf` keeps it inside, and the same seed and `asOf` give the same rows. The partitions below
+cover 2025-10-01 up to 2026-04-01; the fill goes through the parent `ledger`, never a partition:
+
+```java
+// ledger PARTITION BY RANGE (booked_at); partitions from 2025-10-01 to 2026-04-01
+ColumnConfiguration bookedAt = ColumnConfiguration.relative("booked_at", RelativeWindow.withinLast("90d"),
+    (random, window) -> new SqlTimestampGenerator.Builder(random).window(window).build());
+
+new DatabaseFiller.Builder(connection, new DatabaseConfiguration.Builder(128, 10_000, new PostgresSupport())
+        .tableConfigurations(Set.of(new TableConfiguration("ledger", 10_000, Set.of(bookedAt))))
+        .build())
+    .asOf(Instant.parse("2026-04-01T00:00:00Z"))   // [2026-01-01, 2026-04-01): every row routes to ledger_2026_q1
+    .build()
+    .fill();
+```
+
+Pin `asOf` so the window sits inside the partitions that exist. If you leave it unpinned it is today's
+UTC date, and a window that reaches a period with no partition (and no `DEFAULT`) fails with the
+"no partition of relation ... found for row" error described above. A window that spans several
+partitions spreads the rows over them.
 
 ## Configuration options reference
 

@@ -44,11 +44,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Issue #616 against a real PostgreSQL: the motivating case. Tables whose dates only admit one quarter
- * (a range {@code CHECK}, a range partition) are filled validly by a window relative to a pinned
+ * (a range {@code CHECK}, a range-partitioned table filled through its parent) are filled validly by a window relative to a pinned
  * {@code asOf}; the same seed and anchor reproduce the same rows, another anchor moves them, and a
  * parallel, partitioned fill uses a single anchor.
  */
@@ -97,7 +98,7 @@ class PostgresRelativeDateFillTest extends BaseDatabaseTestCase {
                         new TableConfiguration("orders", ROWS, Set.of(
                                 timestampWithin("placed_at", LAST_90_DAYS), dateWithin("due_on", LAST_90_DAYS))),
                         new TableConfiguration("order_notes", ROWS, Set.of(timestampWithin("noted_at", LAST_10_DAYS))),
-                        new TableConfiguration("ledger_2026_q1", ROWS, Set.of(timestampWithin("booked_at", LAST_90_DAYS))),
+                        new TableConfiguration("ledger", ROWS, Set.of(timestampWithin("booked_at", LAST_90_DAYS))),
                         new TableConfiguration("events", 2_000, Set.of(
                                 timestampWithin("happened_at", LAST_90_DAYS), dateWithin("happened_on", LAST_90_DAYS)),
                                 eventPartitions),
@@ -158,13 +159,18 @@ class PostgresRelativeDateFillTest extends BaseDatabaseTestCase {
 
             assertEquals(ROWS, fixture.count("orders"));
             assertEquals(ROWS, fixture.count("order_notes"));
+            // the rows went in through the parent `ledger` and were routed to the one partition that
+            // accepts the window; the other partition stayed empty
+            assertEquals(ROWS, fixture.count("ledger"));
             assertEquals(ROWS, fixture.count("ledger_2026_q1"));
+            assertEquals(0, fixture.count("ledger_2025_q4"));
 
             // the CHECKs and the partition bound were enforced by the server on every insert; also look at what landed
             RelativeWindow.Resolved quarter = LAST_90_DAYS.resolve(AS_OF);
             assertEquals(Q1_START, quarter.start());
             assertAllWithin(epochMillis(connection, "placed_at", "orders"), quarter, "orders.placed_at");
             assertAllWithin(epochMillis(connection, "booked_at", "ledger_2026_q1"), quarter, "ledger_2026_q1.booked_at");
+            assertAllWithin(epochMillis(connection, "booked_at", "ledger"), quarter, "ledger.booked_at");
             assertAllWithin(epochMillis(connection, "noted_at", "order_notes"), LAST_10_DAYS.resolve(AS_OF), "order_notes.noted_at");
 
             Set<LocalDate> dueDates = new HashSet<>();
@@ -307,6 +313,20 @@ class PostgresRelativeDateFillTest extends BaseDatabaseTestCase {
             assertEquals(ROWS, fixture.count("order_notes"));
             assertEquals(ROWS, fixture.count("ledger_2026_q1"));
             assertEquals(2_000, fixture.count("events"));
+        }
+    }
+
+    @Test
+    void aWindowOutsideEveryPartitionFailsWithThePerTableNoPartitionError() throws SQLException {
+        // the partitions cover 2025-10-01 up to 2026-04-01; a year later there is no partition for the key
+        Instant later = AS_OF.plusSeconds(86_400L * 365);
+        try (HikariDataSource dataSource = fixture.dataSource("public");
+             Connection connection = dataSource.getConnection()) {
+            SQLException failure = assertThrows(SQLException.class,
+                    () -> new DatabaseFiller.Builder(connection, configuration(1)).asOf(later)
+                            .includeTables("ledger").build().fill());
+            String message = failure.getMessage() + " " + (failure.getCause() == null ? "" : failure.getCause().getMessage());
+            assertTrue(message.contains("no partition of relation \"ledger\" found for row"), message);
         }
     }
 }

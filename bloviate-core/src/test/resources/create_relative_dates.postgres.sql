@@ -35,12 +35,16 @@ CREATE TABLE order_notes (
     CONSTRAINT noted_last_ten_days CHECK (noted_at >= '2026-03-22T00:00:00Z' AND noted_at < '2026-04-01T00:00:00Z')
 );
 
--- a range partition that only takes one quarter; the test fills the leaf table directly and gives it a relative window
+-- a range-partitioned table with no DEFAULT partition: Bloviate fills it through the parent, so the partition key
+-- has to fall inside a partition, which the test arranges with a window relative to a pinned asOf
 CREATE TABLE ledger (
     id        integer                  NOT NULL,
     booked_at timestamp with time zone NOT NULL,
     PRIMARY KEY (id, booked_at)
 ) PARTITION BY RANGE (booked_at);
+
+CREATE TABLE ledger_2025_q4 PARTITION OF ledger
+    FOR VALUES FROM ('2025-10-01T00:00:00Z') TO ('2026-01-01T00:00:00Z');
 
 CREATE TABLE ledger_2026_q1 PARTITION OF ledger
     FOR VALUES FROM ('2026-01-01T00:00:00Z') TO ('2026-04-01T00:00:00Z');
