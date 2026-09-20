@@ -21,6 +21,7 @@ import picocli.CommandLine.IFactory;
 import picocli.CommandLine.UnmatchedArgumentException;
 
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
 
 /**
@@ -70,8 +71,12 @@ public final class Main {
     private static int handleParameterException(CommandLine.ParameterException error) {
         CommandLine commandLine = error.getCommandLine();
         PrintWriter err = commandLine.getErr();
-        err.println(BloviateCommand.NAME + ": " + error.getMessage());
-        UnmatchedArgumentException.printSuggestions(error, err);
+        // picocli quotes the offending argument, which can be a JDBC URL with a password in it; parsing
+        // has failed, so no password is known, and everything printed is masked by the shape of a URL
+        StringWriter suggestions = new StringWriter();
+        UnmatchedArgumentException.printSuggestions(error, new PrintWriter(suggestions));
+        err.println(BloviateCommand.NAME + ": " + Secrets.redactUrl(String.valueOf(error.getMessage())));
+        err.print(Secrets.redactUrl(suggestions.toString()));
         err.println("Try '" + commandLine.getCommandSpec().qualifiedName() + " --help' for usage.");
         err.flush();
         return ExitCodes.USAGE;

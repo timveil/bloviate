@@ -33,12 +33,18 @@ final class Secrets {
     /** What replaces a secret. */
     static final String MASK = "****";
 
-    /** {@code password=...} / {@code pwd=...} query or property parameters; group 1 keeps the name. */
+    /**
+     * {@code password=...} / {@code pwd=...} query or property parameters, wherever they stand (also as a
+     * bare argument, or inside quotes); group 1 keeps the name.
+     */
     private static final Pattern PARAMETER =
-            Pattern.compile("(?i)([?&;,]\\s*(?:password|passwd|pwd)\\s*=)([^&;,\\s]*)");
+            Pattern.compile("(?i)((?<!\\w)(?:password|passwd|pwd)\\s*=)([^&;,\\s'\"]*)");
 
-    /** {@code //user:password@host} authority; group 1 keeps the {@code //user:} part. */
-    private static final Pattern AUTHORITY = Pattern.compile("(//[^/:@\\s]*:)([^@/\\s]*)@");
+    /**
+     * {@code //user:password@host} authority; group 1 keeps the {@code //user:} part. The password runs to
+     * the last {@code @} before the path, so an {@code @} inside it does not leave a tail showing.
+     */
+    private static final Pattern AUTHORITY = Pattern.compile("(//[^/:@\\s]*:)([^/?#\\s'\"]*)@");
 
     private final Set<String> values = new LinkedHashSet<>();
 
@@ -79,10 +85,13 @@ final class Secrets {
     }
 
     /**
-     * Masks the password in a JDBC URL, keeping the rest so it is still recognizable.
+     * Masks the passwords a URL (or any text quoting one) embeds, keeping the rest so it is still
+     * recognizable. It works from the shape of the text alone, so it is the mask to use where the actual
+     * password is not known, such as a command-line parse error that echoes the offending argument;
+     * {@link #scrub(String)} additionally masks the passwords this instance knows.
      *
-     * @param url a JDBC URL
-     * @return the URL with any embedded password replaced by {@value #MASK}
+     * @param url a JDBC URL, or a message that quotes one
+     * @return the text with any embedded password replaced by {@value #MASK}
      */
     static String redactUrl(String url) {
         String masked = PARAMETER.matcher(url).replaceAll("$1" + MASK);

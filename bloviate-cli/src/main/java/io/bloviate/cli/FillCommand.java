@@ -265,13 +265,15 @@ public final class FillCommand implements Callable<Integer> {
      * usually the driver's own. A JDBC batch failure hides its real error one step further, in
      * {@link SQLException#getNextException()}, so that chain is followed too.
      */
-    private static String describe(Throwable failure) {
+    static String describe(Throwable failure) {
         String message = singleLine(messageOf(failure));
         String deepest = singleLine(messageOf(deepest(failure)));
         String shown = abbreviate(message);
         // compare only the start: a driver's message often repeats in its wrapper with the row data differing
         String lead = deepest.substring(0, Math.min(MESSAGE_LEAD, deepest.length()));
-        return message.contains(lead) ? shown : shown + " (caused by: " + abbreviate(deepest) + ")";
+        // judged on what is printed: abbreviating cuts the middle out, which is where a failed batch
+        // insert's message has the reason, after the multi-row statement it quotes
+        return shown.contains(lead) ? shown : shown + " (caused by: " + abbreviate(deepest) + ")";
     }
 
     private static String describeCause(Throwable failure) {

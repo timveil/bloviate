@@ -36,6 +36,16 @@ class SecretsTest {
     }
 
     @Test
+    void theShapeOfAUrlAloneIsEnoughWhereNoPasswordIsKnown() {
+        assertEquals("Unmatched argument: 'jdbc:postgresql://u:****@h/db'",
+                Secrets.redactUrl("Unmatched argument: 'jdbc:postgresql://u:hunter2@h/db'"));
+        assertEquals("'jdbc:h2:mem:x;PASSWORD=****'", Secrets.redactUrl("'jdbc:h2:mem:x;PASSWORD=hunter2'"));
+        assertEquals("password=****", Secrets.redactUrl("password=hunter2"));
+        assertEquals("jdbc:postgresql://u:****@h/db", Secrets.redactUrl("jdbc:postgresql://u:hun@ter2@h/db"));
+        assertEquals("jdbc:postgresql://h:5432/db?email=a@b", Secrets.redactUrl("jdbc:postgresql://h:5432/db?email=a@b"));
+    }
+
+    @Test
     void aUrlWithoutAPasswordIsUnchanged() {
         String url = "jdbc:postgresql://host:5432/db?user=u&ssl=true";
         assertEquals(url, Secrets.redactUrl(url));
