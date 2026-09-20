@@ -21,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -273,6 +275,33 @@ class SqlScriptRunnerTest extends BaseDatabaseTestCase {
             assertEquals(1, count(connection));
             assertThrows(SQLException.class, () -> runScript(connection, "hook_seed.h2.sql"),
                     "an unresolved token in a fixture must fail rather than reach the database");
+        }
+    }
+
+    @Test
+    void resourceFallsBackToTheLibraryLoaderWhenTheContextLoaderMissesIt() throws SQLException, IOException {
+        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        // a non-null context loader that cannot see the test classpath (no parent): this is what an
+        // application server or plugin host sets, and it must not hide a resource bundled with the app
+        try (URLClassLoader blind = new URLClassLoader(new URL[0], null);
+             Connection connection = DriverManager.getConnection(url)) {
+            Thread.currentThread().setContextClassLoader(blind);
+
+            SqlScript script = SqlScript.resource("hook_seed.h2.sql").withTokens(Map.of("id", "5"));
+            assertTrue(script.read().contains("from resource"));
+            SqlScriptRunner.run(connection, script);
+            assertEquals(1, count(connection));
+        } finally {
+            Thread.currentThread().setContextClassLoader(original);
+        }
+    }
+
+    @Test
+    void explicitClassLoaderIsAuthoritativeAndGetsNoFallback() throws IOException {
+        try (URLClassLoader blind = new URLClassLoader(new URL[0], null)) {
+            SqlScript script = SqlScript.resource("hook_seed.h2.sql", blind);
+            assertThrows(java.io.FileNotFoundException.class, script::read,
+                    "an explicitly chosen loader that lacks the resource must not silently fall back");
         }
     }
 }

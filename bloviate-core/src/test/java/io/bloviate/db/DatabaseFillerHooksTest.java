@@ -341,4 +341,25 @@ class DatabaseFillerHooksTest extends BaseDatabaseTestCase {
             assertEquals(ROWS, scalar(connection, "select count(*) from detail"));
         }
     }
+
+    @Test
+    void sequentialDataSourceHoldsOneConnectionSoAfterHooksSeeTheFillOnAnAutoCommitOffPool() throws SQLException {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(url);
+        // a single connection is enough: the sequential path must hold it across before, fill and after
+        // rather than return it (the pool would roll the fill's uncommitted rows back) and borrow another
+        config.setMaximumPoolSize(1);
+        config.setConnectionTimeout(5_000);
+        config.setAutoCommit(false);
+
+        try (HikariDataSource pool = new HikariDataSource(config);
+             Connection observer = DriverManager.getConnection(url)) {
+            tracing(new DatabaseFiller.Builder(pool, configuration()))
+                    .after(SqlScript.inline("rollup", ROLLUP))
+                    .build().fill();
+
+            assertRollupAgrees(observer);
+            assertEquals(List.of("b1 saw 0", "b2 saw 0", "a1 saw " + ROWS, "a2 saw " + ROWS), trace(observer));
+        }
+    }
 }

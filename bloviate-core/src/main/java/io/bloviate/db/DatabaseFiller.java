@@ -157,10 +157,30 @@ public class DatabaseFiller implements Fillable {
      */
     @Override
     public void fill() throws SQLException {
+        if (connection == null && threads <= 1) {
+            // DataSource supplied but no parallelism requested: borrow ONE connection and use it for the
+            // before hooks, the whole fill and the after hooks. Returning it in between would hand the
+            // after hooks a different connection, and on a pool that hands out autoCommit=false
+            // connections the fill's uncommitted rows (CommitStrategy.connectionDefault()) would already
+            // have been rolled back when the fill connection went back to the pool.
+            try (Connection conn = dataSource.getConnection()) {
+                fill(conn);
+            }
+        } else {
+            fill(connection);
+        }
+    }
+
+    /**
+     * Runs the fill. {@code sequentialConnection} is the single connection everything runs on (the
+     * caller's own, or the one connection borrowed for a non-parallel {@link DataSource} fill), or
+     * {@code null} for the parallel path, where the workers borrow their own connections.
+     */
+    private void fill(Connection sequentialConnection) throws SQLException {
 
         // before-hooks come first so they can create or empty the tables about to be filled, and so a
         // failing one prevents anything from being written
-        runHooks("before", beforeHooks);
+        runHooks("before", beforeHooks, sequentialConnection);
 
         // constraint metadata is per-fill state: a table's constraints are read once and shared
         // across its partitions/workers instead of once per partition
@@ -168,9 +188,9 @@ public class DatabaseFiller implements Fillable {
 
         StopWatch metadataWatch = new StopWatch("fetched database metadata in");
         metadataWatch.start();
-        // a Connection was supplied for the sequential path; otherwise borrow one from the pool
-        Database database = connection != null
-                ? DatabaseUtils.getMetadata(connection)
+        // the sequential path reads metadata on its own connection; the parallel path borrows one
+        Database database = sequentialConnection != null
+                ? DatabaseUtils.getMetadata(sequentialConnection)
                 : DatabaseUtils.getMetadata(dataSource);
         metadataWatch.stop();
 
@@ -186,20 +206,21 @@ public class DatabaseFiller implements Fillable {
         warnIfEngineManagedCommitDiscouraged();
 
         // recommend the driver batch-rewrite URL parameter once per fill if it is missing
-        if (connection != null) {
-            warnIfBatchRewriteMissing(connection);
+        if (sequentialConnection != null) {
+            warnIfBatchRewriteMissing(sequentialConnection);
         } else {
             try (Connection conn = dataSource.getConnection()) {
                 warnIfBatchRewriteMissing(conn);
             }
         }
 
-        if (connection != null) {
-            // back-compat path: fill sequentially on the caller's single connection (unchanged)
+        if (sequentialConnection != null) {
+            // fill sequentially on the single connection: the caller's own (the back-compat path) or the
+            // one borrowed from the DataSource when no parallelism was requested
             warnIfPartitionsIgnored();
             warnIfBulkIgnored();
-            fillSequential(connection, database, reversedGraph);
-        } else if (threads > 1) {
+            fillSequential(sequentialConnection, database, reversedGraph);
+        } else {
             // parallel path: either the ordered level-by-level walk, or the unordered bulk path that
             // disables constraints and fills every table at once (when configured and supported)
             BulkLoadStrategy bulkLoadStrategy = configuration.bulkLoadStrategy();
@@ -212,39 +233,32 @@ public class DatabaseFiller implements Fillable {
                 }
                 fillParallel(database, reversedGraph);
             }
-        } else {
-            // DataSource supplied but no parallelism requested: borrow one connection, fill in order
-            warnIfPartitionsIgnored();
-            warnIfBulkIgnored();
-            try (Connection conn = dataSource.getConnection()) {
-                fillSequential(conn, database, reversedGraph);
-            }
         }
 
         databaseWatch.stop();
 
         logger.info("{}", databaseWatch);
 
-        runHooks("after", afterHooks);
+        runHooks("after", afterHooks, sequentialConnection);
 
     }
 
     /**
-     * Runs one phase's hook scripts, in order, on the fill's connection: the caller's own
-     * {@link Connection} on the sequential path, otherwise a connection borrowed from the
-     * {@link DataSource} just for the hooks and returned before the next phase. It is deliberately not
-     * held across the fill: on the parallel path the workers need the pool, and a pool sized to the
-     * thread count would deadlock with one connection pinned. The consequence is that session state a
-     * hook sets (a {@code SET search_path}, a temporary table) does not carry into the fill or into
-     * the other phase's hooks.
+     * Runs one phase's hook scripts, in order. On the sequential paths they run on the same connection
+     * as the fill: the caller's own {@link Connection}, or the one connection borrowed from the
+     * {@link DataSource} for the whole run, so session state a hook sets (a {@code SET search_path}, a
+     * temporary table) carries into the fill and the other phase. On the parallel path
+     * ({@code sequentialConnection == null}) each phase borrows a connection just for its hooks and
+     * returns it before the workers start or after they finish: pinning one across the fill would
+     * deadlock a pool sized to the thread count, and session state does not carry across phases.
      */
-    private void runHooks(String phase, List<SqlScript> hooks) throws SQLException {
+    private void runHooks(String phase, List<SqlScript> hooks, Connection sequentialConnection) throws SQLException {
         if (hooks.isEmpty()) {
             return;
         }
         logger.info("running {} {} hook script(s)", hooks.size(), phase);
-        if (connection != null) {
-            SqlScriptRunner.runAll(connection, hooks);
+        if (sequentialConnection != null) {
+            SqlScriptRunner.runAll(sequentialConnection, hooks);
         } else {
             try (Connection conn = dataSource.getConnection()) {
                 SqlScriptRunner.runAll(conn, hooks);

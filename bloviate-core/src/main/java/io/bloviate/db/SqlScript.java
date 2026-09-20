@@ -132,15 +132,25 @@ public final class SqlScript {
     }
 
     private static String readResource(String resource, ClassLoader classLoader) throws IOException {
-        ClassLoader loader = classLoader != null ? classLoader : Thread.currentThread().getContextClassLoader();
-        try (InputStream in = loader != null
-                ? loader.getResourceAsStream(resource)
-                : SqlScript.class.getResourceAsStream("/" + resource)) {
+        try (InputStream in = openResource(resource, classLoader)) {
             if (in == null) {
                 throw new FileNotFoundException("SQL script not found on classpath: " + resource);
             }
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
+    }
+
+    /**
+     * An explicit loader is authoritative and gets no fallback. Otherwise the context loader is tried
+     * first and, when it is absent <em>or does not have the resource</em>, this library's own loader.
+     */
+    private static InputStream openResource(String resource, ClassLoader classLoader) {
+        if (classLoader != null) {
+            return classLoader.getResourceAsStream(resource);
+        }
+        ClassLoader context = Thread.currentThread().getContextClassLoader();
+        InputStream in = context != null ? context.getResourceAsStream(resource) : null;
+        return in != null ? in : SqlScript.class.getResourceAsStream("/" + resource);
     }
 
     /**

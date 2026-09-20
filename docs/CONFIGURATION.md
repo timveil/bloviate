@@ -325,6 +325,8 @@ another is emptying tables so a fill can be re-run.
 
 ```java
 import io.bloviate.db.*;
+import java.nio.file.Path;
+import java.util.Map;
 
 new DatabaseFiller.Builder(connection, config)
     .before(SqlScript.resource("sql/reset.sql"))                       // classpath resource
@@ -358,10 +360,13 @@ mis-splitting the script, and backslash escapes are honoured only in `E'...'` st
 
 **Where hooks run.** Before hooks run first, ahead of the schema read, so they can create the tables
 about to be filled. After hooks run last. On the single-`Connection` path both run on the connection
-you supplied. On the `DataSource` path (with or without `threads(n)`) each phase borrows a
-connection, runs its hooks and returns it *before* the workers start or after they have all
-finished, so a pool as small as `threads` cannot be starved; as a result session state a hook sets
-(`SET search_path`, a temporary table) does not carry into the fill or into the other phase.
+you supplied. On a `DataSource` without `threads(n)` (or with `threads(1)`) Bloviate borrows one
+connection and uses it for the before hooks, the fill and the after hooks, so session state a hook
+sets (`SET search_path`, a temporary table) carries through, and the after hooks see the fill's own
+uncommitted rows even if the pool hands out `autoCommit=false` connections. With `threads(n)` greater
+than 1 each phase borrows a connection, runs its hooks and returns it *before* the workers start or
+after they have all finished, so a pool as small as `threads` cannot be starved; there, session state
+a hook sets does not carry into the fill or into the other phase.
 
 **Transactions.** Each script runs on the connection as it is; Bloviate never changes its
 autocommit setting.
@@ -369,9 +374,11 @@ autocommit setting.
 - *Autocommit on* (the default for most drivers and pools): each statement commits as it runs. A
   failure leaves the statements before it applied.
 - *Autocommit off*: the script commits once, after its last statement succeeds, and rolls back if
-  any statement fails, so it is all-or-nothing. It uses the connection's open transaction, so this
-  also commits (or, on failure, discards) anything the caller had run on that connection and not yet
-  committed, including rows from a fill left uncommitted by `CommitStrategy.connectionDefault()`.
+  any statement fails. There is no separate transaction for the script: it runs in the connection's
+  open transaction, so the commit or rollback applies to *everything* pending on that connection,
+  not only the script's own statements. That includes work the caller had run and not yet committed
+  and rows from a fill left uncommitted by `CommitStrategy.connectionDefault()`. A failing `before`
+  or `after` script therefore rolls those back too, and a successful one commits them.
 - Databases that commit DDL implicitly (MySQL, for one) commit it regardless of the mode.
 
 **Failures.** Any failing statement fails `fill()` with a `SQLException` whose message names the
