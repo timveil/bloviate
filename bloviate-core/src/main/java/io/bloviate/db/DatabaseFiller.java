@@ -72,6 +72,11 @@ import java.util.concurrent.Future;
  * are populated before their dependent child tables. Self-referencing tables are
  * detected and logged as potential issues.
  *
+ * <p>Ordered SQL hooks can run around the fill: {@link Builder#before(SqlScript) before} hooks run
+ * before the schema is read and any table is filled, {@link Builder#after(SqlScript) after} hooks
+ * once every table is filled (for example to compute a rollup from the generated rows). See
+ * {@link SqlScriptRunner} for the script syntax and the transaction semantics.
+ *
  * <p>Example usage:
  * <pre>{@code
  * DatabaseConfiguration config = new DatabaseConfiguration(batchSize, recordCount,
@@ -122,6 +127,12 @@ public class DatabaseFiller implements Fillable {
     /** Worker threads for parallel table fill; {@code 1} (the default) keeps the fill sequential. */
     private final int threads;
 
+    /** SQL scripts run, in order, before the schema is read and any table is filled. */
+    private final List<SqlScript> beforeHooks;
+
+    /** SQL scripts run, in order, after every table has been filled. */
+    private final List<SqlScript> afterHooks;
+
     /**
      * Fills all tables in the database with generated data.
      *
@@ -136,10 +147,40 @@ public class DatabaseFiller implements Fillable {
      * <p>Progress and timing information is logged throughout the process.
      * A visualization link for the dependency graph is also provided in the logs.
      *
-     * @throws SQLException if any database operation fails during the filling process
+     * <p>Configured {@link Builder#before(SqlScript) before} hooks run first, ahead of the metadata
+     * read, so they can create the schema being filled; {@link Builder#after(SqlScript) after} hooks
+     * run once all tables are filled. A failing hook (or a failing fill, which skips the after hooks)
+     * fails this method; tables filled before the failure stay filled, since there is no cross-table
+     * rollback.
+     *
+     * @throws SQLException if any database operation or hook script fails during the filling process
      */
     @Override
     public void fill() throws SQLException {
+        if (connection == null && threads <= 1) {
+            // DataSource supplied but no parallelism requested: borrow ONE connection and use it for the
+            // before hooks, the whole fill and the after hooks. Returning it in between would hand the
+            // after hooks a different connection, and on a pool that hands out autoCommit=false
+            // connections the fill's uncommitted rows (CommitStrategy.connectionDefault()) would already
+            // have been rolled back when the fill connection went back to the pool.
+            try (Connection conn = dataSource.getConnection()) {
+                fill(conn);
+            }
+        } else {
+            fill(connection);
+        }
+    }
+
+    /**
+     * Runs the fill. {@code sequentialConnection} is the single connection everything runs on (the
+     * caller's own, or the one connection borrowed for a non-parallel {@link DataSource} fill), or
+     * {@code null} for the parallel path, where the workers borrow their own connections.
+     */
+    private void fill(Connection sequentialConnection) throws SQLException {
+
+        // before-hooks come first so they can create or empty the tables about to be filled, and so a
+        // failing one prevents anything from being written
+        runHooks("before", beforeHooks, sequentialConnection);
 
         // constraint metadata is per-fill state: a table's constraints are read once and shared
         // across its partitions/workers instead of once per partition
@@ -147,9 +188,9 @@ public class DatabaseFiller implements Fillable {
 
         StopWatch metadataWatch = new StopWatch("fetched database metadata in");
         metadataWatch.start();
-        // a Connection was supplied for the sequential path; otherwise borrow one from the pool
-        Database database = connection != null
-                ? DatabaseUtils.getMetadata(connection)
+        // the sequential path reads metadata on its own connection; the parallel path borrows one
+        Database database = sequentialConnection != null
+                ? DatabaseUtils.getMetadata(sequentialConnection)
                 : DatabaseUtils.getMetadata(dataSource);
         metadataWatch.stop();
 
@@ -165,20 +206,21 @@ public class DatabaseFiller implements Fillable {
         warnIfEngineManagedCommitDiscouraged();
 
         // recommend the driver batch-rewrite URL parameter once per fill if it is missing
-        if (connection != null) {
-            warnIfBatchRewriteMissing(connection);
+        if (sequentialConnection != null) {
+            warnIfBatchRewriteMissing(sequentialConnection);
         } else {
             try (Connection conn = dataSource.getConnection()) {
                 warnIfBatchRewriteMissing(conn);
             }
         }
 
-        if (connection != null) {
-            // back-compat path: fill sequentially on the caller's single connection (unchanged)
+        if (sequentialConnection != null) {
+            // fill sequentially on the single connection: the caller's own (the back-compat path) or the
+            // one borrowed from the DataSource when no parallelism was requested
             warnIfPartitionsIgnored();
             warnIfBulkIgnored();
-            fillSequential(connection, database, reversedGraph);
-        } else if (threads > 1) {
+            fillSequential(sequentialConnection, database, reversedGraph);
+        } else {
             // parallel path: either the ordered level-by-level walk, or the unordered bulk path that
             // disables constraints and fills every table at once (when configured and supported)
             BulkLoadStrategy bulkLoadStrategy = configuration.bulkLoadStrategy();
@@ -191,19 +233,37 @@ public class DatabaseFiller implements Fillable {
                 }
                 fillParallel(database, reversedGraph);
             }
-        } else {
-            // DataSource supplied but no parallelism requested: borrow one connection, fill in order
-            warnIfPartitionsIgnored();
-            warnIfBulkIgnored();
-            try (Connection conn = dataSource.getConnection()) {
-                fillSequential(conn, database, reversedGraph);
-            }
         }
 
         databaseWatch.stop();
 
         logger.info("{}", databaseWatch);
 
+        runHooks("after", afterHooks, sequentialConnection);
+
+    }
+
+    /**
+     * Runs one phase's hook scripts, in order. On the sequential paths they run on the same connection
+     * as the fill: the caller's own {@link Connection}, or the one connection borrowed from the
+     * {@link DataSource} for the whole run, so session state a hook sets (a {@code SET search_path}, a
+     * temporary table) carries into the fill and the other phase. On the parallel path
+     * ({@code sequentialConnection == null}) each phase borrows a connection just for its hooks and
+     * returns it before the workers start or after they finish: pinning one across the fill would
+     * deadlock a pool sized to the thread count, and session state does not carry across phases.
+     */
+    private void runHooks(String phase, List<SqlScript> hooks, Connection sequentialConnection) throws SQLException {
+        if (hooks.isEmpty()) {
+            return;
+        }
+        logger.info("running {} {} hook script(s)", hooks.size(), phase);
+        if (sequentialConnection != null) {
+            SqlScriptRunner.runAll(sequentialConnection, hooks);
+        } else {
+            try (Connection conn = dataSource.getConnection()) {
+                SqlScriptRunner.runAll(conn, hooks);
+            }
+        }
     }
 
     /**
@@ -814,6 +874,8 @@ public class DatabaseFiller implements Fillable {
         private final DatabaseConfiguration configuration;
 
         private int threads = 1;
+        private final List<SqlScript> beforeHooks = new ArrayList<>();
+        private final List<SqlScript> afterHooks = new ArrayList<>();
 
         /**
          * Creates a builder that fills sequentially on a single caller-managed connection — the
@@ -863,6 +925,47 @@ public class DatabaseFiller implements Fillable {
         }
 
         /**
+         * Adds a SQL script to run before the fill: ahead of the schema read and before any table is
+         * written, on the fill's connection (the supplied {@link Connection}, or one borrowed from the
+         * {@link DataSource}). Before hooks run in the order added, and a failing one fails
+         * {@link DatabaseFiller#fill()} with nothing filled. Typical uses are creating the schema or
+         * truncating tables so a re-run does not collide with the previous run's rows (a fill is
+         * not idempotent).
+         *
+         * <p>See {@link SqlScriptRunner} for the syntax, token and transaction rules.
+         *
+         * @param script the script to run
+         * @return this builder
+         * @since 3.3.0
+         */
+        public Builder before(SqlScript script) {
+            beforeHooks.add(Objects.requireNonNull(script, "script must not be null"));
+            return this;
+        }
+
+        /**
+         * Adds a SQL script to run after every table has been filled, on the fill's connection (the
+         * supplied {@link Connection}, or one borrowed from the {@link DataSource} once the parallel
+         * fill has finished). After hooks run in the order added; a failure is thrown from
+         * {@link DatabaseFiller#fill()} and is not swallowed. They do not run if the fill itself
+         * fails. Typical use is computing derived tables from the generated rows, so they cannot
+         * disagree with their sources.
+         *
+         * <p>The tables to fill are read before the after hooks run, so a table an after hook creates
+         * is not filled; a derived table that already exists is filled like any other, so the hook
+         * should empty it first. See {@link SqlScriptRunner} for the syntax, token and transaction
+         * rules.
+         *
+         * @param script the script to run
+         * @return this builder
+         * @since 3.3.0
+         */
+        public Builder after(SqlScript script) {
+            afterHooks.add(Objects.requireNonNull(script, "script must not be null"));
+            return this;
+        }
+
+        /**
          * Builds a new DatabaseFiller instance with the configured parameters.
          *
          * @return a new DatabaseFiller ready to fill the database
@@ -882,6 +985,8 @@ public class DatabaseFiller implements Fillable {
         this.dataSource = builder.dataSource;
         this.configuration = builder.configuration;
         this.threads = builder.threads;
+        this.beforeHooks = List.copyOf(builder.beforeHooks);
+        this.afterHooks = List.copyOf(builder.afterHooks);
 
         if (connection != null && threads > 1) {
             logger.warn("threads({}) is ignored when filling on a single Connection; use the DataSource constructor for parallel fills", threads);
