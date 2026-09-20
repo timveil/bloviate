@@ -184,6 +184,23 @@ on driver 4.4.0 and later; they simply stay on DML.
 > Open the connection with `stringtype=unspecified` so the server infers each column's type:
 > `jdbc:postgresql://host/db?stringtype=unspecified`.
 
+## Partitioned tables
+
+| Database | Partitioned tables |
+|----------|--------------------|
+| PostgreSQL | Declarative partitioning (`RANGE`, `LIST`, `HASH`, multi-level) is filled **through the parent**: the driver reports it as `PARTITIONED TABLE`, `PostgresSupport` discovers it and excludes every partition (`pg_class.relispartition`, including intermediate partitions), and the database routes rows. Constrain the partition key with a `ColumnConfiguration`; see [Partitioned tables](CONFIGURATION.md#partitioned-tables). |
+| CockroachDB, MySQL, MariaDB, H2, SQLite, BigQuery | Unchanged. Their partitions are not exposed as separate tables through JDBC, so a partitioned table is discovered as one ordinary table. |
+| Generic JDBC (`DefaultSupport`) | Unchanged: only `TABLE` is discovered. |
+
+The behaviour is two hooks on `DatabaseSupport`, both opt-in and defaulting to today's behaviour:
+`discoveredTableTypes()` (the JDBC table types to discover; `TABLE` by default, plus `PARTITIONED TABLE`
+for `PostgresSupport`) and `readPartitions(connection, schema)` (which discovered tables are partitions,
+each mapped to its top-level partitioned table; empty by default). A custom support for another database
+can override them. `CockroachDBSupport` extends `PostgresSupport` but restores both defaults.
+
+The `partitions` setting of `TableConfiguration` (intra-table parallelism, see
+[Configuration](CONFIGURATION.md#intra-table-partitioning)) is unrelated to SQL partitioning.
+
 ## Auto-detection
 
 You can let Bloviate pick the support implementation from the connection's metadata instead of

@@ -47,7 +47,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,8 +59,8 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
-import java.util.function.UnaryOperator;
 
 /**
  * Main entry point for filling database tables with generated data.
@@ -288,7 +290,8 @@ public class DatabaseFiller implements Fillable {
         StopWatch metadataWatch = new StopWatch("fetched database metadata in");
         metadataWatch.start();
         List<String> discoveredTableNames = new ArrayList<>();
-        Database database = readMetadata(sequentialConnection, discoveredTableNames);
+        Map<String, String> partitions = new LinkedHashMap<>();
+        Database database = readMetadata(sequentialConnection, discoveredTableNames, partitions);
         metadataWatch.stop();
 
         logger.debug("{}", metadataWatch);
@@ -296,7 +299,7 @@ public class DatabaseFiller implements Fillable {
         StopWatch databaseWatch = new StopWatch(String.format("filled database [%s] in", database.catalog()));
         databaseWatch.start();
 
-        warnAboutUnusedTableConfigurations(database, discoveredTableNames);
+        warnAboutUnusedTableConfigurations(database, discoveredTableNames, partitions);
 
         // fails before any row is written if a selected table references a table that is not selected
         Graph<Table, DefaultEdge> reversedGraph = buildReversedDependencyGraph(database);
@@ -384,19 +387,24 @@ public class DatabaseFiller implements Fillable {
     // UnusedLocalVariable: false positive. The schema scope is a try-with-resources resource that is
     // never read; closing it is the point (it restores the connection's schema/catalog).
     @SuppressWarnings("PMD.UnusedLocalVariable")
-    private Database readMetadata(Connection sequentialConnection, List<String> discoveredTableNames) throws SQLException {
-        // the selection sees every table name of the schema; keep a copy of that full list, before the
-        // selection narrows it, so table configurations can be classified against what really exists
-        UnaryOperator<List<String>> filter = names -> {
+    private Database readMetadata(Connection sequentialConnection, List<String> discoveredTableNames,
+                                  Map<String, String> partitions) throws SQLException {
+        // the selection sees every table name of the schema (a partition of a partitioned table is not
+        // one: it is filled through its parent); keep a copy of that full list, and of the partitions,
+        // before the selection narrows it, so table configurations can be classified against what
+        // really exists
+        BiFunction<List<String>, Map<String, String>, List<String>> filter = (names, found) -> {
             discoveredTableNames.addAll(names);
-            return tableSelection.select(names);
+            partitions.putAll(found);
+            return tableSelection.select(names, found);
         };
+        DatabaseSupport support = configuration.databaseSupport();
         if (sequentialConnection != null) {
-            return DatabaseUtils.getMetadata(sequentialConnection, filter);
+            return DatabaseUtils.getMetadata(sequentialConnection, support, filter);
         }
         try (Connection conn = dataSource.getConnection();
              SchemaSelection.Scope scope = schemaSelection.apply(conn, true)) {
-            return DatabaseUtils.getMetadata(conn, filter);
+            return DatabaseUtils.getMetadata(conn, support, filter);
         }
     }
 
@@ -406,8 +414,9 @@ public class DatabaseFiller implements Fillable {
      * selection left out (the configuration has no effect). Neither is an error here; nothing else
      * about them changes.
      */
-    private void warnAboutUnusedTableConfigurations(Database database, List<String> discoveredTableNames) {
-        UnusedTableConfigurations unused = findUnusedTableConfigurations(database, discoveredTableNames, configuration);
+    private void warnAboutUnusedTableConfigurations(Database database, List<String> discoveredTableNames,
+                                                    Map<String, String> partitions) {
+        UnusedTableConfigurations unused = findUnusedTableConfigurations(database, discoveredTableNames, partitions, configuration);
         if (!unused.unknown().isEmpty()) {
             logger.warn("table configuration(s) for {} match no table in the selected schema and are ignored",
                     unused.unknown());
@@ -416,6 +425,9 @@ public class DatabaseFiller implements Fillable {
             logger.warn("table configuration(s) for {} are ignored because includeTables/excludeTables leave those tables out",
                     unused.excluded());
         }
+        unused.partitions().forEach((name, root) -> logger.warn(
+                "table configuration for [{}] is ignored: it is a partition of [{}], and a partitioned table is filled "
+                        + "through its parent; configure [{}] instead", name, root, root));
     }
 
     /**
@@ -423,8 +435,10 @@ public class DatabaseFiller implements Fillable {
      *
      * @param unknown  names matching no table of the selected schema
      * @param excluded names of tables the table selection left out
+     * @param partitions names of partitions of a partitioned table (never filled on their own), each mapped
+     *                   to the partitioned table to configure instead
      */
-    record UnusedTableConfigurations(List<String> unknown, List<String> excluded) {
+    record UnusedTableConfigurations(List<String> unknown, List<String> excluded, Map<String, String> partitions) {
     }
 
     /**
@@ -436,8 +450,20 @@ public class DatabaseFiller implements Fillable {
      */
     static UnusedTableConfigurations findUnusedTableConfigurations(Database database, List<String> discoveredTableNames,
                                                                    DatabaseConfiguration configuration) {
+        return findUnusedTableConfigurations(database, discoveredTableNames, Map.of(), configuration);
+    }
+
+    /**
+     * As {@link #findUnusedTableConfigurations(Database, List, DatabaseConfiguration)}, also telling the
+     * configurations that name a partition of a partitioned table ({@code partitions}: partition name to its
+     * top-level partitioned table) from typos: such a table exists, but is filled through its parent.
+     */
+    static UnusedTableConfigurations findUnusedTableConfigurations(Database database, List<String> discoveredTableNames,
+                                                                   Map<String, String> partitions,
+                                                                   DatabaseConfiguration configuration) {
         List<String> unknown = new ArrayList<>();
         List<String> excluded = new ArrayList<>();
+        Map<String, String> partitioned = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         Set<TableConfiguration> tableConfigurations = configuration.tableConfigurations();
         if (tableConfigurations != null) {
             for (TableConfiguration tableConfiguration : tableConfigurations) {
@@ -445,7 +471,13 @@ public class DatabaseFiller implements Fillable {
                 if (database.findTable(name).isPresent()) {
                     continue;
                 }
-                if (discoveredTableNames.stream().anyMatch(discovered -> discovered.equalsIgnoreCase(name))) {
+                Optional<String> partitionRoot = partitions.entrySet().stream()
+                        .filter(partition -> partition.getKey().equalsIgnoreCase(name))
+                        .map(Map.Entry::getValue)
+                        .findFirst();
+                if (partitionRoot.isPresent()) {
+                    partitioned.put(name, partitionRoot.get());
+                } else if (discoveredTableNames.stream().anyMatch(discovered -> discovered.equalsIgnoreCase(name))) {
                     excluded.add(name);
                 } else {
                     unknown.add(name);
@@ -454,7 +486,7 @@ public class DatabaseFiller implements Fillable {
         }
         unknown.sort(String.CASE_INSENSITIVE_ORDER);
         excluded.sort(String.CASE_INSENSITIVE_ORDER);
-        return new UnusedTableConfigurations(unknown, excluded);
+        return new UnusedTableConfigurations(unknown, excluded, partitioned);
     }
 
     /**

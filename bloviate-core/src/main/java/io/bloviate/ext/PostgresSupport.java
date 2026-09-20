@@ -34,6 +34,7 @@ import java.sql.Connection;
 import java.sql.JDBCType;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -94,6 +95,36 @@ public class PostgresSupport extends AbstractDatabaseSupport {
     @Override
     public java.util.Map<String, io.bloviate.db.ColumnConstraint> readConstraints(java.sql.Connection connection, String schema, String table) {
         return PostgresConstraints.read(connection, schema, table);
+    }
+
+    /**
+     * {@code TABLE} plus {@code PARTITIONED TABLE}: PostgreSQL's driver reports a declaratively
+     * partitioned table (a {@code PARTITION BY} parent) under the latter, and the parent, not its
+     * partitions, is what gets filled.
+     *
+     * @return {@code ["TABLE", "PARTITIONED TABLE"]}
+     * @since 3.6.0
+     */
+    @Override
+    public List<String> discoveredTableTypes() {
+        return List.of("TABLE", "PARTITIONED TABLE");
+    }
+
+    /**
+     * Reads every declarative partition of the schema (a relation with {@code pg_class.relispartition}
+     * set) with the top-level partitioned table it belongs to, following {@code pg_inherits} up through
+     * any intermediate partitioned tables. Legacy inheritance children ({@code INHERITS}) are not
+     * declarative partitions and are not reported.
+     *
+     * @param connection an open connection to query the catalog with
+     * @param schema     the schema to read, or null for the connection's current schema
+     * @return partition name to the name of its top-level partitioned table
+     * @throws SQLException if the catalog query fails
+     * @since 3.6.0
+     */
+    @Override
+    public Map<String, String> readPartitions(Connection connection, String schema) throws SQLException {
+        return PostgresPartitions.read(connection, schema);
     }
 
     /**
