@@ -336,8 +336,9 @@ Set<ColumnConfiguration> columns = Set.of(
 ```
 
 `window(...)` exists on `SqlTimestampGenerator`, `SqlDateGenerator` (whole UTC dates), `DateGenerator`,
-`InstantGenerator`, `SkewedTimestampGenerator` (end-exclusive, like the others) and
-`TruncatedDateGenerator`. A generator that needs the anchor for something else builds itself from the
+`InstantGenerator`, `SkewedTimestampGenerator` and `TruncatedDateGenerator`. A window is always
+end-exclusive; `SkewedTimestampGenerator` keeps that by setting its own end (which is inclusive when set
+directly with `end(...)`) to the window end minus one millisecond. A generator that needs the anchor for something else builds itself from the
 `GenerationContext`, through `ColumnGeneratorFactory.contextual(...)` or, in a registry rule,
 `GeneratorFactory.contextual(...)`. Offset syntax, boundary semantics and the rule that makes the output
 reproducible (pin `asOf`) are in [Relative date ranges and asOf](./CONFIGURATION.md#relative-date-ranges-and-asof).

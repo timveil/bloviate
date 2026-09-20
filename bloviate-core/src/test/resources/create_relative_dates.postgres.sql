@@ -35,7 +35,7 @@ CREATE TABLE order_notes (
     CONSTRAINT noted_last_ten_days CHECK (noted_at >= '2026-03-22T00:00:00Z' AND noted_at < '2026-04-01T00:00:00Z')
 );
 
--- a range partition that only takes one quarter; the partitioned parent is skipped by the fill, its leaf is filled
+-- a range partition that only takes one quarter; the test fills the leaf table directly and gives it a relative window
 CREATE TABLE ledger (
     id        integer                  NOT NULL,
     booked_at timestamp with time zone NOT NULL,

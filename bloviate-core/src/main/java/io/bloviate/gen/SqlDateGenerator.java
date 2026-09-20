@@ -45,8 +45,10 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
         Long randomTime = longGenerator.generate();
 
-        // Date.valueOf is the JVM zone's midnight of that calendar date, which the driver renders back
-        // as exactly that date
+        // Date.valueOf builds the value from calendar fields, so the millisecond instant it holds is midnight
+        // of that date in the JVM's zone and differs between zones; the calendar date itself does not. The
+        // driver renders a java.sql.Date in the same zone, so the date that reaches the database is the one
+        // drawn here whatever the JVM zone is, unlike a millisecond draw whose date can shift with the zone
         return wholeDays ? Date.valueOf(LocalDate.ofEpochDay(randomTime)) : new Date(randomTime);
     }
 
