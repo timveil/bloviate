@@ -51,6 +51,7 @@
         <module>bloviate-junit</module>
         <module>bloviate-testcontainers</module>
         <module>bloviate-datafaker</module>
+        <module>bloviate-cli</module>
         <module>bloviate-benchmarks</module>
     </modules>
 
@@ -72,6 +73,7 @@
         <jspecify.version>1.0.0</jspecify.version>
         <junit-jupiter.version>6.1.2</junit-jupiter.version>
         <datafaker.version>2.7.0</datafaker.version>
+        <picocli.version>4.7.7</picocli.version>
 
         <!-- transitive-only: jackson-dataformat-yaml and datafaker disagree (2.5 vs 2.6).
              Pinned to the higher so enforcer's dependencyConvergence rule has a single
@@ -174,6 +176,11 @@
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
                 <version>${snakeyaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>${picocli.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -386,10 +393,12 @@
                                     <version>[25,)</version>
                                 </requireJavaVersion>
                                 <banDuplicatePomDependencyVersions/>
-                                <!-- Bloviate is not shaded, so every transitive version is one
-                                     a consumer actually inherits. Enforced rather than left to
-                                     Maven's nearest-wins tiebreak; resolving a new conflict
-                                     means an explicit dependencyManagement pin (see snakeyaml). -->
+                                <!-- The libraries are not shaded, so every transitive version is
+                                     one a consumer actually inherits (bloviate-cli's runnable jar
+                                     is shaded, but it is an application, not a dependency). Enforced
+                                     rather than left to Maven's nearest-wins tiebreak; resolving a
+                                     new conflict means an explicit dependencyManagement pin (see
+                                     snakeyaml). -->
                                 <dependencyConvergence/>
                             </rules>
                         </configuration>

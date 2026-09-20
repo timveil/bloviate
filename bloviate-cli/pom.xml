@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2020 Tim Veil
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.bloviate</groupId>
+        <artifactId>bloviate-parent</artifactId>
+        <version>3.7.0</version>
+    </parent>
+
+    <artifactId>bloviate-cli</artifactId>
+
+    <packaging>jar</packaging>
+
+    <name>Bloviate CLI</name>
+    <description>Command-line interface for Bloviate: fill a JDBC database from the shell or a container; not published to Maven</description>
+
+    <properties>
+        <automatic.module.name>io.bloviate.cli</automatic.module.name>
+        <!-- an application, not a library: the runnable jar ships as a GitHub Release asset and a
+             container image, not to GitHub Packages, and it has no public API to document -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.source.skip>true</maven.source.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>io.bloviate</groupId>
+            <artifactId>bloviate-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+        </dependency>
+
+        <!-- core has no SLF4J binding in main scope; the CLI is the application, so it brings one.
+             Runtime only: nothing here compiles against the simple logger's API. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Testing Dependencies -->
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+
+        <!-- only version.properties is filtered (it carries ${project.version}); filtering the rest
+             would mangle any other resource that happens to contain a ${...} -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/version.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>**/version.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+        <plugins>
+
+            <!-- package the runnable jar: target/bloviate-cli.jar. JDBC drivers are deliberately NOT
+                 bundled here (image/driver bundling is a separate concern); put the driver you need
+                 on the classpath: java -cp bloviate-cli.jar:driver.jar io.bloviate.cli.Main -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>cli-uber-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>bloviate-cli</finalName>
+                            <!-- the reduced pom is never consumed (the module is not deployed) and would
+                                 be written into the module directory -->
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>io.bloviate.cli.Main</mainClass>
+                                    <manifestEntries>
+                                        <Implementation-Title>Bloviate CLI</Implementation-Title>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                        <Automatic-Module-Name>${automatic.module.name}</Automatic-Module-Name>
+                                    </manifestEntries>
+                                </transformer>
+                                <!-- merges META-INF/services files instead of letting one silently win:
+                                     java.sql.Driver when drivers are shaded in later, and GeneratorPlugin -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- merge the duplicate legal files the dependencies ship instead of letting one silently win -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"/>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <!-- drop signatures and module descriptors that break a merged uber-jar -->
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>module-info.class</exclude>
+                                        <!-- multi-release jars tuck a second copy here; the top-level exclude misses it -->
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                        <!-- ManifestResourceTransformer regenerates this, so drop the dependencies' copies -->
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- lets the tests assert that the version flag reports the real project version -->
+                        <bloviate.expected.version>${project.version}</bloviate.expected.version>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
