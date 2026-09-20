@@ -47,3 +47,12 @@ CREATE TABLE mixed_checks (
     code          varchar(20)   CHECK (length(code) >= 0 AND length(code) <= 20),
     PRIMARY KEY (id)
 );
+
+-- TruncatedDateGenerator.set -> get round trip on each column type. No CHECK: it is about the driver.
+CREATE TABLE round_trip (
+    id   integer NOT NULL,
+    d    date,
+    ts   timestamp,
+    tstz timestamp with time zone,
+    PRIMARY KEY (id)
+);

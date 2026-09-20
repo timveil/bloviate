@@ -303,6 +303,12 @@ new TableConfiguration("invoices", 1_000, columns);
   `TIMESTAMP WITH TIME ZONE` column is bound as a zone-less midnight, which the database reads in its
   *session* time zone &mdash; the zone a `date_trunc` check is evaluated in &mdash; so the check holds
   whatever that zone is. (A zone whose clocks skip midnight on the first is the one exception.)
+- `get(ResultSet, int)` reads a column back as the same `LocalDate`. For a `timestamptz` that is the
+  date in the zone the database renders the value in (PostgreSQL: the session zone), taken from the
+  driver's text form; the typed accessors can't give it (pgjdbc rejects `LocalDateTime` for a
+  `timestamptz`, and its `OffsetDateTime` is normalised to UTC, a day early east of UTC). A driver
+  whose text form is not `yyyy-MM-dd[ HH:mm[:ss[.f]][offset]]` falls back to `getObject`, which is exact
+  only if the driver reports the zone the value was bound in.
 
 ## Data generator types
 

@@ -17,15 +17,22 @@
 package io.bloviate.gen;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLDataException;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.random.RandomGenerator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Generates the <em>first day of a period</em> &mdash; by default the first day of a month &mdash; for
@@ -52,6 +59,10 @@ import java.util.random.RandomGenerator;
  * @since 3.5.0
  */
 public class TruncatedDateGenerator extends AbstractDataGenerator<LocalDate> {
+
+    // a date, optionally followed by a time of day and a zone offset: the shapes drivers render a column in
+    private static final Pattern DATE_TEXT = Pattern.compile(
+            "\\s*(\\d{4,9}-\\d{2}-\\d{2})(?:[ T]\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?\\s*(?:Z|[+-]\\d{2}(?::?\\d{2}(?::?\\d{2})?)?)?)?\\s*");
 
     private static final DateTimeFormatter TIMESTAMP_TEXT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -118,13 +129,88 @@ public class TruncatedDateGenerator extends AbstractDataGenerator<LocalDate> {
         }
     }
 
+    /**
+     * Reads back the date {@link #set} wrote: the calendar date the column holds, in the zone it was
+     * bound in.
+     *
+     * <p>A {@code DATE} column is read as a {@link LocalDate}. For {@code timestamp(true)} the value
+     * is recovered from the driver's <em>text</em> form of the column ({@link ResultSet#getString}),
+     * whose date part is the wall-clock date in the zone the driver renders it in. That is exact for a
+     * zone-less {@code TIMESTAMP}, and for PostgreSQL's {@code TIMESTAMP WITH TIME ZONE}, which renders
+     * in the <em>session</em> zone ({@code 2020-03-01 00:00:00+13} is 2020-03-01 in a session on
+     * Pacific/Auckland). It cannot be had from the typed accessors: pgjdbc refuses
+     * {@code LocalDateTime} for a {@code timestamptz}, returns a {@code Timestamp} in the JVM's default
+     * zone from {@code getObject}, and an {@code OffsetDateTime} normalised to UTC, whose date is the
+     * day before in any zone east of UTC. Only when the text is not in a recognised form does the
+     * generic {@link ResultSet#getObject(int) getObject} value serve as a fallback, and then a
+     * {@link java.sql.Timestamp} is read in the JVM's default zone and an {@link OffsetDateTime} in its
+     * own offset, which is right only if the driver reports the zone the value was bound in.
+     * The wall clock is never consulted.
+     *
+     * @param resultSet the result set positioned on a row
+     * @param columnIndex the 1-based column index
+     * @return the date the column holds, or null for SQL {@code NULL}
+     * @throws SQLException if the column can't be read or its value can't be interpreted as a date
+     */
     @Override
     public LocalDate get(ResultSet resultSet, int columnIndex) throws SQLException {
-        if (timestamp) {
-            LocalDateTime value = resultSet.getObject(columnIndex, LocalDateTime.class);
-            return value == null ? null : value.toLocalDate();
+        if (!timestamp) {
+            return resultSet.getObject(columnIndex, LocalDate.class);
         }
-        return resultSet.getObject(columnIndex, LocalDate.class);
+        String text = resultSet.getString(columnIndex);
+        if (text == null) {
+            return null;
+        }
+        LocalDate fromText = fromText(text);
+        if (fromText != null) {
+            return fromText;
+        }
+        Object value = resultSet.getObject(columnIndex);
+        if (value == null) {
+            throw new SQLDataException("not a date or timestamp: " + text);
+        }
+        return toLocalDate(value);
+    }
+
+    /**
+     * The date a driver-supplied temporal value stands for, normalising every representation
+     * {@link #get} can meet: {@link LocalDate}, {@link LocalDateTime}, {@link OffsetDateTime} (its own
+     * local date), {@link Timestamp} and {@link java.sql.Date} (read in the JVM's default zone, as the
+     * driver built them) and a text such as {@code 2020-03-01 00:00:00+13}.
+     *
+     * @param value a non-null value obtained from a result set
+     * @return the date it stands for
+     * @throws SQLException if the value's type or text is not a date
+     */
+    static LocalDate toLocalDate(Object value) throws SQLException {
+        return switch (value) {
+            case LocalDate date -> date;
+            case LocalDateTime dateTime -> dateTime.toLocalDate();
+            case OffsetDateTime dateTime -> dateTime.toLocalDate();
+            case Timestamp stamp -> stamp.toLocalDateTime().toLocalDate();
+            case Date date -> date.toLocalDate();
+            case String text -> {
+                LocalDate parsed = fromText(text);
+                if (parsed == null) {
+                    throw new SQLDataException("not a date or timestamp: " + text);
+                }
+                yield parsed;
+            }
+            default -> throw new SQLDataException("cannot read a date from " + value.getClass().getName());
+        };
+    }
+
+    /** The date part of {@code 2020-03-01}, {@code 2020-03-01 00:00:00}, {@code ...T00:00:00Z} or {@code ...+05:30}, else null. */
+    private static LocalDate fromText(String text) {
+        Matcher matcher = DATE_TEXT.matcher(text);
+        if (!matcher.matches()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(matcher.group(1));
+        } catch (DateTimeParseException e) {
+            return null;
+        }
     }
 
     @Override
@@ -190,6 +276,9 @@ public class TruncatedDateGenerator extends AbstractDataGenerator<LocalDate> {
          * Chooses how the value is bound. {@code false} (the default) binds a {@link LocalDate} for a
          * {@code DATE} column; {@code true} binds midnight of that date as a zone-less
          * {@link LocalDateTime} for a {@code TIMESTAMP} or {@code TIMESTAMP WITH TIME ZONE} column.
+         * {@link TruncatedDateGenerator#get get} reads either back as the same {@link LocalDate}; for a
+         * timestamp-with-time-zone column that is the date in the zone the database rendered it in
+         * (PostgreSQL: the session zone).
          *
          * @param timestamp whether the target column holds a time of day
          * @return this builder, for chaining

@@ -21,9 +21,12 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 import java.sql.PreparedStatement;
+import java.sql.SQLDataException;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -179,13 +182,70 @@ class TruncatedDateGeneratorTest {
     }
 
     @Test
-    void readsBackADateOrATimestampAsALocalDate() throws SQLException {
+    void aDateColumnIsReadAsALocalDate() throws SQLException {
         LocalDate date = LocalDate.of(2020, 5, 1);
 
-        assertEquals(date, builder(1).build().get(typed(date), 1));
-        assertNull(builder(1).build().get(typed(null), 1));
-        assertEquals(date, builder(1).timestamp(true).build().get(typed(date.atStartOfDay()), 1));
-        assertNull(builder(1).timestamp(true).build().get(typed(null), 1));
+        assertEquals(date, builder(1).build().get(row(null, date), 1));
+        assertNull(builder(1).build().get(row(null, null), 1));
+    }
+
+    @Test
+    void aTimestampIsReadFromTheDatePartOfTheDriversText() throws SQLException {
+        TruncatedDateGenerator generator = builder(1).timestamp(true).build();
+        LocalDate expected = LocalDate.of(2020, 3, 1);
+
+        for (String text : List.of("2020-03-01 00:00:00", "2020-03-01 00:00:00.000000", "2020-03-01T00:00:00",
+                "2020-03-01 00:00:00+13", "2020-03-01 00:00:00-08", "2020-03-01 00:00:00+05:30",
+                "2020-03-01 00:00:00+05:30:15", "2020-03-01T00:00:00Z", "2020-03-01 00:00", "2020-03-01")) {
+            assertEquals(expected, generator.get(row(text, null), 1), text);
+        }
+    }
+
+    @Test
+    void theTextWinsOverTheTypedValueSoAUtcNormalisedOffsetCannotShiftTheDate() throws SQLException {
+        // what pgjdbc returns for a timestamptz written as midnight on 1 March in a Pacific/Auckland session:
+        // the text is in the session zone, getObject is a Timestamp in the JVM zone, and OffsetDateTime is UTC
+        TruncatedDateGenerator generator = builder(1).timestamp(true).build();
+        LocalDate expected = LocalDate.of(2020, 3, 1);
+
+        assertEquals(expected, generator.get(row("2020-03-01 00:00:00+13", OffsetDateTime.parse("2020-02-29T11:00:00Z")), 1));
+        assertEquals(expected, generator.get(row("2020-03-01 00:00:00+13", Timestamp.valueOf("2020-02-29 06:00:00")), 1));
+    }
+
+    @Test
+    void aTimestampWithNullTextIsNull() throws SQLException {
+        assertNull(builder(1).timestamp(true).build().get(row(null, LocalDateTime.of(2020, 3, 1, 0, 0)), 1));
+    }
+
+    @Test
+    void anUnrecognisedTextFallsBackToTheTypedValue() throws SQLException {
+        TruncatedDateGenerator generator = builder(1).timestamp(true).build();
+        LocalDate expected = LocalDate.of(2020, 3, 1);
+
+        assertEquals(expected, generator.get(row("1 Mar 2020", LocalDateTime.of(2020, 3, 1, 0, 0)), 1));
+        assertEquals(expected, generator.get(row("1 Mar 2020", OffsetDateTime.parse("2020-03-01T00:00:00+13:00")), 1));
+        assertEquals(expected, generator.get(row("1 Mar 2020", Timestamp.valueOf("2020-03-01 00:00:00")), 1));
+        assertThrows(SQLDataException.class, () -> generator.get(row("1 Mar 2020", null), 1));
+    }
+
+    @Test
+    void normalisesEveryRepresentationTheDriversUse() throws SQLException {
+        LocalDate expected = LocalDate.of(2020, 3, 1);
+
+        assertEquals(expected, TruncatedDateGenerator.toLocalDate(expected));
+        assertEquals(expected, TruncatedDateGenerator.toLocalDate(LocalDateTime.of(2020, 3, 1, 0, 0)));
+        assertEquals(expected, TruncatedDateGenerator.toLocalDate(OffsetDateTime.parse("2020-03-01T00:00:00+13:00")));
+        // built and read back in the same (JVM default) zone, so the result does not depend on which zone that is
+        assertEquals(expected, TruncatedDateGenerator.toLocalDate(Timestamp.valueOf("2020-03-01 00:00:00")));
+        assertEquals(expected, TruncatedDateGenerator.toLocalDate(java.sql.Date.valueOf(expected)));
+        assertEquals(expected, TruncatedDateGenerator.toLocalDate("2020-03-01 00:00:00+05:30"));
+    }
+
+    @Test
+    void refusesWhatIsNotADate() {
+        assertThrows(SQLDataException.class, () -> TruncatedDateGenerator.toLocalDate("tomorrow"));
+        assertThrows(SQLDataException.class, () -> TruncatedDateGenerator.toLocalDate("2020-13-45 00:00:00"));
+        assertThrows(SQLDataException.class, () -> TruncatedDateGenerator.toLocalDate(42));
     }
 
     private static LocalDate assertInstanceOfLocalDate(Object value) {
@@ -193,12 +253,16 @@ class TruncatedDateGeneratorTest {
         return (LocalDate) value;
     }
 
-    /** A result set whose {@code getObject(int, Class)} returns {@code value}. */
-    private static java.sql.ResultSet typed(Object value) {
+    /** A result set whose column 1 renders as {@code text} and whose typed value is {@code object}. */
+    private static java.sql.ResultSet row(String text, Object object) {
         return (java.sql.ResultSet) Proxy.newProxyInstance(
                 TruncatedDateGeneratorTest.class.getClassLoader(),
                 new Class<?>[]{java.sql.ResultSet.class},
-                (proxy, method, args) -> method.getName().equals("getObject") ? value : null);
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "getString" -> text;
+                    case "getObject" -> object;
+                    default -> null;
+                });
     }
 
     /** A statement that records the value handed to {@code setObject}. */

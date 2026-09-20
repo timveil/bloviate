@@ -19,15 +19,18 @@ package io.bloviate.db;
 import com.zaxxer.hikari.HikariDataSource;
 import io.bloviate.ext.PostgresSupport;
 import io.bloviate.gen.TruncatedDateGenerator;
+import io.bloviate.util.RandomGenerators;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -184,6 +187,52 @@ class PostgresDateCheckFillTest extends BaseDatabaseTestCase {
         fixture.reset("public");
         fillIn("Pacific/Auckland", configuration(null), connection ->
                 assertEquals(first[0], text(connection, query), "same seed, same zone, same data"));
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // set -> get round trip
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * What {@code set} writes, {@code get} reads back, for a DATE, a TIMESTAMP and a TIMESTAMPTZ column in
+     * every session zone. For timestamptz the driver hands back a UTC-normalised value (pgjdbc's
+     * {@code getObject} is a {@code Timestamp} in the JVM zone and {@code OffsetDateTime} is in UTC), and
+     * neither maps to {@code LocalDateTime}; reading it naively either throws or lands on the previous
+     * day for a zone east of UTC. The date that must come back is the one the column holds in the
+     * session zone.
+     */
+    @Test
+    void getReturnsTheDateSetWroteInEverySessionTimeZone() throws SQLException {
+        List<LocalDate> dates = List.of(LocalDate.of(2020, 1, 1), LocalDate.of(2020, 3, 1), LocalDate.of(2020, 10, 1),
+                LocalDate.of(2021, 1, 1), LocalDate.of(2023, 7, 1));
+        TruncatedDateGenerator date = new TruncatedDateGenerator.Builder(RandomGenerators.create(1)).build();
+        TruncatedDateGenerator stamp = new TruncatedDateGenerator.Builder(RandomGenerators.create(1)).timestamp(true).build();
+
+        for (String zone : ZONES) {
+            try (HikariDataSource dataSource = fixture.dataSource("public");
+                 Connection connection = dataSource.getConnection();
+                 Statement statement = connection.createStatement()) {
+                statement.execute("SET TIME ZONE '" + zone + "'");
+                statement.execute("delete from round_trip");
+                try (PreparedStatement insert = connection.prepareStatement("insert into round_trip values (?, ?, ?, ?)")) {
+                    for (int i = 0; i < dates.size(); i++) {
+                        insert.setInt(1, i);
+                        date.set(connection, insert, 2, dates.get(i));
+                        stamp.set(connection, insert, 3, dates.get(i));
+                        stamp.set(connection, insert, 4, dates.get(i));
+                        insert.executeUpdate();
+                    }
+                }
+                try (ResultSet resultSet = statement.executeQuery("select d, ts, tstz from round_trip order by id")) {
+                    for (LocalDate expected : dates) {
+                        assertTrue(resultSet.next(), zone);
+                        assertEquals(expected, date.get(resultSet, 1), zone + " date");
+                        assertEquals(expected, stamp.get(resultSet, 2), zone + " timestamp");
+                        assertEquals(expected, stamp.get(resultSet, 3), zone + " timestamptz");
+                    }
+                }
+            }
+        }
     }
 
     // ---------------------------------------------------------------------------------------------
