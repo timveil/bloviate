@@ -42,14 +42,14 @@ import java.util.List;
  * @param max the upper bound, or null if unbounded above
  * @param maxInclusive whether {@code max} is inclusive
  * @param dateTruncation for a date/timestamp column that must hold the first day of a period, that
- *                       period; null otherwise (added in 3.4.0)
+ *                       period; null otherwise (added in 3.5.0)
  * @since 2.14.0
  */
 public record ColumnConstraint(List<String> allowedValues, BigDecimal min, boolean minInclusive, BigDecimal max, boolean maxInclusive,
                                TruncatedDateGenerator.Unit dateTruncation) {
 
     /**
-     * The constructor as it was before date truncation was added (3.4.0): a set-of-values or numeric
+     * The constructor as it was before date truncation was added (3.5.0): a set-of-values or numeric
      * range constraint, with no {@link #dateTruncation()}.
      *
      * @param allowedValues the permitted values (their text form), or null for a range constraint

@@ -272,7 +272,7 @@ TPC-DS, and so on).
 
 ## First-of-month dates
 
-`TruncatedDateGenerator` (since 3.4.0) produces the first day of a month, quarter or year, for a
+`TruncatedDateGenerator` (since 3.5.0) produces the first day of a month, quarter or year, for a
 column guarded by a check such as `CHECK (date_trunc('month', billing_month) = billing_month)` or
 `CHECK (EXTRACT(day FROM period_start) = 1)`. On PostgreSQL the engine picks it for you when it reads
 such a check (see [Constraint conformance](./CONFIGURATION.md#constraint-conformance)); use it
@@ -324,7 +324,7 @@ new DateGenerator.Builder(random).build()
 new SqlTimestampGenerator.Builder(random).build()
 new InstantGenerator.Builder(random).build()
 
-// First day of a month / quarter / year, for columns that only admit such dates (since 3.4.0)
+// First day of a month / quarter / year, for columns that only admit such dates (since 3.5.0)
 new TruncatedDateGenerator.Builder(random).build()                                 // DATE, first of a month
 new TruncatedDateGenerator.Builder(random).unit(Unit.QUARTER).build()              // Jan/Apr/Jul/Oct 1st
 new TruncatedDateGenerator.Builder(random).timestamp(true).build()                 // TIMESTAMP[TZ], midnight on the 1st

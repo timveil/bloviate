@@ -132,7 +132,7 @@ forms are honored: `IN (...)`, `BETWEEN`, and `>=`/`<=`/`>`/`<` comparisons, for
 floating, and text columns, plus enum/domain allowed values.
 
 Dates that must fall on the first of a period are honored too, on `DATE`, `TIMESTAMP` and
-`TIMESTAMP WITH TIME ZONE` columns (since 3.4.0):
+`TIMESTAMP WITH TIME ZONE` columns (since 3.5.0):
 
 ```sql
 CREATE TABLE invoices (
@@ -154,7 +154,7 @@ Notes:
   does arithmetic, or takes any other form is **skipped with a warning**, and the column falls back to
   its type default. That includes negation, `OR`, `LIKE` patterns, a one-sided bound, other
   `date_trunc` units (`day`, `week`, ...), and **`CHECK`s over more than one column**.
-- Before 3.4.0 a quoted function argument was read as an allowed value, so
+- Before 3.5.0 a quoted function argument was read as an allowed value, so
   `date_trunc('month', d) = d` made the fill fail with `invalid input syntax for type date: "month"`.
 - A per-column override or a [registry](./GENERATORS.md#custom-generator-registry) rule always
   wins, so you can still take full control of a constrained column.
