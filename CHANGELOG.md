@@ -1,3 +1,9 @@
+## [3.8.0](https://github.com/timveil/bloviate/compare/v3.7.0...v3.8.0) (2026-09-20)
+
+### ✨ Features
+
+* **cli:** add bloviate-cli module with the fill command ([#636](https://github.com/timveil/bloviate/issues/636)) ([7a0c279](https://github.com/timveil/bloviate/commit/7a0c27932838542d9d9cd1a1c1a31b3a229eeb18)), closes [#623](https://github.com/timveil/bloviate/issues/623) [#624](https://github.com/timveil/bloviate/issues/624) [#625](https://github.com/timveil/bloviate/issues/625) [#626](https://github.com/timveil/bloviate/issues/626) [#622](https://github.com/timveil/bloviate/issues/622)
+
 ## [3.7.0](https://github.com/timveil/bloviate/compare/v3.6.0...v3.7.0) (2026-09-20)
 
 ### ✨ Features
