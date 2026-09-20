@@ -1,3 +1,9 @@
+## [3.6.0](https://github.com/timveil/bloviate/compare/v3.5.1...v3.6.0) (2026-09-20)
+
+### ✨ Features
+
+* **core:** fill declaratively partitioned tables through the parent ([#637](https://github.com/timveil/bloviate/issues/637)) ([0d80b3f](https://github.com/timveil/bloviate/commit/0d80b3f9e4bb9c19f66b4f8f84d3ff24eb23fc7c)), closes [#615](https://github.com/timveil/bloviate/issues/615)
+
 ## [3.5.1](https://github.com/timveil/bloviate/compare/v3.5.0...v3.5.1) (2026-09-20)
 
 ### 🐛 Bug Fixes
