@@ -1,3 +1,9 @@
+## [3.7.0](https://github.com/timveil/bloviate/compare/v3.6.0...v3.7.0) (2026-09-20)
+
+### ✨ Features
+
+* **gen:** add anchored relative date ranges with asOf ([#638](https://github.com/timveil/bloviate/issues/638)) ([a28ce7b](https://github.com/timveil/bloviate/commit/a28ce7b6fda6213928eac20bdb883df125cd2011)), closes [#616](https://github.com/timveil/bloviate/issues/616) [#637](https://github.com/timveil/bloviate/issues/637)
+
 ## [3.6.0](https://github.com/timveil/bloviate/compare/v3.5.1...v3.6.0) (2026-09-20)
 
 ### ✨ Features
