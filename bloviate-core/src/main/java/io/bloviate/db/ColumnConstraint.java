@@ -91,7 +91,7 @@ public record ColumnConstraint(List<String> allowedValues, BigDecimal min, boole
      *
      * @param unit the period whose first day the column must hold
      * @return a constraint that admits only first days of {@code unit}
-     * @since 3.4.0
+     * @since 3.5.0
      */
     public static ColumnConstraint ofDateTruncation(TruncatedDateGenerator.Unit unit) {
         return new ColumnConstraint(null, null, false, null, false, unit);
@@ -130,7 +130,7 @@ public record ColumnConstraint(List<String> allowedValues, BigDecimal min, boole
      * True if the column must hold the first day of a period (month, quarter or year).
      *
      * @return whether a date truncation is present
-     * @since 3.4.0
+     * @since 3.5.0
      */
     public boolean hasDateTruncation() {
         return dateTruncation != null;

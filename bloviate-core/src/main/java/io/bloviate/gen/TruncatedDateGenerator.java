@@ -49,7 +49,7 @@ import java.util.random.RandomGenerator;
  * {@code new TruncatedDateGenerator.Builder(random).unit(Unit.MONTH).build()}. The fill engine also
  * selects it by itself when it reads such a {@code CHECK} constraint from PostgreSQL.
  *
- * @since 3.4.0
+ * @since 3.5.0
  */
 public class TruncatedDateGenerator extends AbstractDataGenerator<LocalDate> {
 
