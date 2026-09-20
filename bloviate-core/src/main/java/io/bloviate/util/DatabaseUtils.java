@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.*;
+import java.util.function.UnaryOperator;
 
 /**
  * Utility class for extracting database metadata through JDBC.
@@ -114,23 +115,48 @@ public class DatabaseUtils {
      * @throws SQLException if database access fails
      */
     public static Database getMetadata(Connection connection) throws SQLException {
+        return getMetadata(connection, UnaryOperator.identity());
+    }
+
+    /**
+     * Extracts database metadata from a Connection, keeping only the tables a filter selects.
+     *
+     * <p>The catalog and schema read are the connection's current ones. The filter receives the
+     * names of every table found there and returns the names to keep, in the order to keep them; it
+     * runs before any column or key metadata is read, so a large schema pays only for the tables it
+     * keeps. A foreign key that references a table the filter dropped is still described (its parent's
+     * columns are read on demand), but that table is not in {@link Database#tables()}; callers that
+     * fill the result must check for that, as {@link DatabaseFiller} does.
+     *
+     * @param connection  the database connection to analyze
+     * @param tableFilter maps the names of all tables found to the names to keep; may throw
+     *                    {@link IllegalArgumentException} to reject the selection
+     * @return a Database object containing the metadata of the selected tables
+     * @throws SQLException if database access fails
+     * @since 3.3.0
+     */
+    public static Database getMetadata(Connection connection, UnaryOperator<List<String>> tableFilter) throws SQLException {
         String catalog = connection.getCatalog();
         String schema = connection.getSchema();
 
         DatabaseMetaData metaData = connection.getMetaData();
 
-        return new Database(metaData.getDatabaseProductName(), metaData.getDatabaseProductVersion(), catalog, schema, getTables(metaData, catalog, schema));
+        return new Database(metaData.getDatabaseProductName(), metaData.getDatabaseProductVersion(), catalog, schema,
+                getTables(metaData, catalog, schema, tableFilter));
     }
 
-    private static List<Table> getTables(DatabaseMetaData metaData, String catalog, String schema) throws SQLException {
+    private static List<Table> getTables(DatabaseMetaData metaData, String catalog, String schema,
+                                         UnaryOperator<List<String>> tableFilter) throws SQLException {
 
-        List<String> tableNames = new ArrayList<>();
+        List<String> discoveredNames = new ArrayList<>();
 
         try (ResultSet tablesResultSet = metaData.getTables(catalog, schema, null, new String[]{"TABLE"})) {
             while (tablesResultSet.next()) {
-                tableNames.add(tablesResultSet.getString("TABLE_NAME"));
+                discoveredNames.add(tablesResultSet.getString("TABLE_NAME"));
             }
         }
+
+        List<String> tableNames = tableFilter.apply(discoveredNames);
 
         // each table's columns are fetched once and reused for primary- and foreign-key
         // resolution below, instead of issuing a getColumns round trip per key column
@@ -182,17 +208,42 @@ public class DatabaseUtils {
             List<KeyColumn> columns = new ArrayList<>();
 
             String primaryKeyTable = null;
+            String primaryKeySchema = null;
+            String primaryKeyCatalog = null;
             for (Key key : keys) {
                 primaryKeyTable = key.primaryTableName();
+                primaryKeySchema = key.primaryTableSchema();
+                primaryKeyCatalog = key.primaryTableCatalog();
                 columns.add(new KeyColumn(key.sequence(), columnFor(metaData, catalog, schema, tableName, key.foreignColumnName(), columnsByTable)));
             }
 
-            foreignKeys.add(new ForeignKey(columns, primaryKeyFor(metaData, catalog, schema, primaryKeyTable, columnsByTable, primaryKeysByTable)));
+            boolean otherSchema = differs(schema, primaryKeySchema);
+            boolean otherCatalog = differs(catalog, primaryKeyCatalog);
+
+            if (otherSchema || otherCatalog) {
+                // the parent is in another schema/catalog. Resolving it by name here would read the
+                // same-named table of THIS schema (or nothing), so it is described without key columns
+                // and marked; DatabaseFiller reports it instead of filling against the wrong parent
+                foreignKeys.add(new ForeignKey(columns, new PrimaryKey(primaryKeyTable, List.of()),
+                        otherSchema ? primaryKeySchema : null, otherCatalog ? primaryKeyCatalog : null));
+            } else {
+                foreignKeys.add(new ForeignKey(columns, primaryKeyFor(metaData, catalog, schema, primaryKeyTable, columnsByTable, primaryKeysByTable)));
+            }
 
         }
 
         return foreignKeys;
 
+    }
+
+    /**
+     * Whether a referenced table's schema or catalog is a different one from the one being read. Only a
+     * definite difference counts: a null on either side (a driver that has no such concept, MySQL
+     * reporting no schema, a connection with no current schema) is not a difference, and names compare
+     * case-insensitively because key and table result sets can disagree on identifier case.
+     */
+    private static boolean differs(String selected, String referenced) {
+        return selected != null && referenced != null && !selected.equalsIgnoreCase(referenced);
     }
 
     private static PrimaryKey primaryKeyFor(DatabaseMetaData metaData, String catalog, String schema, String tableName,
@@ -221,8 +272,11 @@ public class DatabaseUtils {
                 String fkColumnName = rs.getString("FKCOLUMN_NAME");
                 int seq = rs.getInt("KEY_SEQ");
                 String fkName = rs.getString("FK_NAME");
+                String primaryKeySchema = rs.getString("PKTABLE_SCHEM");
+                String primaryKeyCatalog = rs.getString("PKTABLE_CAT");
 
-                keys.add(new Key(primaryKeyTableName, primaryKeyColumnName, fkTableName, fkColumnName, seq, fkName));
+                keys.add(new Key(primaryKeyTableName, primaryKeyColumnName, fkTableName, fkColumnName, seq, fkName,
+                        primaryKeySchema, primaryKeyCatalog));
             }
         }
 
@@ -406,8 +460,16 @@ public class DatabaseUtils {
                         // for the column on this table that is a foreign key, grab the associated column the another table where it is the primary key
                         PrimaryKey primaryKey = foreignKey.primaryKey();
 
-                        // for the primary key grab its full table data
-                        Table primaryTable = database.getTable(primaryKey.tableName());
+                        // for the primary key grab its full table data; the parent can be missing when a
+                        // table selection left it out, which deserves more than "table not found"
+                        // (a parent in another schema is never the same-named table of this one)
+                        Table primaryTable = (foreignKey.referencesOtherSchema()
+                                ? Optional.<Table>empty()
+                                : database.findTable(primaryKey.tableName())).orElseThrow(() ->
+                                new IllegalArgumentException(String.format(
+                                        "table [%s] column [%s] references table [%s], which is not among the tables being filled; "
+                                                + "include it in the table selection",
+                                        table.name(), column.name(), primaryKey.tableName())));
 
                         for (KeyColumn primaryKeyColumn : primaryKey.keyColumns()) {
 

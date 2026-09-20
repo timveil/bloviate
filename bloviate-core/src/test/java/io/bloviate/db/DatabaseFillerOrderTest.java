@@ -22,6 +22,7 @@ import java.sql.JDBCType;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -58,6 +59,51 @@ class DatabaseFillerOrderTest {
             }
         }
         throw new AssertionError("table not in fill order: " + tableName);
+    }
+
+    @Test
+    void aForeignKeyToATableOutsideTheDatabaseFailsNamingChildColumnAndParentBeforeOrdering() {
+        Table parent = parentless("parent");
+        Table child = childOf("child", parent);
+        Database database = new Database("test", "1", null, null, List.of(child, parentless("other")));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> DatabaseFiller.fillOrder(database));
+
+        assertTrue(e.getMessage().contains("[child]"), e.getMessage());
+        assertTrue(e.getMessage().contains("[parent_id]"), e.getMessage());
+        assertTrue(e.getMessage().contains("[parent]"), e.getMessage());
+        assertTrue(e.getMessage().contains("includeTables"), e.getMessage());
+    }
+
+    @Test
+    void everyOffendingForeignKeyIsReportedAtOnce() {
+        Table p1 = parentless("p1");
+        Table p2 = parentless("p2");
+        Database database = new Database("test", "1", null, null, List.of(childOf("c1", p1), childOf("c2", p2)));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> DatabaseFiller.fillOrder(database));
+
+        assertTrue(e.getMessage().contains("[c1]") && e.getMessage().contains("[c2]"), e.getMessage());
+    }
+
+    @Test
+    void aSelfReferencingTableIsNotMissingItsParent() {
+        Column id = id("tree");
+        Column fk = fk("tree", "parent_id");
+        PrimaryKey pk = new PrimaryKey("tree", List.of(new KeyColumn(1, id)));
+        Table tree = new Table("tree", pk, List.of(id, fk), List.of(new ForeignKey(List.of(new KeyColumn(1, fk)), pk)));
+        Database database = new Database("test", "1", null, null, List.of(tree));
+
+        assertEquals(1, DatabaseFiller.fillOrder(database).size());
+    }
+
+    @Test
+    void findTableIsCaseInsensitiveAndDoesNotThrow() {
+        Database database = new Database("test", "1", null, null, List.of(parentless("Orders")));
+
+        assertTrue(database.findTable("ORDERS").isPresent());
+        assertTrue(database.findTable("missing").isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> database.getTable("missing"));
     }
 
     @Test
