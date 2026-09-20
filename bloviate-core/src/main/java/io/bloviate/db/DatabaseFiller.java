@@ -41,6 +41,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -76,6 +77,11 @@ import java.util.concurrent.Future;
  * before the schema is read and any table is filled, {@link Builder#after(SqlScript) after} hooks
  * once every table is filled (for example to compute a rollup from the generated rows). See
  * {@link SqlScriptRunner} for the script syntax and the transaction semantics.
+ *
+ * <p>By default every table of the connection's current schema is filled. {@link Builder#schema(String)}
+ * and {@link Builder#catalog(String)} pick another schema, and {@link Builder#includeTables(String...)}
+ * and {@link Builder#excludeTables(String...)} narrow the tables, for example to leave a derived table
+ * to an after hook.
  *
  * <p>Example usage:
  * <pre>{@code
@@ -133,6 +139,12 @@ public class DatabaseFiller implements Fillable {
     /** SQL scripts run, in order, after every table has been filled. */
     private final List<SqlScript> afterHooks;
 
+    /** Which of the schema's tables are filled; {@link TableSelection#ALL} unless narrowed. */
+    private final TableSelection tableSelection;
+
+    /** The catalog/schema every connection the fill uses is pointed at; {@link SchemaSelection#NONE} leaves them alone. */
+    private final SchemaSelection schemaSelection;
+
     /**
      * Fills all tables in the database with generated data.
      *
@@ -153,7 +165,18 @@ public class DatabaseFiller implements Fillable {
      * fails this method; tables filled before the failure stay filled, since there is no cross-table
      * rollback.
      *
-     * @throws SQLException if any database operation or hook script fails during the filling process
+     * <p>When a {@link Builder#schema(String) schema} or {@link Builder#catalog(String) catalog} is
+     * selected it is applied to every connection the fill uses (hooks included) and undone afterwards:
+     * on a supplied {@link Connection} when this method returns or throws, on a {@link DataSource}
+     * connection before it goes back to the pool. Tables left out by
+     * {@link Builder#includeTables(String...) includeTables}/{@link Builder#excludeTables(String...)
+     * excludeTables} are not touched, and the fill fails before writing any row if a selected table
+     * has a foreign key to one of them.
+     *
+     * @throws SQLException if any database operation or hook script fails during the filling process,
+     *                      or the driver cannot select the requested schema/catalog
+     * @throws IllegalArgumentException if the table selection matches no table, or a selected table
+     *                      references a table that is not selected
      */
     @Override
     public void fill() throws SQLException {
@@ -176,7 +199,24 @@ public class DatabaseFiller implements Fillable {
      * caller's own, or the one connection borrowed for a non-parallel {@link DataSource} fill), or
      * {@code null} for the parallel path, where the workers borrow their own connections.
      */
+    // UnusedLocalVariable: false positive. The schema scope is a try-with-resources resource that is
+    // never read; closing it is the point (it restores the connection's schema/catalog).
+    @SuppressWarnings("PMD.UnusedLocalVariable")
     private void fill(Connection sequentialConnection) throws SQLException {
+        if (sequentialConnection == null) {
+            // parallel path: the schema is applied to each connection as it is borrowed
+            fillAll(null);
+            return;
+        }
+        // point the single connection at the selected schema for the whole run (hooks included) and put
+        // it back when done, on success or failure: a caller's connection is left as it was, and a pooled
+        // one is restored before it is returned to the pool (the caller of this method closes it)
+        try (SchemaSelection.Scope scope = schemaSelection.apply(sequentialConnection, connection == null)) {
+            fillAll(sequentialConnection);
+        }
+    }
+
+    private void fillAll(Connection sequentialConnection) throws SQLException {
 
         // before-hooks come first so they can create or empty the tables about to be filled, and so a
         // failing one prevents anything from being written
@@ -188,10 +228,7 @@ public class DatabaseFiller implements Fillable {
 
         StopWatch metadataWatch = new StopWatch("fetched database metadata in");
         metadataWatch.start();
-        // the sequential path reads metadata on its own connection; the parallel path borrows one
-        Database database = sequentialConnection != null
-                ? DatabaseUtils.getMetadata(sequentialConnection)
-                : DatabaseUtils.getMetadata(dataSource);
+        Database database = readMetadata(sequentialConnection);
         metadataWatch.stop();
 
         logger.debug("{}", metadataWatch);
@@ -199,6 +236,9 @@ public class DatabaseFiller implements Fillable {
         StopWatch databaseWatch = new StopWatch(String.format("filled database [%s] in", database.catalog()));
         databaseWatch.start();
 
+        warnAboutUnusedTableConfigurations(database);
+
+        // fails before any row is written if a selected table references a table that is not selected
         Graph<Table, DefaultEdge> reversedGraph = buildReversedDependencyGraph(database);
 
         visualizeGraph(reversedGraph, database.catalog());
@@ -252,6 +292,9 @@ public class DatabaseFiller implements Fillable {
      * returns it before the workers start or after they finish: pinning one across the fill would
      * deadlock a pool sized to the thread count, and session state does not carry across phases.
      */
+    // UnusedLocalVariable: false positive. The schema scope is a try-with-resources resource that is
+    // never read; closing it is the point (it restores the connection's schema/catalog).
+    @SuppressWarnings("PMD.UnusedLocalVariable")
     private void runHooks(String phase, List<SqlScript> hooks, Connection sequentialConnection) throws SQLException {
         if (hooks.isEmpty()) {
             return;
@@ -260,10 +303,85 @@ public class DatabaseFiller implements Fillable {
         if (sequentialConnection != null) {
             SqlScriptRunner.runAll(sequentialConnection, hooks);
         } else {
-            try (Connection conn = dataSource.getConnection()) {
+            try (Connection conn = dataSource.getConnection();
+                 SchemaSelection.Scope scope = schemaSelection.apply(conn, true)) {
                 SqlScriptRunner.runAll(conn, hooks);
             }
         }
+    }
+
+    /**
+     * Reads the metadata of the selected tables: on the single connection of a sequential fill (already
+     * pointed at the selected schema), otherwise on a connection borrowed from the pool for the read,
+     * pointed at the selected schema and restored before it goes back.
+     */
+    // UnusedLocalVariable: false positive. The schema scope is a try-with-resources resource that is
+    // never read; closing it is the point (it restores the connection's schema/catalog).
+    @SuppressWarnings("PMD.UnusedLocalVariable")
+    private Database readMetadata(Connection sequentialConnection) throws SQLException {
+        if (sequentialConnection != null) {
+            return DatabaseUtils.getMetadata(sequentialConnection, tableSelection.asFilter());
+        }
+        try (Connection conn = dataSource.getConnection();
+             SchemaSelection.Scope scope = schemaSelection.apply(conn, true)) {
+            return DatabaseUtils.getMetadata(conn, tableSelection.asFilter());
+        }
+    }
+
+    /**
+     * Logs one warning naming the {@link TableConfiguration}s that configure a table that will not be
+     * filled: those matching no table at all (usually a typo), and those matching a table the table
+     * selection left out (the configuration has no effect). Neither is an error here; nothing else
+     * about them changes.
+     */
+    private void warnAboutUnusedTableConfigurations(Database database) {
+        UnusedTableConfigurations unused = findUnusedTableConfigurations(database, configuration, tableSelection);
+        if (!unused.unknown().isEmpty()) {
+            logger.warn("table configuration(s) for {} match no table in the selected schema and are ignored",
+                    unused.unknown());
+        }
+        if (!unused.excluded().isEmpty()) {
+            logger.warn("table configuration(s) for {} are ignored because includeTables/excludeTables leave those tables out",
+                    unused.excluded());
+        }
+    }
+
+    /**
+     * The names in a configuration's table configurations that will not be filled.
+     *
+     * @param unknown  names matching no table of the selected schema
+     * @param excluded names of tables the table selection left out
+     */
+    record UnusedTableConfigurations(List<String> unknown, List<String> excluded) {
+    }
+
+    /**
+     * Sorts the names of {@code configuration}'s table configurations that match no table of
+     * {@code database} into typos ({@code unknown}) and tables the selection left out
+     * ({@code excluded}, judged by name against {@code selection}). Both lists are sorted, so the
+     * warning does not depend on the configuration set's iteration order.
+     */
+    static UnusedTableConfigurations findUnusedTableConfigurations(Database database, DatabaseConfiguration configuration,
+                                                                   TableSelection selection) {
+        List<String> unknown = new ArrayList<>();
+        List<String> excluded = new ArrayList<>();
+        Set<TableConfiguration> tableConfigurations = configuration.tableConfigurations();
+        if (tableConfigurations != null) {
+            for (TableConfiguration tableConfiguration : tableConfigurations) {
+                String name = tableConfiguration.tableName();
+                if (database.findTable(name).isPresent()) {
+                    continue;
+                }
+                if (selection.isConfigured() && !selection.isSelected(name)) {
+                    excluded.add(name);
+                } else {
+                    unknown.add(name);
+                }
+            }
+        }
+        unknown.sort(String.CASE_INSENSITIVE_ORDER);
+        excluded.sort(String.CASE_INSENSITIVE_ORDER);
+        return new UnusedTableConfigurations(unknown, excluded);
     }
 
     /**
@@ -358,6 +476,9 @@ public class DatabaseFiller implements Fillable {
      * @param graph    the reversed dependency graph (used only for its vertex set here)
      * @throws SQLException if any table fill fails or the run is interrupted
      */
+    // UnusedLocalVariable: false positive. The schema scope is a try-with-resources resource that is
+    // never read; closing it is the point (it restores the connection's schema/catalog).
+    @SuppressWarnings("PMD.UnusedLocalVariable")
     private void fillUnordered(Database database, Graph<Table, DefaultEdge> graph) throws SQLException {
         DatabaseSupport support = configuration.databaseSupport();
 
@@ -365,7 +486,8 @@ public class DatabaseFiller implements Fillable {
         // the ordered path instead of fanning out into a partially-disabled state. As in the worker
         // bodies, a failed re-enable aborts the connection rather than returning it to the pool still
         // in its constraint-disabled state (see restoreConstraints).
-        try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = dataSource.getConnection();
+             SchemaSelection.Scope scope = schemaSelection.apply(conn, true)) {
             BulkLoadHandle handle = support.disableConstraints(conn, database);
             restoreConstraints(support, conn, database, handle);
         } catch (BulkLoadUnsupportedException e) {
@@ -567,9 +689,14 @@ public class DatabaseFiller implements Fillable {
      * the connection is aborted rather than returned to the pool (see {@link #restoreConstraints}). The
      * disable/enable mechanism is database-specific (see {@link DatabaseSupport#disableConstraints}).
      */
+    // UnusedLocalVariable: false positive. The schema scope is a try-with-resources resource that is
+    // never read; closing it is the point (it restores the connection's schema/catalog).
+    @SuppressWarnings("PMD.UnusedLocalVariable")
     private void fillOnPooledConnection(Database database, boolean bulk, ConnectionFill body) throws SQLException {
         DatabaseSupport support = configuration.databaseSupport();
-        try (Connection conn = dataSource.getConnection()) {
+        // the scope closes before the connection returns to the pool (resources close in reverse order)
+        try (Connection conn = dataSource.getConnection();
+             SchemaSelection.Scope scope = schemaSelection.apply(conn, true)) {
             BulkLoadHandle handle = bulk ? support.disableConstraints(conn, database) : null;
             try {
                 body.fill(conn);
@@ -763,8 +890,12 @@ public class DatabaseFiller implements Fillable {
      *
      * @param database the database whose tables and foreign keys define the dependencies
      * @return the reversed dependency graph, ready for topological ordering
+     * @throws IllegalArgumentException if a table has a foreign key to a table that is not in
+     *                                  {@code database}; see {@link #requireForeignKeyTargetsPresent}
      */
     static Graph<Table, DefaultEdge> buildReversedDependencyGraph(Database database) {
+        requireForeignKeyTargetsPresent(database);
+
         Graph<Table, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
         for (Table table : database.tables()) {
 
@@ -800,6 +931,39 @@ public class DatabaseFiller implements Fillable {
         }
 
         return new EdgeReversedGraph<>(graph);
+    }
+
+    /**
+     * Fails if any table has a foreign key to a table that is not in {@code database}: the referencing
+     * table's values are seeded from the parent's primary key, and the parent must be filled first, so a
+     * parent left out of the selection (or living in another schema) cannot be honoured. Reported for
+     * every offending key at once, before anything is written, naming the child table, the foreign-key
+     * column(s) and the missing parent. A table referencing itself is fine.
+     *
+     * @param database the selected tables
+     * @throws IllegalArgumentException if a foreign key's parent is not among {@code database}'s tables
+     */
+    static void requireForeignKeyTargetsPresent(Database database) {
+        List<String> problems = new ArrayList<>();
+        for (Table table : database.tables()) {
+            List<ForeignKey> foreignKeys = table.foreignKeys();
+            if (foreignKeys == null) {
+                continue;
+            }
+            for (ForeignKey key : foreignKeys) {
+                String parent = key.primaryKey().tableName();
+                if (database.findTable(parent).isEmpty()) {
+                    problems.add(String.format("table [%s] foreign key on column(s) %s references table [%s]",
+                            table.name(), key.foreignKeyColumns().stream().map(keyColumn -> keyColumn.column().name()).toList(), parent));
+                }
+            }
+        }
+        if (!problems.isEmpty()) {
+            throw new IllegalArgumentException("cannot fill: " + String.join("; ", problems)
+                    + ", which is not among the tables being filled (left out by includeTables/excludeTables, or in another schema). "
+                    + "Add the referenced table(s) to includeTables (or remove the excludeTables pattern that drops them), "
+                    + "or exclude the referencing table(s) as well. Nothing was written.");
+        }
     }
 
     /**
@@ -876,6 +1040,10 @@ public class DatabaseFiller implements Fillable {
         private int threads = 1;
         private final List<SqlScript> beforeHooks = new ArrayList<>();
         private final List<SqlScript> afterHooks = new ArrayList<>();
+        private final List<String> includePatterns = new ArrayList<>();
+        private final List<String> excludePatterns = new ArrayList<>();
+        private String catalog;
+        private String schema;
 
         /**
          * Creates a builder that fills sequentially on a single caller-managed connection — the
@@ -966,6 +1134,137 @@ public class DatabaseFiller implements Fillable {
         }
 
         /**
+         * Fills the tables of this schema instead of the connection's current one. The schema is set
+         * on every connection the fill uses (metadata discovery, each worker, and the hook phases, so
+         * an unqualified table name in a hook script resolves in this schema) and the previous schema
+         * is restored afterwards: on a supplied {@link Connection} when {@link DatabaseFiller#fill()}
+         * returns or throws, on a {@link DataSource} connection before it goes back to the pool.
+         *
+         * <p>The name is passed to {@link Connection#setSchema(String)} as given, so its case must
+         * match the database's. If the driver does not support selecting a schema (MySQL and MariaDB
+         * treat a database as a catalog, so use {@link #catalog(String)}), or the schema does not
+         * exist, {@code fill()} fails with a {@link SQLException} before doing anything else. Table
+         * patterns given to {@link #includeTables(String...)} and {@link #excludeTables(String...)}
+         * match table names within this schema.
+         *
+         * <p>Where a driver implements {@code setSchema} by replacing the session's whole search path
+         * (PostgreSQL does), restoring puts back the single schema the connection reported before,
+         * not a multi-entry search path.
+         *
+         * @param schema the schema to fill
+         * @return this builder
+         * @throws NullPointerException     if {@code schema} is null
+         * @throws IllegalArgumentException if {@code schema} is blank
+         * @since 3.3.0
+         */
+        public Builder schema(String schema) {
+            this.schema = requireName(schema, "schema");
+            return this;
+        }
+
+        /**
+         * Fills the tables of this catalog instead of the connection's current one; on MySQL and
+         * MariaDB the catalog is the database. Applied and restored exactly as described for
+         * {@link #schema(String)}, and it fails the same way where the driver cannot switch catalog
+         * (PostgreSQL cannot change database on a connection).
+         *
+         * @param catalog the catalog to fill
+         * @return this builder
+         * @throws NullPointerException     if {@code catalog} is null
+         * @throws IllegalArgumentException if {@code catalog} is blank
+         * @since 3.3.0
+         */
+        public Builder catalog(String catalog) {
+            this.catalog = requireName(catalog, "catalog");
+            return this;
+        }
+
+        /**
+         * Restricts the fill to tables whose names match any of these patterns; with no include
+         * pattern every table of the schema is filled. Additive: each call adds patterns.
+         *
+         * <p>A pattern is an unqualified table name matched case-insensitively (as
+         * {@link TableConfiguration} names are), in which {@code *} matches any run of characters and
+         * {@code ?} exactly one; nothing else is special. It is matched against the tables of the
+         * {@linkplain #schema(String) selected schema}. A pattern that matches no table fails
+         * {@link DatabaseFiller#fill()} with an {@link IllegalArgumentException} naming it, since an
+         * empty selection is nearly always a typo. Exclusions ({@link #excludeTables(String...)}) are
+         * applied to what the includes kept.
+         *
+         * <p>A selected table with a foreign key to a table that is not selected fails the fill before
+         * any row is written; include the parent too.
+         *
+         * @param patterns table name patterns
+         * @return this builder
+         * @throws NullPointerException     if {@code patterns} or any pattern is null
+         * @throws IllegalArgumentException if any pattern is blank
+         * @since 3.3.0
+         */
+        public Builder includeTables(String... patterns) {
+            Objects.requireNonNull(patterns, "patterns must not be null");
+            return includeTables(List.of(patterns));
+        }
+
+        /**
+         * Collection form of {@link #includeTables(String...)}.
+         *
+         * @param patterns table name patterns
+         * @return this builder
+         * @throws NullPointerException     if {@code patterns} or any pattern is null
+         * @throws IllegalArgumentException if any pattern is blank
+         * @since 3.3.0
+         */
+        public Builder includeTables(Collection<String> patterns) {
+            Objects.requireNonNull(patterns, "patterns must not be null");
+            patterns.forEach(pattern -> includePatterns.add(TableSelection.requirePattern(pattern)));
+            return this;
+        }
+
+        /**
+         * Leaves tables whose names match any of these patterns unfilled: the way to keep a derived
+         * table (a rollup an {@link #after(SqlScript) after} hook computes) free of random rows.
+         * Additive; the pattern syntax is that of {@link #includeTables(String...)}, and exclusions
+         * apply after inclusions.
+         *
+         * <p>A pattern that matches no table only logs a warning. Excluding a table that no other table
+         * references just works; excluding a table that a selected table references fails
+         * {@link DatabaseFiller#fill()} before any row is written, naming both tables.
+         *
+         * @param patterns table name patterns
+         * @return this builder
+         * @throws NullPointerException     if {@code patterns} or any pattern is null
+         * @throws IllegalArgumentException if any pattern is blank
+         * @since 3.3.0
+         */
+        public Builder excludeTables(String... patterns) {
+            Objects.requireNonNull(patterns, "patterns must not be null");
+            return excludeTables(List.of(patterns));
+        }
+
+        /**
+         * Collection form of {@link #excludeTables(String...)}.
+         *
+         * @param patterns table name patterns
+         * @return this builder
+         * @throws NullPointerException     if {@code patterns} or any pattern is null
+         * @throws IllegalArgumentException if any pattern is blank
+         * @since 3.3.0
+         */
+        public Builder excludeTables(Collection<String> patterns) {
+            Objects.requireNonNull(patterns, "patterns must not be null");
+            patterns.forEach(pattern -> excludePatterns.add(TableSelection.requirePattern(pattern)));
+            return this;
+        }
+
+        private static String requireName(String value, String what) {
+            Objects.requireNonNull(value, what + " must not be null");
+            if (value.isBlank()) {
+                throw new IllegalArgumentException(what + " must not be blank");
+            }
+            return value;
+        }
+
+        /**
          * Builds a new DatabaseFiller instance with the configured parameters.
          *
          * @return a new DatabaseFiller ready to fill the database
@@ -987,6 +1286,8 @@ public class DatabaseFiller implements Fillable {
         this.threads = builder.threads;
         this.beforeHooks = List.copyOf(builder.beforeHooks);
         this.afterHooks = List.copyOf(builder.afterHooks);
+        this.tableSelection = new TableSelection(builder.includePatterns, builder.excludePatterns);
+        this.schemaSelection = new SchemaSelection(builder.catalog, builder.schema);
 
         if (connection != null && threads > 1) {
             logger.warn("threads({}) is ignored when filling on a single Connection; use the DataSource constructor for parallel fills", threads);

@@ -107,6 +107,15 @@ while (iterator.hasNext()) {
 }
 ```
 
+**Table selection.** The graph is built from the tables the fill selected, not necessarily every table
+in the schema: `DatabaseFiller.Builder#includeTables`/`#excludeTables` narrow what
+`DatabaseUtils.getMetadata` returns (before any column metadata is read), and `#schema`/`#catalog`
+point every connection the fill uses at another schema. A foreign key from a selected table to one
+that was left out has no parent to order after, so `buildReversedDependencyGraph` first checks every
+foreign key's target is present and fails with a message naming the child table, its column(s) and
+the missing parent, before a single row is written. See
+[Selecting tables and schema](CONFIGURATION.md#selecting-tables-and-schema).
+
 **Visualize it for free.** As a nice touch, `DatabaseFiller` exports the graph to
 [Graphviz DOT](https://graphviz.org/doc/info/lang.html) notation with JGraphT's `DOTExporter`,
 URL-encodes it, and logs a clickable [GraphvizOnline](https://dreampuf.github.io/GraphvizOnline/)

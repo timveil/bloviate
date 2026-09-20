@@ -17,6 +17,7 @@
 package io.bloviate.db;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Represents a database instance with its metadata and contained tables.
@@ -57,12 +58,25 @@ public record Database(String product, String productVersion, String catalog, St
      * @throws IllegalArgumentException if no table with the given name exists
      */
     public Table getTable(String tableName) {
+        return findTable(tableName)
+                .orElseThrow(() -> new IllegalArgumentException(String.format("table with name [%s] not found", tableName)));
+    }
+
+    /**
+     * Looks up a table by name using case-insensitive comparison, without throwing when it is absent.
+     * A table left out by {@code includeTables}/{@code excludeTables} is absent here even though it
+     * exists in the database.
+     *
+     * @param tableName the name of the table to find
+     * @return the table, or empty if this database does not hold a table of that name
+     * @since 3.3.0
+     */
+    public Optional<Table> findTable(String tableName) {
         for (Table table : tables) {
             if (table.name().equalsIgnoreCase(tableName)) {
-                return table;
+                return Optional.of(table);
             }
         }
-
-        throw new IllegalArgumentException(String.format("table with name [%s] not found", tableName));
+        return Optional.empty();
     }
 }

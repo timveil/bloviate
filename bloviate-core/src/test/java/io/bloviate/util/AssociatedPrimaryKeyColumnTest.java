@@ -30,6 +30,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for {@link DatabaseUtils#getAssociatedPrimaryKeyColumn}, the recursive
@@ -82,6 +84,25 @@ class AssociatedPrimaryKeyColumnTest {
         Database database = new Database("test", "1", null, null, List.of(parent, child));
 
         assertSame(parentId, DatabaseUtils.getAssociatedPrimaryKeyColumn(database, child, childFk));
+    }
+
+    @Test
+    void aParentOutsideTheDatabaseIsAClearErrorNamingTheChildColumnAndParent() {
+        Column parentId = col("id", "parent");
+
+        Column childFk = col("parent_id", "child");
+        ForeignKey fk = new ForeignKey(List.of(new KeyColumn(1, childFk)), singleColumnPk("parent", parentId));
+        Table child = new Table("child", null, List.of(childFk), List.of(fk));
+
+        // the parent was left out of the table selection, so it is not in the database
+        Database database = new Database("test", "1", null, null, List.of(child));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> DatabaseUtils.getAssociatedPrimaryKeyColumn(database, child, childFk));
+
+        assertTrue(e.getMessage().contains("[child]"), e.getMessage());
+        assertTrue(e.getMessage().contains("[parent_id]"), e.getMessage());
+        assertTrue(e.getMessage().contains("[parent]"), e.getMessage());
     }
 
     @Test

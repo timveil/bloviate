@@ -398,8 +398,100 @@ the primary keys. The supported way to re-run is a `before` hook that empties th
 
 **Derived tables.** The tables to fill are read after the before hooks and before the after hooks.
 A table an after hook *creates* (`CREATE TABLE summary AS SELECT ...`) is therefore never filled. A
-derived table that already exists is filled like any other, so have the hook empty it first
-(`DELETE FROM summary`) or configure it with a row count of `0`.
+derived table that already exists is filled like any other, so **exclude it**
+(`excludeTables("summary")`, see [Selecting tables and schema](#selecting-tables-and-schema)) and let
+the after hook compute it; otherwise it is filled with random rows that the hook then has to delete.
+
+## Selecting tables and schema
+
+By default Bloviate fills every table (views are not filled) in the connection's current catalog and
+schema. `DatabaseFiller.Builder` narrows that:
+
+```java
+new DatabaseFiller.Builder(connection, config)
+    .schema("reporting")                          // fill this schema, not the connection's current one
+    .includeTables("orders", "order_*")           // only these (default: all tables)
+    .excludeTables("order_stats", "tmp_*")        // ...except these
+    .after(SqlScript.inline("rollup", """
+        INSERT INTO order_stats (day, orders, revenue)
+        SELECT order_date, count(*), sum(total) FROM orders GROUP BY order_date"""))
+    .build()
+    .fill();
+```
+
+`includeTables` and `excludeTables` take varargs or a `Collection<String>`, and are additive across
+calls.
+
+**Patterns.** A pattern is an unqualified table name, matched case-insensitively (like
+`TableConfiguration` names). `*` matches any run of characters (including none) and `?` matches exactly
+one; every other character, including `.`, `[` and `%`, is literal, and there is no escape. Patterns
+match table names *within the selected schema*; they are never schema-qualified.
+
+**Rules.**
+
+- With no `includeTables`, every table is a candidate; with it, only tables matching at least one
+  include pattern are. `excludeTables` is applied after that, so an excluded table is out even if an
+  include pattern also names it.
+- An include pattern that matches no table fails `fill()` with an `IllegalArgumentException` naming
+  the pattern and listing the tables found: an empty selection is nearly always a typo. So does a
+  selection that leaves no table at all.
+- An exclude pattern that matches no table only logs a warning, so an exclude list can outlive a
+  dropped table.
+- These checks run when the schema is read, after any `before` hooks, and before any row is written.
+
+**Foreign keys to a table that is not filled.** Values in a foreign-key column are generated from the
+parent's primary key, so a selected table cannot reference a table that is left out. `fill()` fails
+with an `IllegalArgumentException` *before writing any row*, naming every offending child table, its
+foreign-key column(s) and the missing parent:
+
+```
+cannot fill: table [orders] foreign key on column(s) [customer_id] references table [customers], which
+is not among the tables being filled (left out by includeTables/excludeTables, or in another schema).
+Add the referenced table(s) to includeTables (or remove the excludeTables pattern that drops them), or
+exclude the referencing table(s) as well. Nothing was written.
+```
+
+Excluding a table that nothing references (a leaf, such as a derived rollup) always works, and a table
+that references itself is not an excluded parent. A foreign key into another schema is reported the
+same way.
+
+**Table configurations that do not apply.** A `TableConfiguration` naming a table that does not exist
+in the selected schema is still ignored, but `fill()` now logs one warning listing those names. A second
+warning lists configurations for tables the selection left out, since they have no effect.
+
+**The derived-table pattern.** A rollup or summary table exists in the schema but must be computed from
+the generated detail rows, not filled with random data. Exclude it, and populate it in an `after`
+hook (as in the example above). Hooks run in the selected schema, so their unqualified names resolve
+there. Because the hook reads the rows the fill wrote, the derived table always agrees with them.
+
+**Schema and catalog selection.** `schema(...)` and `catalog(...)` call `Connection.setSchema` /
+`setCatalog` on *every* connection the fill uses: the metadata read, each parallel worker, and the
+hook phases. The previous values are put back afterwards:
+
+- On a `Connection` you supply, when `fill()` returns or throws, so your connection is left as it was.
+- On a `DataSource` connection, before it goes back to the pool (with `threads(1)` the single borrowed
+  connection is scoped for the whole run; with `threads(n)` each worker's connection is scoped as it is
+  borrowed). If a pooled connection cannot be restored it is aborted so the pool discards it.
+
+The name is passed to the driver as given, so its case must match the database's (`"reporting"` and
+`"REPORTING"` differ on PostgreSQL, and H2 folds unquoted names to upper case). Bloviate checks that the
+connection reports the requested value after setting it, so a schema that does not exist, or a driver
+that ignores the request, is a `SQLException` from `fill()` ("cannot select schema [x]...") rather than a
+silent fill of the wrong schema. Databases differ:
+
+- **PostgreSQL, H2, CockroachDB:** use `schema(...)`. PostgreSQL cannot change database on a connection,
+  so `catalog(...)` there fails unless it names the current database.
+- **MySQL, MariaDB:** a database is a catalog and there are no schemas, so use `catalog("db_name")`;
+  `schema(...)` fails.
+- **SQLite:** neither is supported; `schema(...)`/`catalog(...)` fail.
+
+Two details worth knowing. PostgreSQL's driver implements `setSchema` by replacing the whole
+`search_path` with the one schema, so inside the fill (hooks included) types and functions living in
+other schemas, such as `public`, need qualifying, and the restore puts back the single schema the
+connection reported, not a multi-entry `search_path`. And on a connection with autocommit off, a
+`setSchema` is part of the open transaction on some drivers (PostgreSQL), as is anything else you have
+pending. Selecting the connection's current schema explicitly changes nothing, including the generated
+data: the seed depends on the table's real schema and catalog names, never on how they were chosen.
 
 ## Configuration options reference
 
@@ -422,7 +514,8 @@ derived table that already exists is filled like any other, so have the hook emp
 
 Parallelism (worker threads for concurrent table fill) is configured on the
 `DatabaseFiller.Builder` via `threads(n)` with the `DataSource` constructor, and so are the
-`before(...)`/`after(...)` [SQL hooks](#sql-hooks).
+`before(...)`/`after(...)` [SQL hooks](#sql-hooks) and the `schema(...)`/`catalog(...)`/
+`includeTables(...)`/`excludeTables(...)` [table and schema selection](#selecting-tables-and-schema).
 
 ### File generation options
 
