@@ -61,6 +61,33 @@ public class CockroachDBSupport extends PostgresSupport {
     }
 
     /**
+     * CockroachDB does not expose partitions as separate tables through JDBC, so there is nothing to
+     * discover or exclude; overrides {@link PostgresSupport#discoveredTableTypes()} back to
+     * {@code TABLE} only.
+     *
+     * @return {@code ["TABLE"]}
+     * @since 3.6.0
+     */
+    @Override
+    public java.util.List<String> discoveredTableTypes() {
+        return java.util.List.of("TABLE");
+    }
+
+    /**
+     * CockroachDB's partitioning is not PostgreSQL's declarative partitioning and its catalog differs;
+     * overrides {@link PostgresSupport#readPartitions} back to none.
+     *
+     * @param connection unused
+     * @param schema     unused
+     * @return an empty map
+     * @since 3.6.0
+     */
+    @Override
+    public java.util.Map<String, String> readPartitions(java.sql.Connection connection, String schema) {
+        return java.util.Map.of();
+    }
+
+    /**
      * CockroachDB does not support the unordered bulk-load path. It has no
      * {@code session_replication_role} switch, and its foreign keys and secondary indexes are
      * maintained transactionally across a distributed cluster, so there is no cheap session-level way

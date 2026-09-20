@@ -18,6 +18,7 @@ package io.bloviate.db;
 
 import com.zaxxer.hikari.HikariDataSource;
 import io.bloviate.ext.PostgresSupport;
+import io.bloviate.gen.SqlTimestampGenerator;
 import io.bloviate.util.DatabaseUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,9 +29,13 @@ import org.junit.jupiter.api.Test;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -46,8 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * enforcement genuinely on (see {@link PostgresSchemaFixture#assertForeignKeysEnforced}), so passing
  * means the data is valid, not that validation was skipped.
  *
- * <p>Observed on PostgreSQL 18 when #614 was written (the {@code @Disabled} tests fail this way today,
- * except the two {@code CHECK} cases, which #619 has since fixed and enabled):
+ * <p>Observed on PostgreSQL 18 when #614 was written (the {@code @Disabled} tests failed this way,
+ * except the two {@code CHECK} cases, which #619 has since fixed and enabled; the two partitioned-table
+ * cases are fixed and enabled by #615):
  * <ul>
  *   <li>a leaf partition filled directly: {@code new row for relation "orders_2024_01" violates
  *       partition constraint} (the generated {@code placed_at} was 2019-12-15);</li>
@@ -86,21 +92,18 @@ class PostgresPartitionedSchemaTest extends BaseDatabaseTestCase {
         }
     }
 
-    private static DatabaseConfiguration configuration() {
-        return new DatabaseConfiguration(16, ROWS, new PostgresSupport(), null, 42L);
-    }
-
     // ---------------------------------------------------------------------------------------------
     // partitioned tables (#615)
     // ---------------------------------------------------------------------------------------------
 
     /**
-     * Discovery asks JDBC for type {@code TABLE} only. PostgreSQL reports a partitioned parent as
-     * {@code PARTITIONED TABLE} and its leaf partitions as plain {@code TABLE}s, so the parent is
-     * skipped and every leaf is treated as an independent, unconstrained table.
+     * The driver reports a partitioned parent as {@code PARTITIONED TABLE} and its leaf partitions as
+     * plain {@code TABLE}s. Discovery asks for both and drops every partition, so the parent is the
+     * table to fill and its leaves are not tables of the metadata at all (#615). Before #615 this
+     * discovered only the leaves and skipped the parent.
      */
     @Test
-    void partitionedParentIsSkippedAndLeafPartitionsAreDiscovered() throws SQLException {
+    void partitionedParentIsDiscoveredAndItsPartitionsAreNot() throws SQLException {
         try (HikariDataSource dataSource = fixture.dataSource("orders_part");
              Connection connection = dataSource.getConnection()) {
 
@@ -110,43 +113,83 @@ class PostgresPartitionedSchemaTest extends BaseDatabaseTestCase {
                 names.add(table.name());
             }
 
-            assertEquals(Set.of("orders_2024_01", "orders_2024_02", "orders_2024_03", "order_stats"), Set.copyOf(names),
-                    "the partitioned parent [orders] must not be discovered; its leaves and the rollup are");
+            assertEquals(Set.of("orders", "order_stats"), Set.copyOf(names),
+                    "the partitioned parent [orders] is discovered; its leaves are not");
 
-            // the reason: the driver reports the parent under a different table type
+            // the parent's metadata is complete: columns, and a primary key that includes the partition key
+            Table orders = database.getTable("orders");
+            assertEquals(List.of("id", "tenant_id", "placed_at", "total"), orders.columns().stream().map(Column::name).toList());
+            assertEquals(List.of("id", "placed_at"), orders.primaryKey().keyColumns().stream().map(k -> k.column().name()).toList());
+
+            // the driver still reports the parent under a different table type
             try (ResultSet rs = connection.getMetaData().getTables(null, "orders_part", "orders", null)) {
                 rs.next();
                 assertEquals("PARTITIONED TABLE", rs.getString("TABLE_TYPE"));
             }
+
+            assertEquals(Map.of("orders_2024_01", "orders", "orders_2024_02", "orders", "orders_2024_03", "orders"),
+                    new PostgresSupport().readPartitions(connection, "orders_part"));
         }
     }
 
     /**
-     * Desired outcome for #615: a range-partitioned table is filled through its parent, so every row
-     * routes to a partition (which requires the generated {@code placed_at} to fall inside the
-     * bounded range the leaves cover).
-     *
-     * <p>Today each leaf is filled directly with default, unbounded timestamps, which violates the
-     * partition constraint.
+     * #615: a range-partitioned table is filled through its parent, so every row routes to a partition
+     * (which requires the generated {@code placed_at} to fall inside the bounded range the leaves
+     * cover; the default 2020 +-100 day range does not, so the column is configured).
      */
     @Test
-    @Disabled("#615: leaf partitions are filled directly with unbounded timestamps that violate partition bounds")
     void partitionedTableIsFilledThroughItsParent() throws SQLException {
-        fixture.fillSequential("orders_part", configuration());
+        fixture.fillSequential("orders_part", configuration(placedAtIn2024("orders", 4)));
 
         verifyPartitionedOrders("orders_part");
     }
 
     /**
-     * Desired outcome for #615: a foreign key that references a partitioned table resolves to it.
-     * Today {@code Database.getTable} does not know the (skipped) parent and throws.
+     * #615: a foreign key that references a partitioned table resolves to it. The referencing column
+     * is generated by its own column's generator (seeded from the parent's key), so it carries the same
+     * range as the partition key it references.
      */
     @Test
-    @Disabled("#615: a foreign key to a partitioned parent fails table lookup (IllegalArgumentException)")
     void foreignKeyToPartitionedParentIsFilled() throws SQLException {
-        fixture.fillSequential("fk_to_part", configuration());
+        fixture.fillSequential("fk_to_part", configuration(placedAtIn2024("orders", 3), placedAtIn2024("order_items", 3)));
 
         verifyForeignKeyToPartitionedParent();
+    }
+
+    /**
+     * #615: the foreign key is described once, against the partitioned table. PostgreSQL clones it onto
+     * every partition of the referenced table and the driver lists each clone; those are dropped.
+     */
+    @Test
+    void foreignKeyToPartitionedParentIsDescribedOnceAgainstTheParent() throws SQLException {
+        try (HikariDataSource dataSource = fixture.dataSource("fk_to_part");
+             Connection connection = dataSource.getConnection()) {
+            assertEquals(3, fixture.queryLong("select count(*) from pg_constraint c join pg_namespace n on n.oid = c.connamespace "
+                    + "where c.contype = 'f' and n.nspname = 'fk_to_part'"), "the database holds a parent constraint and one clone per partition");
+
+            Database database = DatabaseUtils.getMetadata(connection);
+
+            assertEquals(Set.of("orders", "order_items"), database.tables().stream().map(Table::name).collect(Collectors.toSet()));
+            List<ForeignKey> foreignKeys = database.getTable("order_items").foreignKeys();
+            assertEquals(1, foreignKeys.size());
+            assertEquals("orders", foreignKeys.getFirst().primaryKey().tableName());
+            assertEquals(List.of("id", "placed_at"),
+                    foreignKeys.getFirst().primaryKey().keyColumns().stream().map(k -> k.column().name()).toList());
+        }
+    }
+
+    private static DatabaseConfiguration configuration(TableConfiguration... tableConfigurations) {
+        return new DatabaseConfiguration(16, ROWS, new PostgresSupport(),
+                tableConfigurations.length == 0 ? null : Set.of(tableConfigurations), 42L);
+    }
+
+    /** Constrains {@code placed_at} of {@code table} to 2024-01-01 up to the first of {@code endMonth}, the range the partitions cover. */
+    private static TableConfiguration placedAtIn2024(String table, int endMonth) {
+        return new TableConfiguration(table, ROWS, Set.of(new ColumnConfiguration("placed_at",
+                random -> new SqlTimestampGenerator.Builder(random)
+                        .start(Timestamp.valueOf(LocalDateTime.of(2024, 1, 1, 0, 0)))
+                        .end(Timestamp.valueOf(LocalDateTime.of(2024, endMonth, 1, 0, 0)))
+                        .build())));
     }
 
     static void verifyPartitionedOrders(String schema) throws SQLException {
@@ -272,11 +315,12 @@ class PostgresPartitionedSchemaTest extends BaseDatabaseTestCase {
 
     /**
      * End-to-end target for the umbrella: the whole {@code saas} schema fills with enforcement on.
-     * It needs #615 (orders) and #617 (tenant FKs), so it can only be enabled once both have landed
-     * (#619, the invoices' first-of-month CHECKs, has). The {@code rollup} table is filled like any other; it is not derived.
+     * It needs #617 (tenant FKs), so it can only be enabled once that has landed (#615, the
+     * partitioned orders, and #619, the invoices' first-of-month CHECKs, have; it will also need the
+     * partition key of {@code orders} constrained, see {@link #placedAtIn2024}). The {@code rollup} table is filled like any other; it is not derived.
      */
     @Test
-    @Disabled("#613: needs #615 (partitioned orders) and #617 (tenant-scoped FKs); the first-of-month CHECKs (#619) are done")
+    @Disabled("#613: needs #617 (tenant-scoped FKs); partitioned tables (#615) and the first-of-month CHECKs (#619) are done")
     void wholeMotivatingSchemaIsFilled() throws SQLException {
         fixture.fillSequential("saas", configuration());
 

@@ -50,6 +50,13 @@ foreign keys, then assembles them into an immutable model:
 These are all Java **records** — immutable, boilerplate-free value types. The metadata model is the
 single source of truth that every later stage reads from.
 
+Discovery goes through the `DatabaseSupport` (`discoveredTableTypes()`, `readPartitions(...)`): on
+PostgreSQL a declaratively partitioned table is discovered as one table (its parent) and its partitions,
+at any depth, are left out of the model, so rows are inserted through the parent and routed by the
+database. A foreign key to a partitioned table is read once against it; the per-partition copies PostgreSQL
+clones onto the referencing table are dropped. Other databases keep discovering plain `TABLE`s only. See
+[Partitioned tables](CONFIGURATION.md#partitioned-tables).
+
 ## The dependency DAG — fill order via topological sort
 
 This is the headline feature. You can't insert an order row before the customer it references

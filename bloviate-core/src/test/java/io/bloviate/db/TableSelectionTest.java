@@ -19,6 +19,7 @@ package io.bloviate.db;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -151,5 +152,44 @@ class TableSelectionTest {
         assertThrows(NullPointerException.class, () -> TableSelection.requirePattern(null));
         assertThrows(IllegalArgumentException.class, () -> TableSelection.requirePattern(" "));
         assertEquals("ok*", TableSelection.requirePattern("ok*"));
+    }
+
+    // ---- partitions (#615) -----------------------------------------------------------------------
+
+    private static final Map<String, String> PARTITIONS = Map.of("orders_2024_01", "orders", "orders_2024_02", "orders");
+
+    @Test
+    void partitionsAreNotAmongTheDiscoveredNamesSoAWildcardKeepsOnlyTheParent() {
+        // partitions are dropped from the discovered list before the selection sees it
+        assertEquals(List.of("orders", "order_items"),
+                selection(List.of("order*"), List.of()).select(List.of("orders", "order_items", "tmp_a"), PARTITIONS));
+    }
+
+    @Test
+    void anIncludePatternThatOnlyNamesAPartitionIsIgnoredNotAnErrorWhileOtherTablesAreSelected() {
+        assertEquals(List.of("customers"),
+                selection(List.of("customers", "orders_2024_01"), List.of()).select(List.of("customers", "orders"), PARTITIONS));
+    }
+
+    @Test
+    void includingOnlyAPartitionLeavesNothingToFill() {
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+                () -> selection(List.of("orders_2024_01"), List.of()).select(List.of("customers", "orders"), PARTITIONS));
+
+        assertTrue(failure.getMessage().contains("leave no table to fill"), failure.getMessage());
+    }
+
+    @Test
+    void anIncludePatternThatMatchesNeitherATableNorAPartitionStillFails() {
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+                () -> selection(List.of("customers", "typo"), List.of()).select(List.of("customers", "orders"), PARTITIONS));
+
+        assertTrue(failure.getMessage().contains("[typo]"), failure.getMessage());
+    }
+
+    @Test
+    void anExcludePatternThatNamesAPartitionExcludesNothing() {
+        assertEquals(List.of("customers", "orders"),
+                selection(List.of(), List.of("orders_2024_*")).select(List.of("customers", "orders"), PARTITIONS));
     }
 }

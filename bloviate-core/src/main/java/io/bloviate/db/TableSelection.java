@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -99,7 +100,7 @@ final class TableSelection {
     }
 
     /**
-     * Applies the selection to every table name found in the schema.
+     * Applies the selection to every table name found in the schema, when none of them is a partition.
      *
      * @param discovered the names of all tables in the schema, in discovery order
      * @return the names to fill, in the same order
@@ -107,21 +108,54 @@ final class TableSelection {
      *                                  the selection leaves no table to fill
      */
     List<String> select(List<String> discovered) {
+        return select(discovered, Map.of());
+    }
+
+    /**
+     * Applies the selection to every table name found in the schema.
+     *
+     * <p>{@code partitions} are the partitions of partitioned tables (partition name to the top-level
+     * partitioned table it belongs to). They are not among {@code discovered} and are never filled on
+     * their own, so a pattern that names one is not a typo but not actionable either: it is reported
+     * with the partitioned table to use instead, and otherwise ignored.
+     *
+     * @param discovered the names of all tables in the schema that can be filled, in discovery order
+     * @param partitions the partitions found, each mapped to its top-level partitioned table
+     * @return the names to fill, in the same order
+     * @throws IllegalArgumentException if an include pattern matches none of {@code discovered} or
+     *                                  {@code partitions}, or the selection leaves no table to fill
+     */
+    List<String> select(List<String> discovered, Map<String, String> partitions) {
         if (!isConfigured()) {
             return discovered;
         }
 
+        List<String> partitionNames = List.copyOf(partitions.keySet());
         List<String> unmatchedIncludes = unmatched(includes, discovered);
+        List<String> partitionIncludes = matchingAny(unmatchedIncludes, partitionNames);
+        unmatchedIncludes.removeAll(partitionIncludes);
         if (!unmatchedIncludes.isEmpty()) {
             throw new IllegalArgumentException(String.format(
                     "includeTables pattern(s) %s match no table in the selected schema (found: %s)",
                     unmatchedIncludes, listed(discovered)));
         }
+        if (!partitionIncludes.isEmpty()) {
+            logger.warn("includeTables pattern(s) {} only match partitions ({}); a partition is never filled on its own, "
+                    + "so they are ignored. Include the partitioned table instead", partitionIncludes,
+                    partitionsMatching(partitionIncludes, partitions));
+        }
 
         List<String> unmatchedExcludes = unmatched(excludes, discovered);
+        List<String> partitionExcludes = matchingAny(unmatchedExcludes, partitionNames);
+        unmatchedExcludes.removeAll(partitionExcludes);
         if (!unmatchedExcludes.isEmpty()) {
             logger.warn("excludeTables pattern(s) {} match no table in the selected schema; nothing was excluded by them",
                     unmatchedExcludes);
+        }
+        if (!partitionExcludes.isEmpty()) {
+            logger.warn("excludeTables pattern(s) {} only match partitions ({}); a partition is never filled on its own, "
+                    + "so nothing was excluded by them. Exclude the partitioned table to skip it", partitionExcludes,
+                    partitionsMatching(partitionExcludes, partitions));
         }
 
         List<String> selected = new ArrayList<>();
@@ -139,6 +173,26 @@ final class TableSelection {
 
         logger.debug("table selection kept {} of {} table(s)", selected.size(), discovered.size());
         return selected;
+    }
+
+    /** The patterns of {@code patterns} that match at least one of {@code names}. */
+    private static List<String> matchingAny(List<String> patterns, List<String> names) {
+        List<String> result = new ArrayList<>();
+        for (String pattern : patterns) {
+            if (names.stream().anyMatch(name -> matches(pattern, name))) {
+                result.add(pattern);
+            }
+        }
+        return result;
+    }
+
+    /** "partition [p] of [root]" for every partition one of {@code patterns} matches, in name order. */
+    private static List<String> partitionsMatching(List<String> patterns, Map<String, String> partitions) {
+        return partitions.entrySet().stream()
+                .filter(entry -> patterns.stream().anyMatch(pattern -> matches(pattern, entry.getKey())))
+                .map(entry -> "[" + entry.getKey() + "] of [" + entry.getValue() + "]")
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
     }
 
     private static List<String> unmatched(List<String> patterns, List<String> names) {

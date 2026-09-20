@@ -23,6 +23,7 @@ import io.bloviate.gen.DataGenerator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.random.RandomGenerator;
@@ -95,6 +96,46 @@ public interface DatabaseSupport {
      * @since 2.14.0
      */
     default Map<String, ColumnConstraint> readConstraints(Connection connection, String schema, String table) {
+        return Map.of();
+    }
+
+    /**
+     * The JDBC table types ({@link java.sql.DatabaseMetaData#getTables}) the fill engine asks the
+     * driver for when it discovers the tables to fill. The default is just {@code TABLE}, which is what
+     * every supported driver reports for an ordinary table.
+     *
+     * <p>A database whose driver reports another kind of relation that holds rows the engine must fill
+     * overrides this: PostgreSQL reports a declaratively partitioned table as
+     * {@code PARTITIONED TABLE}, so {@link PostgresSupport} adds it (see {@link #readPartitions}).
+     *
+     * @return the JDBC table types to discover, never empty
+     * @since 3.6.0
+     */
+    default List<String> discoveredTableTypes() {
+        return List.of("TABLE");
+    }
+
+    /**
+     * Reads which of the discovered tables are <em>partitions</em> of a declaratively partitioned
+     * table, so the fill engine can leave them out and insert through the partitioned parent instead
+     * (issue #615). A partition is a table in its own right that only accepts rows within its bounds,
+     * so filling it directly with unconstrained values fails; the parent routes each row to the right
+     * partition.
+     *
+     * <p>The result maps the name of every partition found in {@code schema} to the name of the
+     * <em>top-level</em> partitioned table it belongs to (for multi-level partitioning, an intermediate
+     * partition and its own partitions all map to the top-level table). A top-level table in a different
+     * schema is written {@code schema.table}. The default returns an empty map: MySQL, MariaDB,
+     * CockroachDB, H2, SQLite and BigQuery do not expose partitions as separate tables through JDBC, so
+     * nothing has to be excluded.
+     *
+     * @param connection an open connection to query the catalog with
+     * @param schema     the schema being discovered (may be null for the connection's current schema)
+     * @return partition name to top-level partitioned table, empty when none are found or supported
+     * @throws SQLException if the catalog query fails
+     * @since 3.6.0
+     */
+    default Map<String, String> readPartitions(Connection connection, String schema) throws SQLException {
         return Map.of();
     }
 

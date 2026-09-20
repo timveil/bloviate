@@ -17,12 +17,14 @@
 package io.bloviate.util;
 
 import io.bloviate.db.*;
+import io.bloviate.ext.DatabaseSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
 /**
@@ -136,27 +138,63 @@ public class DatabaseUtils {
      * @since 3.3.0
      */
     public static Database getMetadata(Connection connection, UnaryOperator<List<String>> tableFilter) throws SQLException {
+        return getMetadata(connection, DatabaseSupport.forConnection(connection),
+                (names, partitions) -> tableFilter.apply(names));
+    }
+
+    /**
+     * Extracts database metadata from a Connection using a {@link DatabaseSupport} to decide which
+     * relations are tables to fill, keeping only the tables a filter selects.
+     *
+     * <p>Besides {@code TABLE}, the support may ask for other JDBC table types
+     * ({@link DatabaseSupport#discoveredTableTypes()}) and names the <em>partitions</em> of
+     * declaratively partitioned tables ({@link DatabaseSupport#readPartitions}). Partitions are never
+     * tables to fill: they are left out of the names the filter sees and out of
+     * {@link Database#tables()}, and the partitioned table they belong to (the outermost one, for
+     * multi-level partitioning) stands in for them. The partition names are handed to the filter so it
+     * can report a selection that names one. A foreign key that references a partitioned table is
+     * described once, against that table; the extra keys some drivers report against each of its
+     * partitions are dropped.
+     *
+     * @param connection  the database connection to analyze
+     * @param support     the database support that discovers tables and partitions
+     * @param tableFilter maps the names of all tables found (partitions excluded) and the partition
+     *                    names (partition to its top-level partitioned table) to the names to keep; may
+     *                    throw {@link IllegalArgumentException} to reject the selection
+     * @return a Database object containing the metadata of the selected tables
+     * @throws SQLException if database access fails
+     * @since 3.6.0
+     */
+    public static Database getMetadata(Connection connection, DatabaseSupport support,
+                                       BiFunction<List<String>, Map<String, String>, List<String>> tableFilter) throws SQLException {
         String catalog = connection.getCatalog();
         String schema = connection.getSchema();
 
         DatabaseMetaData metaData = connection.getMetaData();
 
         return new Database(metaData.getDatabaseProductName(), metaData.getDatabaseProductVersion(), catalog, schema,
-                getTables(metaData, catalog, schema, tableFilter));
+                getTables(connection, metaData, support, catalog, schema, tableFilter));
     }
 
-    private static List<Table> getTables(DatabaseMetaData metaData, String catalog, String schema,
-                                         UnaryOperator<List<String>> tableFilter) throws SQLException {
+    private static List<Table> getTables(Connection connection, DatabaseMetaData metaData, DatabaseSupport support,
+                                         String catalog, String schema,
+                                         BiFunction<List<String>, Map<String, String>, List<String>> tableFilter) throws SQLException {
+
+        // partitions of a partitioned table are filled through it, never on their own
+        Map<String, String> partitions = support.readPartitions(connection, schema);
 
         List<String> discoveredNames = new ArrayList<>();
 
-        try (ResultSet tablesResultSet = metaData.getTables(catalog, schema, null, new String[]{"TABLE"})) {
+        try (ResultSet tablesResultSet = metaData.getTables(catalog, schema, null, support.discoveredTableTypes().toArray(String[]::new))) {
             while (tablesResultSet.next()) {
-                discoveredNames.add(tablesResultSet.getString("TABLE_NAME"));
+                String tableName = tablesResultSet.getString("TABLE_NAME");
+                if (!partitions.containsKey(tableName)) {
+                    discoveredNames.add(tableName);
+                }
             }
         }
 
-        List<String> tableNames = tableFilter.apply(discoveredNames);
+        List<String> tableNames = tableFilter.apply(discoveredNames, partitions);
 
         // each table's columns are fetched once and reused for primary- and foreign-key
         // resolution below, instead of issuing a getColumns round trip per key column
@@ -173,7 +211,7 @@ public class DatabaseUtils {
 
         for (String tableName : tableNames) {
             PrimaryKey primaryKey = primaryKeyFor(metaData, catalog, schema, tableName, columnsByTable, primaryKeysByTable);
-            List<ForeignKey> foreignKeys = getForeignKeys(metaData, catalog, schema, tableName, columnsByTable, primaryKeysByTable);
+            List<ForeignKey> foreignKeys = getForeignKeys(metaData, catalog, schema, tableName, columnsByTable, primaryKeysByTable, partitions);
 
             tables.add(new Table(tableName, primaryKey, columnsByTable.get(tableName), foreignKeys));
         }
@@ -183,7 +221,8 @@ public class DatabaseUtils {
 
     private static List<ForeignKey> getForeignKeys(DatabaseMetaData metaData, String catalog, String schema, String tableName,
                                                    Map<String, List<Column>> columnsByTable,
-                                                   Map<String, PrimaryKey> primaryKeysByTable) throws SQLException {
+                                                   Map<String, PrimaryKey> primaryKeysByTable,
+                                                   Map<String, String> partitions) throws SQLException {
 
         List<Key> importedKeys = getImportedKeys(metaData, catalog, schema, tableName);
 
@@ -204,6 +243,10 @@ public class DatabaseUtils {
         for (List<Key> keys : map.values()) {
 
             keys.sort(Comparator.comparing(Key::sequence));
+
+            if (referencesPartition(keys, map.values(), partitions, tableName)) {
+                continue;
+            }
 
             List<KeyColumn> columns = new ArrayList<>();
 
@@ -234,6 +277,58 @@ public class DatabaseUtils {
 
         return foreignKeys;
 
+    }
+
+    /**
+     * Whether a foreign key (one group of {@code keys} sharing a name) is one of the copies some drivers
+     * report for a foreign key that references a partitioned table: PostgreSQL clones the constraint onto
+     * every partition of the referenced table, and the driver lists each clone as a foreign key of its
+     * own. Only the original, against the partitioned table itself, is a relationship to fill; the copies
+     * would point at partitions, which are not tables being filled.
+     *
+     * <p>A copy is a foreign key to a partition that is <em>identical</em> to another foreign key of the
+     * same table to that partition's top-level table: the same referencing columns and the same
+     * referenced columns, pairwise and in the same order, in the same referenced schema and catalog
+     * (a clone is the original re-pointed at a partition, so only the table differs). Comparing the
+     * referencing columns alone would mistake a foreign key the user aimed at a partition for a copy
+     * whenever the same referencing column also references the parent, for example
+     * {@code child.a -> root(id)} beside {@code child.a -> partition(code)}. The metadata carries no
+     * update/delete rules to compare, so a direct foreign key that mirrors the parent's exactly (same
+     * columns against a same-named column of the partition) cannot be told from a copy and is dropped.
+     *
+     * <p>A foreign key to a partition with no such original is the user's own, aimed at a partition
+     * directly; it cannot be honoured (a partition is never filled), so it is kept (the fill then fails
+     * clearly, saying the referenced table is not being filled) and logged.
+     */
+    private static boolean referencesPartition(List<Key> keys, Collection<List<Key>> allKeys, Map<String, String> partitions,
+                                               String tableName) {
+        Key first = keys.getFirst();
+        String referenced = first.primaryTableName();
+        String root = partitions.get(referenced);
+        if (root == null) {
+            return false;
+        }
+        for (List<Key> other : allKeys) {
+            Key otherFirst = other.getFirst();
+            if (root.equals(otherFirst.primaryTableName())
+                    && Objects.equals(first.primaryTableSchema(), otherFirst.primaryTableSchema())
+                    && Objects.equals(first.primaryTableCatalog(), otherFirst.primaryTableCatalog())
+                    && columnPairs(keys).equals(columnPairs(other))) {
+                return true;
+            }
+        }
+        logger.warn("table [{}] has a foreign key [{}] that references [{}], a partition of [{}]; a partition is never filled on "
+                + "its own, so this key cannot be honoured. Reference the partitioned table instead",
+                tableName, first.name(), referenced, root);
+        return false;
+    }
+
+    /** The (referencing column, referenced column) pairs of one foreign key, in key-sequence order. */
+    private static List<List<String>> columnPairs(List<Key> keys) {
+        return keys.stream()
+                .sorted(Comparator.comparing(Key::sequence))
+                .map(key -> List.of(key.foreignColumnName(), key.primaryColumnName()))
+                .toList();
     }
 
     /**
