@@ -1,3 +1,9 @@
+## [3.4.0](https://github.com/timveil/bloviate/compare/v3.3.0...v3.4.0) (2026-09-20)
+
+### ✨ Features
+
+* **core:** add table include/exclude and schema/catalog selection ([#631](https://github.com/timveil/bloviate/issues/631)) ([1cc359f](https://github.com/timveil/bloviate/commit/1cc359f70cd864d8f74e8b9fd44b309a6f4770d8)), closes [#621](https://github.com/timveil/bloviate/issues/621)
+
 ## [3.3.0](https://github.com/timveil/bloviate/compare/v3.2.0...v3.3.0) (2026-09-20)
 
 ### ✨ Features
