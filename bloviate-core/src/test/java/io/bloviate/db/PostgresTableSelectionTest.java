@@ -217,6 +217,28 @@ class PostgresTableSelectionTest extends BaseDatabaseTestCase {
     }
 
     @Test
+    void aForeignKeyIntoAnotherSchemaIsNotMistakenForTheSameNamedLocalTable() throws SQLException {
+        try (Connection connection = open()) {
+            // sa gets its own customers table, but its orders reference sb's customers
+            SqlScriptRunner.run(connection, SqlScript.inline("cross", """
+                    create table sa.customers (id int primary key);
+                    create table sa.orders (id int primary key, customer_id int references sb.customers (id));
+                    """));
+            DatabaseFiller filler = new DatabaseFiller.Builder(connection, configuration()).schema("sa").build();
+
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, filler::fill);
+
+            assertTrue(e.getMessage().contains("[orders]"), e.getMessage());
+            assertTrue(e.getMessage().contains("customer_id"), e.getMessage());
+            assertTrue(e.getMessage().contains("[customers] in schema [sb]"), e.getMessage());
+            assertEquals(0, scalar(connection, "select count(*) from sa.customers"));
+            assertEquals(0, scalar(connection, "select count(*) from sa.orders"));
+            assertEquals(0, scalar(connection, "select count(*) from sb.customers"));
+            assertEquals("public", connection.getSchema());
+        }
+    }
+
+    @Test
     void aSchemaThatDoesNotExistIsAClearError() throws SQLException {
         try (Connection connection = open()) {
             DatabaseFiller filler = new DatabaseFiller.Builder(connection, configuration()).schema("no_such_schema").build();
@@ -255,6 +277,178 @@ class PostgresTableSelectionTest extends BaseDatabaseTestCase {
             assertEquals(implicit, explicit);
             assertFalse(implicit.isEmpty());
             assertEquals("sa", connection.getSchema());
+        }
+    }
+
+    // ---- caller connection with autocommit OFF: setSchema joins the caller's open transaction ----
+
+    /** A caller connection on schema sa with autocommit off, its own schema choice already committed. */
+    private static Connection manualCommitConnectionOnSa() throws SQLException {
+        Connection connection = open();
+        connection.setSchema("sa");
+        connection.setAutoCommit(false);
+        connection.commit();
+        return connection;
+    }
+
+    @Test
+    void manualCommitSuccessfulFillLandsInTheSelectedSchemaAndLeavesTheTransactionOpenAndUsable() throws SQLException {
+        try (Connection connection = manualCommitConnectionOnSa(); Connection observer = open()) {
+            new DatabaseFiller.Builder(connection, configuration()).schema("sb").includeTables("detail").build().fill();
+
+            // the fill's rows went to sb, not to the connection's schema, and are still uncommitted
+            assertEquals(0, scalar(observer, "select count(*) from sb.detail"), "the caller has not committed yet");
+            assertEquals(ROWS, scalar(connection, "select count(*) from sb.detail"));
+            assertEquals(0, scalar(connection, "select count(*) from sa.detail"));
+
+            // schema restored, transaction still open and the caller's
+            assertEquals("sa", connection.getSchema());
+            assertFalse(connection.getAutoCommit());
+            assertEquals(0, scalar(connection, "select count(*) from detail"), "unqualified names resolve in sa again");
+
+            connection.commit();
+
+            assertEquals(ROWS, scalar(observer, "select count(*) from sb.detail"));
+            assertEquals("sa", connection.getSchema(), "a commit must not bring the selected schema back");
+            assertFalse(connection.getAutoCommit());
+        }
+    }
+
+    @Test
+    void manualCommitRollbackAfterASuccessfulFillDiscardsTheRowsAndKeepsTheOriginalSchema() throws SQLException {
+        try (Connection connection = manualCommitConnectionOnSa(); Connection observer = open()) {
+            new DatabaseFiller.Builder(connection, configuration()).schema("sb").includeTables("detail").build().fill();
+
+            // the schema setting and its restore were both inside the transaction, so a rollback
+            // undoes both and the connection is back on the schema it had when the transaction began
+            connection.rollback();
+
+            assertEquals("sa", connection.getSchema());
+            assertEquals(0, scalar(connection, "select count(*) from sb.detail"));
+            assertEquals(0, scalar(observer, "select count(*) from sb.detail"));
+            assertFalse(connection.getAutoCommit());
+        }
+    }
+
+    @Test
+    void manualCommitHooksRunInTheSelectedSchemaAndTheirCommitKeepsTheRestoreCorrect() throws SQLException {
+        try (Connection connection = manualCommitConnectionOnSa(); Connection observer = open()) {
+            derivedTableFill(new DatabaseFiller.Builder(connection, configuration()))
+                    .before(SqlScript.inline("noop", "select 1")).build().fill();
+
+            // the after hook commits the transaction, fill rows included, and does so in schema sb
+            assertRollupAgrees(observer);
+            assertEquals("sa", connection.getSchema());
+            assertFalse(connection.getAutoCommit());
+            connection.rollback();
+            assertEquals("sa", connection.getSchema());
+            assertRollupAgrees(observer);
+        }
+    }
+
+    @Test
+    void manualCommitBeforeHookCommitsTheSelectionButARollbackStillEndsOnTheOriginalSchema() throws SQLException {
+        try (Connection connection = manualCommitConnectionOnSa(); Connection observer = open()) {
+            new DatabaseFiller.Builder(connection, configuration()).schema("sb").includeTables("detail")
+                    .before(SqlScript.inline("noop", "select 1")).build().fill();
+
+            // the hook's commit made the selection durable; the fill's rows are still pending
+            assertEquals(0, scalar(observer, "select count(*) from sb.detail"));
+            assertEquals("sa", connection.getSchema());
+
+            connection.rollback();
+
+            assertEquals("sa", connection.getSchema(), "the restore must not have been lost with the rolled-back rows");
+            assertEquals(0, scalar(connection, "select count(*) from sb.detail"));
+        }
+    }
+
+    @Test
+    void manualCommitEngineManagedCommitsMakeTheSelectionDurableSoTheRestoreIsCommittedToo() throws SQLException {
+        try (Connection connection = manualCommitConnectionOnSa(); Connection observer = open()) {
+            DatabaseConfiguration perTable = new DatabaseConfiguration(16, ROWS, new PostgresSupport(), null, 42L, CommitStrategy.perTable());
+            new DatabaseFiller.Builder(connection, perTable).schema("sb").includeTables("detail").build().fill();
+
+            assertEquals(ROWS, scalar(observer, "select count(*) from sb.detail"), "committed by the engine");
+            assertEquals("sa", connection.getSchema());
+            assertFalse(connection.getAutoCommit());
+
+            connection.rollback();
+
+            assertEquals("sa", connection.getSchema());
+            assertEquals(ROWS, scalar(connection, "select count(*) from sb.detail"));
+        }
+    }
+
+    @Test
+    void manualCommitAHookFailingAfterAnEarlierOneCommittedStillEndsOnTheOriginalSchema() throws SQLException {
+        try (Connection connection = manualCommitConnectionOnSa()) {
+            DatabaseFiller filler = new DatabaseFiller.Builder(connection, configuration()).schema("sb")
+                    .before(SqlScript.inline("good", "select 1"))
+                    .before(SqlScript.inline("bad", "select * from no_such_table"))
+                    .build();
+
+            assertThrows(SQLException.class, filler::fill);
+            connection.rollback();
+
+            assertEquals("sa", connection.getSchema(), "the first hook committed the selection; the restore had to survive a rollback");
+        }
+    }
+
+    @Test
+    void manualCommitFailingBeforeHookLeavesTheOriginalSchemaAndAutocommitOff() throws SQLException {
+        try (Connection connection = manualCommitConnectionOnSa()) {
+            DatabaseFiller filler = new DatabaseFiller.Builder(connection, configuration())
+                    .schema("sb").before(SqlScript.inline("bad", "select * from no_such_table")).build();
+
+            SQLException e = assertThrows(SQLException.class, filler::fill);
+
+            assertTrue(e.getMessage().contains("[bad]"), e.getMessage());
+            // the hook runner rolled the transaction back, schema selection included, so the restore
+            // had nothing left to undo and the connection is neither aborted nor on the wrong schema
+            assertEquals("sa", connection.getSchema());
+            assertFalse(connection.getAutoCommit());
+            assertEquals(0, scalar(connection, "select count(*) from detail"));
+        }
+    }
+
+    @Test
+    void manualCommitForeignKeyToAnExcludedTableFailsWithTheOriginalSchemaAndAutocommitOff() throws SQLException {
+        try (Connection connection = manualCommitConnectionOnSa()) {
+            DatabaseFiller filler = new DatabaseFiller.Builder(connection, configuration())
+                    .schema("sb").excludeTables("customers").build();
+
+            assertThrows(IllegalArgumentException.class, filler::fill);
+
+            assertEquals("sa", connection.getSchema());
+            assertFalse(connection.getAutoCommit());
+            assertEquals(0, scalar(connection, "select count(*) from detail"), "the connection is still usable");
+        }
+    }
+
+    @Test
+    void manualCommitFillThatAbortsTheTransactionSurfacesTheFillErrorAndRollbackBringsTheSchemaBack() throws SQLException {
+        try (Connection connection = manualCommitConnectionOnSa()) {
+            SqlScriptRunner.run(connection, SqlScript.inline("unfillable",
+                    "create table sb.unfillable (id int primary key, v int check (v = 1 and v = 2))"));
+            DatabaseFiller filler = new DatabaseFiller.Builder(connection, configuration())
+                    .schema("sb").includeTables("unfillable").build();
+
+            SQLException e = assertThrows(SQLException.class, filler::fill);
+
+            // the caller sees the fill's own error; the failed restore (the transaction is aborted) is
+            // attached to it rather than replacing it
+            assertTrue(e.getMessage().contains("check"), e.getMessage());
+            assertFalse(connection.getAutoCommit());
+            // until the caller rolls back, an aborted transaction accepts nothing
+            assertThrows(SQLException.class, () -> scalar(connection, "select 1"));
+
+            connection.rollback();
+
+            // the rollback undid the selection along with everything else in the transaction
+            assertEquals("sa", connection.getSchema());
+            assertEquals(0, scalar(connection, "select count(*) from detail"));
+            assertFalse(connection.getAutoCommit());
         }
     }
 

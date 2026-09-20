@@ -185,6 +185,46 @@ class DatabaseFillerTableSelectionTest {
     }
 
     @Test
+    void aForeignKeyIntoAnotherSchemaIsNotMistakenForTheSameNamedLocalTable() throws SQLException {
+        try (Connection connection = DriverManager.getConnection(url)) {
+            // schema X has its own customers table, but its orders reference Y's customers
+            SqlScriptRunner.run(connection, SqlScript.inline("cross", """
+                    create schema x;
+                    create schema y;
+                    create table y.customers (id int primary key);
+                    create table x.customers (id int primary key);
+                    create table x.orders (id int primary key, customer_id int, foreign key (customer_id) references y.customers (id));
+                    """));
+            connection.setSchema("A");
+            DatabaseFiller filler = filler(connection).schema("X").build();
+
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, filler::fill);
+
+            assertTrue(e.getMessage().contains("[ORDERS]"), e.getMessage());
+            assertTrue(e.getMessage().contains("CUSTOMER_ID"), e.getMessage());
+            assertTrue(e.getMessage().contains("[CUSTOMERS] in schema [Y]"), e.getMessage());
+            assertEquals(0, count(connection, "x.customers"));
+            assertEquals(0, count(connection, "x.orders"));
+            assertEquals(0, count(connection, "y.customers"));
+            assertEquals("A", connection.getSchema());
+        }
+    }
+
+    @Test
+    void aForeignKeyIntoTheSameSchemaStillWorksWhetherOrNotTheSchemaIsSelectedExplicitly() throws SQLException {
+        try (Connection connection = DriverManager.getConnection(url)) {
+            connection.setSchema("B");
+            filler(connection).includeTables("customers", "orders").build().fill();
+            assertEquals(ROWS, count(connection, "b.orders"));
+
+            SqlScriptRunner.run(connection, SqlScript.inline("reset", "delete from orders; delete from customers"));
+            connection.setSchema("A");
+            filler(connection).schema("B").includeTables("customers", "orders").build().fill();
+            assertEquals(ROWS, count(connection, "b.orders"));
+        }
+    }
+
+    @Test
     void excludingAParentFailsBeforeAnyRowIsWrittenNamingTheChildColumnAndParent() throws SQLException {
         try (Connection connection = DriverManager.getConnection(url)) {
             connection.setSchema("B");
@@ -259,24 +299,28 @@ class DatabaseFillerTableSelectionTest {
     // ---- unused table configurations ------------------------------------------------------------
 
     @Test
-    void tableConfigurationsForUnknownAndExcludedTablesAreReported() throws SQLException {
+    void tableConfigurationsAreClassifiedAgainstTheTablesThatExistNotTheOnesSelected() throws SQLException {
         try (Connection connection = DriverManager.getConnection(url)) {
             connection.setSchema("B");
-            Database database = io.bloviate.util.DatabaseUtils.getMetadata(connection,
-                    new TableSelection(List.of(), List.of("order_stats")).asFilter());
+            TableSelection selection = new TableSelection(List.of("orders", "customers"), List.of());
+            // what the fill does: remember every table of the schema before the selection narrows the list
+            List<String> discovered = new ArrayList<>();
+            Database database = io.bloviate.util.DatabaseUtils.getMetadata(connection, names -> {
+                discovered.addAll(names);
+                return selection.select(names);
+            });
             DatabaseConfiguration configuration = new DatabaseConfiguration(16, ROWS, new H2Support(),
-                    Set.of(new TableConfiguration("detail", 5), new TableConfiguration("Typo", 5),
-                            new TableConfiguration("ORDER_STATS", 0), new TableConfiguration("nope", 1)), 42L);
+                    Set.of(new TableConfiguration("ORDERS", 5),            // selected: fine
+                            new TableConfiguration("detail", 5),           // exists, left out by includeTables
+                            new TableConfiguration("Audit_Log", 5),        // exists, left out by includeTables
+                            new TableConfiguration("Typo", 5),             // no such table, and it also fails the include
+                            new TableConfiguration("nope", 1)), 42L);
 
-            DatabaseFiller.UnusedTableConfigurations unused = DatabaseFiller.findUnusedTableConfigurations(database, configuration,
-                    new TableSelection(List.of(), List.of("order_stats")));
+            DatabaseFiller.UnusedTableConfigurations unused =
+                    DatabaseFiller.findUnusedTableConfigurations(database, discovered, configuration);
 
             assertEquals(List.of("nope", "Typo"), unused.unknown());
-            assertEquals(List.of("ORDER_STATS"), unused.excluded());
-
-            // without a selection the same name is simply unknown
-            assertEquals(List.of("nope", "ORDER_STATS", "Typo"),
-                    DatabaseFiller.findUnusedTableConfigurations(database, configuration, TableSelection.ALL).unknown());
+            assertEquals(List.of("Audit_Log", "detail"), unused.excluded());
         }
     }
 

@@ -31,7 +31,26 @@ package io.bloviate.db;
  * @param foreignColumnName the name of the foreign key column
  * @param sequence the ordinal position of this column in a composite key (1-based)
  * @param name the name of the foreign key constraint
+ * @param primaryTableSchema the schema of the table containing the primary key as the driver reported it
+ *        ({@code PKTABLE_SCHEM}), or null when the driver reports none (MySQL, SQLite) or it is unknown
+ * @param primaryTableCatalog the catalog of the table containing the primary key ({@code PKTABLE_CAT}),
+ *        or null when the driver reports none or it is unknown
  * @since 1.0.0
  */
-public record Key(String primaryTableName, String primaryColumnName, String foreignTableName, String foreignColumnName, int sequence, String name) {
+public record Key(String primaryTableName, String primaryColumnName, String foreignTableName, String foreignColumnName, int sequence, String name,
+                  String primaryTableSchema, String primaryTableCatalog) {
+
+    /**
+     * Creates a key without the referenced table's schema and catalog, as before they were tracked.
+     *
+     * @param primaryTableName the name of the table containing the primary key
+     * @param primaryColumnName the name of the primary key column
+     * @param foreignTableName the name of the table containing the foreign key
+     * @param foreignColumnName the name of the foreign key column
+     * @param sequence the ordinal position of this column in a composite key (1-based)
+     * @param name the name of the foreign key constraint
+     */
+    public Key(String primaryTableName, String primaryColumnName, String foreignTableName, String foreignColumnName, int sequence, String name) {
+        this(primaryTableName, primaryColumnName, foreignTableName, foreignColumnName, sequence, name, null, null);
+    }
 }

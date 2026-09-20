@@ -57,6 +57,8 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.BooleanSupplier;
+import java.util.function.UnaryOperator;
 
 /**
  * Main entry point for filling database tables with generated data.
@@ -198,25 +200,14 @@ public class DatabaseFiller implements Fillable {
      * Runs the fill. {@code sequentialConnection} is the single connection everything runs on (the
      * caller's own, or the one connection borrowed for a non-parallel {@link DataSource} fill), or
      * {@code null} for the parallel path, where the workers borrow their own connections.
+     *
+     * <p>On the single connection the selected schema/catalog is applied and restored per phase (before
+     * hooks, the fill, after hooks) rather than once around the whole run. Between phases the
+     * connection is therefore back on the caller's schema, and on a connection with autocommit off each
+     * restore can be committed exactly when the phase's own commit made the selection durable; see
+     * {@link #inSchema}.
      */
-    // UnusedLocalVariable: false positive. The schema scope is a try-with-resources resource that is
-    // never read; closing it is the point (it restores the connection's schema/catalog).
-    @SuppressWarnings("PMD.UnusedLocalVariable")
     private void fill(Connection sequentialConnection) throws SQLException {
-        if (sequentialConnection == null) {
-            // parallel path: the schema is applied to each connection as it is borrowed
-            fillAll(null);
-            return;
-        }
-        // point the single connection at the selected schema for the whole run (hooks included) and put
-        // it back when done, on success or failure: a caller's connection is left as it was, and a pooled
-        // one is restored before it is returned to the pool (the caller of this method closes it)
-        try (SchemaSelection.Scope scope = schemaSelection.apply(sequentialConnection, connection == null)) {
-            fillAll(sequentialConnection);
-        }
-    }
-
-    private void fillAll(Connection sequentialConnection) throws SQLException {
 
         // before-hooks come first so they can create or empty the tables about to be filled, and so a
         // failing one prevents anything from being written
@@ -226,9 +217,78 @@ public class DatabaseFiller implements Fillable {
         // across its partitions/workers instead of once per partition
         constraintCache.clear();
 
+        if (sequentialConnection == null) {
+            // parallel path: the schema is applied to each connection as it is borrowed
+            fillTables(null);
+        } else {
+            // engine-managed commit strategies commit inside the fill, which makes the selection durable
+            inSchema(sequentialConnection, configuration.commitStrategy().managesTransaction(), () -> false,
+                    () -> fillTables(sequentialConnection));
+        }
+
+        runHooks("after", afterHooks, sequentialConnection);
+    }
+
+    /** A step run on a connection that is pointed at the selected schema; see {@link #inSchema}. */
+    @FunctionalInterface
+    private interface SchemaBody {
+        void run() throws SQLException;
+    }
+
+    /**
+     * Runs {@code body} on the single sequential connection with the selected schema/catalog applied,
+     * and restores it afterwards, on success or failure.
+     *
+     * <p>Restoring can need a commit. On a database where {@code setSchema} is transactional
+     * (PostgreSQL: {@code SET search_path}) and the connection has autocommit off, the selection and
+     * its restore are part of the caller's open transaction. If something inside {@code body} committed
+     * that transaction, the selection is durable but the restore is not, and a later rollback by the
+     * caller would leave the connection on the selected schema. So when {@code body} is known to have
+     * committed, and nothing but the restore can still be pending, the restore is committed too.
+     *
+     * @param commitAfterSuccess true if a successful {@code body} always ends with a commit, so the
+     *                           restore is the only thing pending and can be committed
+     * @param commitAfterFailure whether the same holds after a failed {@code body}, evaluated after the
+     *                           failure
+     */
+    // UnusedLocalVariable: false positive. The schema scope is a try-with-resources resource that is
+    // never read; closing it is the point (it restores the connection's schema/catalog).
+    @SuppressWarnings("PMD.UnusedLocalVariable")
+    private void inSchema(Connection conn, boolean commitAfterSuccess, BooleanSupplier commitAfterFailure,
+                          SchemaBody body) throws SQLException {
+        if (!schemaSelection.isSet()) {
+            body.run();
+            return;
+        }
+        try (SchemaSelection.Scope scope = schemaSelection.apply(conn, connection == null)) {
+            body.run();
+        } catch (SQLException | RuntimeException e) {
+            if (commitAfterFailure.getAsBoolean()) {
+                try {
+                    commitIfManual(conn);
+                } catch (SQLException commitFailure) {
+                    e.addSuppressed(commitFailure);
+                }
+            }
+            throw e;
+        }
+        if (commitAfterSuccess) {
+            commitIfManual(conn);
+        }
+    }
+
+    private static void commitIfManual(Connection conn) throws SQLException {
+        if (!conn.getAutoCommit()) {
+            conn.commit();
+        }
+    }
+
+    private void fillTables(Connection sequentialConnection) throws SQLException {
+
         StopWatch metadataWatch = new StopWatch("fetched database metadata in");
         metadataWatch.start();
-        Database database = readMetadata(sequentialConnection);
+        List<String> discoveredTableNames = new ArrayList<>();
+        Database database = readMetadata(sequentialConnection, discoveredTableNames);
         metadataWatch.stop();
 
         logger.debug("{}", metadataWatch);
@@ -236,7 +296,7 @@ public class DatabaseFiller implements Fillable {
         StopWatch databaseWatch = new StopWatch(String.format("filled database [%s] in", database.catalog()));
         databaseWatch.start();
 
-        warnAboutUnusedTableConfigurations(database);
+        warnAboutUnusedTableConfigurations(database, discoveredTableNames);
 
         // fails before any row is written if a selected table references a table that is not selected
         Graph<Table, DefaultEdge> reversedGraph = buildReversedDependencyGraph(database);
@@ -278,9 +338,6 @@ public class DatabaseFiller implements Fillable {
         databaseWatch.stop();
 
         logger.info("{}", databaseWatch);
-
-        runHooks("after", afterHooks, sequentialConnection);
-
     }
 
     /**
@@ -301,7 +358,16 @@ public class DatabaseFiller implements Fillable {
         }
         logger.info("running {} {} hook script(s)", hooks.size(), phase);
         if (sequentialConnection != null) {
-            SqlScriptRunner.runAll(sequentialConnection, hooks);
+            // a script that succeeded has committed (on a manual-commit connection), selection included;
+            // a script that failed has rolled back only itself, so after a failure the restore is the
+            // only thing pending exactly when an earlier script committed
+            boolean[] committed = {false};
+            inSchema(sequentialConnection, true, () -> committed[0], () -> {
+                for (SqlScript script : hooks) {
+                    SqlScriptRunner.run(sequentialConnection, script);
+                    committed[0] = true;
+                }
+            });
         } else {
             try (Connection conn = dataSource.getConnection();
                  SchemaSelection.Scope scope = schemaSelection.apply(conn, true)) {
@@ -318,13 +384,19 @@ public class DatabaseFiller implements Fillable {
     // UnusedLocalVariable: false positive. The schema scope is a try-with-resources resource that is
     // never read; closing it is the point (it restores the connection's schema/catalog).
     @SuppressWarnings("PMD.UnusedLocalVariable")
-    private Database readMetadata(Connection sequentialConnection) throws SQLException {
+    private Database readMetadata(Connection sequentialConnection, List<String> discoveredTableNames) throws SQLException {
+        // the selection sees every table name of the schema; keep a copy of that full list, before the
+        // selection narrows it, so table configurations can be classified against what really exists
+        UnaryOperator<List<String>> filter = names -> {
+            discoveredTableNames.addAll(names);
+            return tableSelection.select(names);
+        };
         if (sequentialConnection != null) {
-            return DatabaseUtils.getMetadata(sequentialConnection, tableSelection.asFilter());
+            return DatabaseUtils.getMetadata(sequentialConnection, filter);
         }
         try (Connection conn = dataSource.getConnection();
              SchemaSelection.Scope scope = schemaSelection.apply(conn, true)) {
-            return DatabaseUtils.getMetadata(conn, tableSelection.asFilter());
+            return DatabaseUtils.getMetadata(conn, filter);
         }
     }
 
@@ -334,8 +406,8 @@ public class DatabaseFiller implements Fillable {
      * selection left out (the configuration has no effect). Neither is an error here; nothing else
      * about them changes.
      */
-    private void warnAboutUnusedTableConfigurations(Database database) {
-        UnusedTableConfigurations unused = findUnusedTableConfigurations(database, configuration, tableSelection);
+    private void warnAboutUnusedTableConfigurations(Database database, List<String> discoveredTableNames) {
+        UnusedTableConfigurations unused = findUnusedTableConfigurations(database, discoveredTableNames, configuration);
         if (!unused.unknown().isEmpty()) {
             logger.warn("table configuration(s) for {} match no table in the selected schema and are ignored",
                     unused.unknown());
@@ -357,12 +429,13 @@ public class DatabaseFiller implements Fillable {
 
     /**
      * Sorts the names of {@code configuration}'s table configurations that match no table of
-     * {@code database} into typos ({@code unknown}) and tables the selection left out
-     * ({@code excluded}, judged by name against {@code selection}). Both lists are sorted, so the
-     * warning does not depend on the configuration set's iteration order.
+     * {@code database} into typos ({@code unknown}: no such table in the schema at all) and tables the
+     * selection left out ({@code excluded}: the table exists in the schema, as {@code discoveredTableNames}
+     * lists them before any selection was applied, but is not in {@code database}). Both lists are
+     * sorted, so the warning does not depend on the configuration set's iteration order.
      */
-    static UnusedTableConfigurations findUnusedTableConfigurations(Database database, DatabaseConfiguration configuration,
-                                                                   TableSelection selection) {
+    static UnusedTableConfigurations findUnusedTableConfigurations(Database database, List<String> discoveredTableNames,
+                                                                   DatabaseConfiguration configuration) {
         List<String> unknown = new ArrayList<>();
         List<String> excluded = new ArrayList<>();
         Set<TableConfiguration> tableConfigurations = configuration.tableConfigurations();
@@ -372,7 +445,7 @@ public class DatabaseFiller implements Fillable {
                 if (database.findTable(name).isPresent()) {
                     continue;
                 }
-                if (selection.isConfigured() && !selection.isSelected(name)) {
+                if (discoveredTableNames.stream().anyMatch(discovered -> discovered.equalsIgnoreCase(name))) {
                     excluded.add(name);
                 } else {
                     unknown.add(name);
@@ -945,6 +1018,7 @@ public class DatabaseFiller implements Fillable {
      */
     static void requireForeignKeyTargetsPresent(Database database) {
         List<String> problems = new ArrayList<>();
+        boolean otherSchema = false;
         for (Table table : database.tables()) {
             List<ForeignKey> foreignKeys = table.foreignKeys();
             if (foreignKeys == null) {
@@ -952,9 +1026,13 @@ public class DatabaseFiller implements Fillable {
             }
             for (ForeignKey key : foreignKeys) {
                 String parent = key.primaryKey().tableName();
-                if (database.findTable(parent).isEmpty()) {
-                    problems.add(String.format("table [%s] foreign key on column(s) %s references table [%s]",
-                            table.name(), key.foreignKeyColumns().stream().map(keyColumn -> keyColumn.column().name()).toList(), parent));
+                // a parent in another schema/catalog is missing even if this schema has a table of the same
+                // name: the foreign key does not reference that one
+                if (key.referencesOtherSchema() || database.findTable(parent).isEmpty()) {
+                    otherSchema |= key.referencesOtherSchema();
+                    problems.add(String.format("table [%s] foreign key on column(s) %s references table [%s]%s",
+                            table.name(), key.foreignKeyColumns().stream().map(keyColumn -> keyColumn.column().name()).toList(), parent,
+                            qualifier(key)));
                 }
             }
         }
@@ -962,8 +1040,21 @@ public class DatabaseFiller implements Fillable {
             throw new IllegalArgumentException("cannot fill: " + String.join("; ", problems)
                     + ", which is not among the tables being filled (left out by includeTables/excludeTables, or in another schema). "
                     + "Add the referenced table(s) to includeTables (or remove the excludeTables pattern that drops them), "
+                    + (otherSchema ? "(a table in another schema cannot be included) " : "")
                     + "or exclude the referencing table(s) as well. Nothing was written.");
         }
+    }
+
+    /** " in schema [s] catalog [c]" for a foreign key into another schema/catalog, otherwise empty. */
+    private static String qualifier(ForeignKey key) {
+        StringBuilder where = new StringBuilder();
+        if (key.referencedSchema() != null) {
+            where.append(" in schema [").append(key.referencedSchema()).append(']');
+        }
+        if (key.referencedCatalog() != null) {
+            where.append(" in catalog [").append(key.referencedCatalog()).append(']');
+        }
+        return where.toString();
     }
 
     /**

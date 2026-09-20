@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.function.UnaryOperator;
 
 /**
  * Which tables of the selected schema a fill touches: the include and exclude name patterns set with
@@ -140,11 +139,6 @@ final class TableSelection {
 
         logger.debug("table selection kept {} of {} table(s)", selected.size(), discovered.size());
         return selected;
-    }
-
-    /** {@link #select(List)} as the filter {@link io.bloviate.util.DatabaseUtils} applies to a schema's tables. */
-    UnaryOperator<List<String>> asFilter() {
-        return this::select;
     }
 
     private static List<String> unmatched(List<String> patterns, List<String> names) {

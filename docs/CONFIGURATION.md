@@ -452,12 +452,15 @@ exclude the referencing table(s) as well. Nothing was written.
 ```
 
 Excluding a table that nothing references (a leaf, such as a derived rollup) always works, and a table
-that references itself is not an excluded parent. A foreign key into another schema is reported the
-same way.
+that references itself is not an excluded parent. A foreign key into another schema (or catalog) is
+reported the same way, naming the parent's schema, even when the selected schema has a table of the
+same name: the foreign key does not reference that one. A table in another schema cannot be included,
+so exclude the referencing table.
 
 **Table configurations that do not apply.** A `TableConfiguration` naming a table that does not exist
 in the selected schema is still ignored, but `fill()` now logs one warning listing those names. A second
-warning lists configurations for tables the selection left out, since they have no effect.
+warning lists configurations for tables that exist in the schema but that `includeTables`/`excludeTables`
+left out, since they have no effect.
 
 **The derived-table pattern.** A rollup or summary table exists in the schema but must be computed from
 the generated detail rows, not filled with random data. Exclude it, and populate it in an `after`
@@ -488,9 +491,21 @@ silent fill of the wrong schema. Databases differ:
 Two details worth knowing. PostgreSQL's driver implements `setSchema` by replacing the whole
 `search_path` with the one schema, so inside the fill (hooks included) types and functions living in
 other schemas, such as `public`, need qualifying, and the restore puts back the single schema the
-connection reported, not a multi-entry `search_path`. And on a connection with autocommit off, a
-`setSchema` is part of the open transaction on some drivers (PostgreSQL), as is anything else you have
-pending. Selecting the connection's current schema explicitly changes nothing, including the generated
+connection reported, not a multi-entry `search_path`.
+
+On a connection with **autocommit off**, PostgreSQL's `setSchema` is part of your open transaction, as
+is anything you have pending. `fill()` leaves that transaction open and the connection back on its
+original schema (`getSchema()` and `getAutoCommit()` are as you left them), so you can commit or roll
+back afterwards. The selection is applied and restored for each phase (before hooks, the fill, after
+hooks), and when a phase committed (hooks always do; the fill does with an engine-managed
+[commit strategy](#commit-strategy)) the restore is committed as well, so a later `rollback()` cannot
+put the connection back on the selected schema. With the default connection-default strategy the
+fill's own rows stay uncommitted until you commit, and a `rollback()` discards them together with the
+selection. If a fill fails in a way that aborts the transaction (a constraint violation, say) the
+restore cannot run until you `rollback()`; the connection is then back on its original schema, and
+you get the fill's own error, with the failed restore attached as a suppressed exception.
+
+Selecting the connection's current schema explicitly changes nothing, including the generated
 data: the seed depends on the table's real schema and catalog names, never on how they were chosen.
 
 ## Configuration options reference

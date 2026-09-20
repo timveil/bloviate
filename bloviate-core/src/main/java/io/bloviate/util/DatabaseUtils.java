@@ -208,17 +208,42 @@ public class DatabaseUtils {
             List<KeyColumn> columns = new ArrayList<>();
 
             String primaryKeyTable = null;
+            String primaryKeySchema = null;
+            String primaryKeyCatalog = null;
             for (Key key : keys) {
                 primaryKeyTable = key.primaryTableName();
+                primaryKeySchema = key.primaryTableSchema();
+                primaryKeyCatalog = key.primaryTableCatalog();
                 columns.add(new KeyColumn(key.sequence(), columnFor(metaData, catalog, schema, tableName, key.foreignColumnName(), columnsByTable)));
             }
 
-            foreignKeys.add(new ForeignKey(columns, primaryKeyFor(metaData, catalog, schema, primaryKeyTable, columnsByTable, primaryKeysByTable)));
+            boolean otherSchema = differs(schema, primaryKeySchema);
+            boolean otherCatalog = differs(catalog, primaryKeyCatalog);
+
+            if (otherSchema || otherCatalog) {
+                // the parent is in another schema/catalog. Resolving it by name here would read the
+                // same-named table of THIS schema (or nothing), so it is described without key columns
+                // and marked; DatabaseFiller reports it instead of filling against the wrong parent
+                foreignKeys.add(new ForeignKey(columns, new PrimaryKey(primaryKeyTable, List.of()),
+                        otherSchema ? primaryKeySchema : null, otherCatalog ? primaryKeyCatalog : null));
+            } else {
+                foreignKeys.add(new ForeignKey(columns, primaryKeyFor(metaData, catalog, schema, primaryKeyTable, columnsByTable, primaryKeysByTable)));
+            }
 
         }
 
         return foreignKeys;
 
+    }
+
+    /**
+     * Whether a referenced table's schema or catalog is a different one from the one being read. Only a
+     * definite difference counts: a null on either side (a driver that has no such concept, MySQL
+     * reporting no schema, a connection with no current schema) is not a difference, and names compare
+     * case-insensitively because key and table result sets can disagree on identifier case.
+     */
+    private static boolean differs(String selected, String referenced) {
+        return selected != null && referenced != null && !selected.equalsIgnoreCase(referenced);
     }
 
     private static PrimaryKey primaryKeyFor(DatabaseMetaData metaData, String catalog, String schema, String tableName,
@@ -247,8 +272,11 @@ public class DatabaseUtils {
                 String fkColumnName = rs.getString("FKCOLUMN_NAME");
                 int seq = rs.getInt("KEY_SEQ");
                 String fkName = rs.getString("FK_NAME");
+                String primaryKeySchema = rs.getString("PKTABLE_SCHEM");
+                String primaryKeyCatalog = rs.getString("PKTABLE_CAT");
 
-                keys.add(new Key(primaryKeyTableName, primaryKeyColumnName, fkTableName, fkColumnName, seq, fkName));
+                keys.add(new Key(primaryKeyTableName, primaryKeyColumnName, fkTableName, fkColumnName, seq, fkName,
+                        primaryKeySchema, primaryKeyCatalog));
             }
         }
 
@@ -434,7 +462,10 @@ public class DatabaseUtils {
 
                         // for the primary key grab its full table data; the parent can be missing when a
                         // table selection left it out, which deserves more than "table not found"
-                        Table primaryTable = database.findTable(primaryKey.tableName()).orElseThrow(() ->
+                        // (a parent in another schema is never the same-named table of this one)
+                        Table primaryTable = (foreignKey.referencesOtherSchema()
+                                ? Optional.<Table>empty()
+                                : database.findTable(primaryKey.tableName())).orElseThrow(() ->
                                 new IllegalArgumentException(String.format(
                                         "table [%s] column [%s] references table [%s], which is not among the tables being filled; "
                                                 + "include it in the table selection",
