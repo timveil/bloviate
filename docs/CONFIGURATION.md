@@ -316,6 +316,84 @@ Requirements and fallback:
 The default, `BulkLoadStrategy.ordered()`, preserves today's behavior (dependency-ordered, constraints
 always enforced).
 
+## SQL hooks
+
+`DatabaseFiller.Builder` can run SQL scripts around the fill: **`before`** hooks run before any table
+is filled, **`after`** hooks run once every table is filled. The classic use is a derived table
+computed from the generated rows (a rollup, a summary), so it cannot disagree with its source;
+another is emptying tables so a fill can be re-run.
+
+```java
+import io.bloviate.db.*;
+
+new DatabaseFiller.Builder(connection, config)
+    .before(SqlScript.resource("sql/reset.sql"))                       // classpath resource
+    .after(SqlScript.file(Path.of("sql/rollup.sql"))                   // file on disk
+        .withTokens(Map.of("schema", "reporting")))                    // ${schema} in the script
+    .after(SqlScript.inline("analyze", "ANALYZE orders_by_day"))       // inline text
+    .build()
+    .fill();
+```
+
+```sql
+-- sql/rollup.sql
+DELETE FROM ${schema}.orders_by_day;
+INSERT INTO ${schema}.orders_by_day (day, orders, revenue)
+SELECT order_date, count(*), sum(total) FROM orders GROUP BY order_date;
+```
+
+`before(...)` and `after(...)` are additive and ordered: call them as often as you like and the
+scripts run in the order added. A `SqlScript` is a name (used in log lines and error messages) plus
+its text, from `SqlScript.inline(name, sql)`, `SqlScript.file(path)` or `SqlScript.resource(name)`.
+`SqlScriptRunner.run(connection, script)` runs one on its own, for example to load a schema.
+
+**What a script may contain.** Statements are separated by `;`. A `;` inside a `'string'` (with `''`
+as the escape, and `\'` inside `E'...'`), a `"quoted"` or `` `backtick` `` identifier, a `--` or
+`/* */` comment (which nests, as in PostgreSQL), or a PostgreSQL dollar-quoted body (`$$...$$`,
+`$tag$...$tag$`, so `CREATE FUNCTION` bodies work) does not end a statement. Empty statements are
+skipped and the last statement needs no `;`. `${name}` is replaced from the script's tokens,
+everywhere except inside comments; a token with no value fails the script before any statement runs.
+MySQL's `DELIMITER` command is **not supported** and fails with a clear message rather than
+mis-splitting the script, and backslash escapes are honoured only in `E'...'` strings.
+
+**Where hooks run.** Before hooks run first, ahead of the schema read, so they can create the tables
+about to be filled. After hooks run last. On the single-`Connection` path both run on the connection
+you supplied. On the `DataSource` path (with or without `threads(n)`) each phase borrows a
+connection, runs its hooks and returns it *before* the workers start or after they have all
+finished, so a pool as small as `threads` cannot be starved; as a result session state a hook sets
+(`SET search_path`, a temporary table) does not carry into the fill or into the other phase.
+
+**Transactions.** Each script runs on the connection as it is; Bloviate never changes its
+autocommit setting.
+
+- *Autocommit on* (the default for most drivers and pools): each statement commits as it runs. A
+  failure leaves the statements before it applied.
+- *Autocommit off*: the script commits once, after its last statement succeeds, and rolls back if
+  any statement fails, so it is all-or-nothing. It uses the connection's open transaction, so this
+  also commits (or, on failure, discards) anything the caller had run on that connection and not yet
+  committed, including rows from a fill left uncommitted by `CommitStrategy.connectionDefault()`.
+- Databases that commit DDL implicitly (MySQL, for one) commit it regardless of the mode.
+
+**Failures.** Any failing statement fails `fill()` with a `SQLException` whose message names the
+script and the statement's number, line and first line of text (for example
+`SQL script [rollup.sql] failed at statement 2 (line 4) [INSERT INTO ...]: ...`); the driver's
+exception is the cause and its SQL state is kept. A failing `before` hook stops the fill before any
+table is written. A failing `after` hook is thrown, not swallowed. `after` hooks do not run if the
+fill itself failed. There is no cross-table rollback: as with any failed fill, tables filled before
+the failure stay filled, and a failing `after` hook does not undo the fill.
+
+**A fill is not idempotent.** Running it again against tables that already hold its rows collides on
+the primary keys. The supported way to re-run is a `before` hook that empties the tables first:
+
+```java
+.before(SqlScript.inline("reset", "TRUNCATE orders, customers CASCADE"))
+```
+
+**Derived tables.** The tables to fill are read after the before hooks and before the after hooks.
+A table an after hook *creates* (`CREATE TABLE summary AS SELECT ...`) is therefore never filled. A
+derived table that already exists is filled like any other, so have the hook empty it first
+(`DELETE FROM summary`) or configure it with a row count of `0`.
+
 ## Configuration options reference
 
 ### Database configuration options
@@ -336,7 +414,8 @@ always enforced).
   path only; PostgreSQL/MySQL, with CockroachDB falling back)
 
 Parallelism (worker threads for concurrent table fill) is configured on the
-`DatabaseFiller.Builder` via `threads(n)` with the `DataSource` constructor.
+`DatabaseFiller.Builder` via `threads(n)` with the `DataSource` constructor, and so are the
+`before(...)`/`after(...)` [SQL hooks](#sql-hooks).
 
 ### File generation options
 

@@ -72,6 +72,11 @@ import java.util.concurrent.Future;
  * are populated before their dependent child tables. Self-referencing tables are
  * detected and logged as potential issues.
  *
+ * <p>Ordered SQL hooks can run around the fill: {@link Builder#before(SqlScript) before} hooks run
+ * before the schema is read and any table is filled, {@link Builder#after(SqlScript) after} hooks
+ * once every table is filled (for example to compute a rollup from the generated rows). See
+ * {@link SqlScriptRunner} for the script syntax and the transaction semantics.
+ *
  * <p>Example usage:
  * <pre>{@code
  * DatabaseConfiguration config = new DatabaseConfiguration(batchSize, recordCount,
@@ -122,6 +127,12 @@ public class DatabaseFiller implements Fillable {
     /** Worker threads for parallel table fill; {@code 1} (the default) keeps the fill sequential. */
     private final int threads;
 
+    /** SQL scripts run, in order, before the schema is read and any table is filled. */
+    private final List<SqlScript> beforeHooks;
+
+    /** SQL scripts run, in order, after every table has been filled. */
+    private final List<SqlScript> afterHooks;
+
     /**
      * Fills all tables in the database with generated data.
      *
@@ -136,10 +147,20 @@ public class DatabaseFiller implements Fillable {
      * <p>Progress and timing information is logged throughout the process.
      * A visualization link for the dependency graph is also provided in the logs.
      *
-     * @throws SQLException if any database operation fails during the filling process
+     * <p>Configured {@link Builder#before(SqlScript) before} hooks run first, ahead of the metadata
+     * read, so they can create the schema being filled; {@link Builder#after(SqlScript) after} hooks
+     * run once all tables are filled. A failing hook (or a failing fill, which skips the after hooks)
+     * fails this method; tables filled before the failure stay filled, since there is no cross-table
+     * rollback.
+     *
+     * @throws SQLException if any database operation or hook script fails during the filling process
      */
     @Override
     public void fill() throws SQLException {
+
+        // before-hooks come first so they can create or empty the tables about to be filled, and so a
+        // failing one prevents anything from being written
+        runHooks("before", beforeHooks);
 
         // constraint metadata is per-fill state: a table's constraints are read once and shared
         // across its partitions/workers instead of once per partition
@@ -204,6 +225,31 @@ public class DatabaseFiller implements Fillable {
 
         logger.info("{}", databaseWatch);
 
+        runHooks("after", afterHooks);
+
+    }
+
+    /**
+     * Runs one phase's hook scripts, in order, on the fill's connection: the caller's own
+     * {@link Connection} on the sequential path, otherwise a connection borrowed from the
+     * {@link DataSource} just for the hooks and returned before the next phase. It is deliberately not
+     * held across the fill: on the parallel path the workers need the pool, and a pool sized to the
+     * thread count would deadlock with one connection pinned. The consequence is that session state a
+     * hook sets (a {@code SET search_path}, a temporary table) does not carry into the fill or into
+     * the other phase's hooks.
+     */
+    private void runHooks(String phase, List<SqlScript> hooks) throws SQLException {
+        if (hooks.isEmpty()) {
+            return;
+        }
+        logger.info("running {} {} hook script(s)", hooks.size(), phase);
+        if (connection != null) {
+            SqlScriptRunner.runAll(connection, hooks);
+        } else {
+            try (Connection conn = dataSource.getConnection()) {
+                SqlScriptRunner.runAll(conn, hooks);
+            }
+        }
     }
 
     /**
@@ -814,6 +860,8 @@ public class DatabaseFiller implements Fillable {
         private final DatabaseConfiguration configuration;
 
         private int threads = 1;
+        private final List<SqlScript> beforeHooks = new ArrayList<>();
+        private final List<SqlScript> afterHooks = new ArrayList<>();
 
         /**
          * Creates a builder that fills sequentially on a single caller-managed connection — the
@@ -863,6 +911,47 @@ public class DatabaseFiller implements Fillable {
         }
 
         /**
+         * Adds a SQL script to run before the fill: ahead of the schema read and before any table is
+         * written, on the fill's connection (the supplied {@link Connection}, or one borrowed from the
+         * {@link DataSource}). Before hooks run in the order added, and a failing one fails
+         * {@link DatabaseFiller#fill()} with nothing filled. Typical uses are creating the schema or
+         * truncating tables so a re-run does not collide with the previous run's rows (a fill is
+         * not idempotent).
+         *
+         * <p>See {@link SqlScriptRunner} for the syntax, token and transaction rules.
+         *
+         * @param script the script to run
+         * @return this builder
+         * @since 3.3.0
+         */
+        public Builder before(SqlScript script) {
+            beforeHooks.add(Objects.requireNonNull(script, "script must not be null"));
+            return this;
+        }
+
+        /**
+         * Adds a SQL script to run after every table has been filled, on the fill's connection (the
+         * supplied {@link Connection}, or one borrowed from the {@link DataSource} once the parallel
+         * fill has finished). After hooks run in the order added; a failure is thrown from
+         * {@link DatabaseFiller#fill()} and is not swallowed. They do not run if the fill itself
+         * fails. Typical use is computing derived tables from the generated rows, so they cannot
+         * disagree with their sources.
+         *
+         * <p>The tables to fill are read before the after hooks run, so a table an after hook creates
+         * is not filled; a derived table that already exists is filled like any other, so the hook
+         * should empty it first. See {@link SqlScriptRunner} for the syntax, token and transaction
+         * rules.
+         *
+         * @param script the script to run
+         * @return this builder
+         * @since 3.3.0
+         */
+        public Builder after(SqlScript script) {
+            afterHooks.add(Objects.requireNonNull(script, "script must not be null"));
+            return this;
+        }
+
+        /**
          * Builds a new DatabaseFiller instance with the configured parameters.
          *
          * @return a new DatabaseFiller ready to fill the database
@@ -882,6 +971,8 @@ public class DatabaseFiller implements Fillable {
         this.dataSource = builder.dataSource;
         this.configuration = builder.configuration;
         this.threads = builder.threads;
+        this.beforeHooks = List.copyOf(builder.beforeHooks);
+        this.afterHooks = List.copyOf(builder.afterHooks);
 
         if (connection != null && threads > 1) {
             logger.warn("threads({}) is ignored when filling on a single Connection; use the DataSource constructor for parallel fills", threads);
