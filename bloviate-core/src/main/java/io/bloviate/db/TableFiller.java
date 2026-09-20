@@ -338,7 +338,10 @@ public class TableFiller implements Fillable {
         }
 
         if (failure != null) {
-            throw failure;
+            // name the table: a driver's own message rarely does, and on a parallel fill the caller
+            // cannot tell which of the concurrent tables failed. The original stays as the cause.
+            throw new SQLException("failed to fill table [" + table.name() + "]: " + failure.getMessage(),
+                    failure.getSQLState(), failure.getErrorCode(), failure);
         }
 
         tableWatch.stop();
