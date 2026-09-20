@@ -17,6 +17,7 @@
 package io.bloviate.ext;
 
 import io.bloviate.db.ColumnConstraint;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -90,5 +91,26 @@ class PostgresConstraintsTest {
     void rejectsOneSidedRange() {
         // a single bound can't be turned into a closed range generator, so it is not honored
         assertNull(PostgresConstraints.parseCheck("CHECK ((age >= 18))"));
+    }
+
+    /**
+     * Issue #614 / #619. The definitions below are the exact text PostgreSQL 18 stores (see
+     * {@code PostgresPartitionedSchemaTest}) for a first-of-month CHECK on a {@code date} column. The
+     * first contains a quoted function argument and no {@code <} or {@code >}, which the categorical
+     * branch of {@code parseCheck} takes for a value list, yielding the allowed values {@code ["month"]}
+     * &mdash; so the engine generated the string {@code month} for a date column and the insert failed
+     * with {@code invalid input syntax for type date: "month"}.
+     *
+     * <p>Desired outcome: an unrecognised expression is never read as a value list (it may be rejected
+     * or, once #619 recognises it, read as something date-aware).
+     */
+    @Test
+    @Disabled("#619: a quoted function argument in a CHECK is misread as the allowed value 'month'")
+    void quotedFunctionArgumentIsNotReadAsAValueList() {
+        ColumnConstraint c = PostgresConstraints.parseCheck(
+                "CHECK ((date_trunc('month'::text, (billing_month)::timestamp with time zone) = billing_month))");
+
+        assertFalse(c != null && c.hasAllowedValues() && c.allowedValues().contains("month"),
+                "'month' is the argument to date_trunc, not an allowed value: " + c);
     }
 }
