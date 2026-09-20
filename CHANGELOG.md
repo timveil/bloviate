@@ -1,3 +1,9 @@
+## [3.5.0](https://github.com/timveil/bloviate/compare/v3.4.0...v3.5.0) (2026-09-20)
+
+### ✨ Features
+
+* **ext:** honor first-of-month date CHECKs and add TruncatedDateGenerator ([#634](https://github.com/timveil/bloviate/issues/634)) ([d4c65f9](https://github.com/timveil/bloviate/commit/d4c65f9d8b77c9b7a46b0b0eedf49588eff09987)), closes [#619](https://github.com/timveil/bloviate/issues/619)
+
 ## [3.4.0](https://github.com/timveil/bloviate/compare/v3.3.0...v3.4.0) (2026-09-20)
 
 ### ✨ Features
