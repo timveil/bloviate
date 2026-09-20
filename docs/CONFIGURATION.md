@@ -183,6 +183,116 @@ new DatabaseFiller.Builder(connection, config).build().fill();
 The seed defaults to `0` when you use the four-argument constructor, so existing code keeps a
 single, stable dataset without changes.
 
+## Relative date ranges and asOf
+
+Date and timestamp generators default to a fixed window around 2020-01-01, so on their own they miss
+"this quarter" partitions and range `CHECK`s. A **relative window** says where the data should fall in
+terms of a moving anchor, `asOf`, instead of absolute dates: "within the last 90 days", "from 30 days
+ago to a week from now". (Absolute bounds, `start(...)`/`end(...)`, still work and are unchanged.)
+
+```java
+import io.bloviate.db.*;
+import io.bloviate.ext.PostgresSupport;
+import io.bloviate.gen.*;
+import java.time.Instant;
+import java.util.Set;
+
+// orders may only be placed in Q1 2026:  CHECK (placed_at >= '2026-01-01' AND placed_at < '2026-04-01')
+Set<ColumnConfiguration> columns = Set.of(
+    ColumnConfiguration.relative("placed_at", RelativeWindow.withinLast("90d"),
+        (random, window) -> new SqlTimestampGenerator.Builder(random).window(window).build()),
+    ColumnConfiguration.relative("due_on", RelativeWindow.between("-30d", "+7d"),
+        (random, window) -> new SqlDateGenerator.Builder(random).window(window).build()));
+
+DatabaseConfiguration config = new DatabaseConfiguration.Builder(128, 1_000, new PostgresSupport())
+    .seed(42L)
+    .tableConfigurations(Set.of(new TableConfiguration("orders", 1_000, columns)))
+    .build();
+
+new DatabaseFiller.Builder(connection, config)
+    .asOf(Instant.parse("2026-04-01T00:00:00Z"))   // pin the anchor: same seed + same asOf = same rows
+    .build()
+    .fill();
+```
+
+`withinLast("90d")` with `asOf` 2026-04-01 is the 90 days from 2026-01-01 up to (not including)
+2026-04-01, so every `placed_at` satisfies the `CHECK` above, in the same rows every time.
+
+### The reproducibility rule
+
+Wall-clock time is never an input to generation. The one place a date can enter is `asOf`, and it is
+explicit:
+
+- **Pinned** (`DatabaseFiller.Builder.asOf(Instant)`): the **same seed and the same `asOf` produce
+  byte-identical output** on every run and every JDK. This is the sanctioned, reproducible way to get
+  "current" data.
+- **Not pinned**: when the fill starts, `asOf` is read once from the clock and truncated to the start of
+  the current UTC day (00:00Z). It is logged once at INFO the first time a relative window uses it
+  (`resolved asOf 2026-06-10T00:00:00Z ...; pin it with asOf(...) for reproducible output`) and is
+  available from `DatabaseFiller.asOf()`. Two unpinned fills on the same UTC day agree; across midnight
+  they do not. To reproduce such a fill, pin the instant it logged.
+
+One `asOf` serves the whole fill: every table, every intra-table partition and every worker thread of a
+parallel fill uses the same instant, so the tables of one dataset are consistent with each other. A
+fill that uses **no** relative window is unaffected by `asOf`: its output is exactly what it was, and
+the same seed still gives the same data with or without one.
+
+### Offsets and windows
+
+An **offset** is an optional sign, digits and one unit letter (case-sensitive):
+
+| Unit | Meaning | Arithmetic (all in UTC) |
+|------|---------|-------------------------|
+| `h`  | hours   | exact 3,600 seconds |
+| `d`  | days    | exact 24 hours (UTC has no daylight saving) |
+| `w`  | weeks   | exact 7 days |
+| `M`  | months  | calendar: the day of month is clamped, so `2026-03-31` minus `1M` is `2026-02-28` |
+| `y`  | years   | calendar: `2024-02-29` plus `1y` is `2025-02-28` |
+
+Examples: `90d`, `-30d`, `+7d`, `12w`, `6M`, `1y`, `36h`. There is no minute or second unit; a lower-case
+`m` is rejected (months are `M`). Whitespace inside an offset is an error.
+
+| Window | Meaning | Resolved for `asOf` = 2026-04-01 |
+|--------|---------|----------------------------------|
+| `RelativeWindow.withinLast("90d")` | `[asOf - 90d, asOf)`; the span must be positive | `[2026-01-01, 2026-04-01)` |
+| `RelativeWindow.between("-30d", "+7d")` | `[asOf + start, asOf + end)` | `[2026-03-02, 2026-04-08)` |
+| `RelativeWindow.withinLast("6M")` | six calendar months back | `[2025-10-01, 2026-04-01)` |
+
+A window is **half-open**: the start is inclusive and the end exclusive, the same convention as
+`SqlTimestampGenerator`, `SqlDateGenerator`, `DateGenerator`, `InstantGenerator` and
+`TruncatedDateGenerator`. So `withinLast` never produces the anchor instant itself; use
+`between("-90d", "1d")` to include `asOf`'s whole day. Bad input fails fast with an
+`IllegalArgumentException` that names the problem: an unknown unit, a zero or negative `withinLast`, an
+`end` that is not after the `start`. `RelativeOffset.parse(...)`, `RelativeWindow.withinLast(String)`
+and `RelativeWindow.between(String, String)` take the text forms, so a configuration file or command
+line can hand them the same strings.
+
+### Applying a window
+
+`ColumnConfiguration.relative(column, window, factory)` resolves the window against the fill's `asOf`
+and hands the concrete bounds to your factory. Those generators accept one through
+`window(RelativeWindow.Resolved)`: `SqlTimestampGenerator`, `SqlDateGenerator`, `DateGenerator`,
+`InstantGenerator`, `SkewedTimestampGenerator` and `TruncatedDateGenerator`. `Distributions.recentTimestamps(window, skew)`
+is the recency-skewed shorthand. Anything else that needs the anchor takes the fill's
+`GenerationContext`: `ColumnGeneratorFactory.contextual((random, context) -> ...)`, or, for a
+[registry](./GENERATORS.md#custom-generator-registry) rule, `GeneratorFactory.contextual((column, random, context) -> ...)`,
+where `context.asOf()` is the anchor. Existing factories (plain lambdas) are unchanged and ignore the
+context.
+
+- A relative window is the way to keep the key of a [partitioned table](#partitioned-tables) inside its
+  existing partitions; configure it on the partitioned parent, which is what Bloviate fills (see
+  [Keeping the partition key inside existing partitions](#keeping-the-partition-key-inside-existing-partitions)).
+- A per-column relative configuration takes precedence over a `CHECK` constraint, a registry rule and
+  the support default, like any other per-column override.
+- `SqlDateGenerator` reads its window as whole UTC calendar days, so a `DATE` column holds exactly the
+  dates in the window whatever the JVM or session time zone. A window a few hours wide inside one day
+  contains no whole date and is rejected. `TruncatedDateGenerator` draws the period starts in the
+  window (its bounds rounded up to whole dates).
+- For a zone-less `TIMESTAMP` column the JDBC driver renders the instant in the JVM's default time zone,
+  as it does for absolute bounds. If a hard bound (a `CHECK` or a partition edge) must hold and the
+  JVM may run in another zone, use `TIMESTAMP WITH TIME ZONE` or start the JVM with `-Duser.timezone=UTC`.
+- `SqlTimeGenerator` has no window: a `TIME` column has no date to be relative to.
+
 ## Parallel table fill
 
 For large, wide schemas the fill can run **in parallel**. Construct the filler from a pooled
@@ -555,7 +665,9 @@ against the parent).
 
 **Constrain the partition key.** Generated values default to a window around 2020 for timestamps and
 dates, and to arbitrary text or numbers otherwise, none of which is likely to fall in your partitions.
-Give the partition key a `ColumnConfiguration` whose range the partitions cover:
+Give the partition key a `ColumnConfiguration` whose range the partitions cover. For date and timestamp
+keys whose partitions follow the calendar, prefer a [relative window](#relative-date-ranges-and-asof)
+(see [below](#keeping-the-partition-key-inside-existing-partitions)) over hard-coded dates:
 
 ```java
 import io.bloviate.gen.SqlTimestampGenerator;
@@ -627,14 +739,40 @@ the rows equal those of a sequential fill.
   as a table that is not being filled. Reference the partitioned table instead. (A direct foreign key that
   exactly mirrors one to the parent, the same columns against the same-named column of a partition, cannot
   be told apart from the copies PostgreSQL makes and is treated as one.)
-- Bloviate does not create partitions or choose a partition key range for you; an anchored, relative
-  range for the key is planned separately.
+- Bloviate does not create partitions or choose a partition key range for you. To keep the key inside
+  the partitions you have, give it a window relative to a pinned `asOf` (see
+  [below](#keeping-the-partition-key-inside-existing-partitions)).
 
 > **Behaviour change (3.6.0).** Before partitioned tables were supported, Bloviate skipped the parent and
 > filled each partition as an independent table with unconstrained values, which fails unless the
 > partitions happen to accept them. A schema whose partitions do accept the default values (for example
 > a table partitioned to cover 2020) used to fill leaf-by-leaf and now fills through the parent: the same
 > seed produces different rows there. Schemas without partitioned tables are unaffected.
+
+### Keeping the partition key inside existing partitions
+
+Partitions are usually cut by the calendar: this month, this quarter. A key drawn from fixed dates
+misses them as time passes. A [relative window](#relative-date-ranges-and-asof) resolved against a
+pinned `asOf` keeps it inside, and the same seed and `asOf` give the same rows. The partitions below
+cover 2025-10-01 up to 2026-04-01; the fill goes through the parent `ledger`, never a partition:
+
+```java
+// ledger PARTITION BY RANGE (booked_at); partitions from 2025-10-01 to 2026-04-01
+ColumnConfiguration bookedAt = ColumnConfiguration.relative("booked_at", RelativeWindow.withinLast("90d"),
+    (random, window) -> new SqlTimestampGenerator.Builder(random).window(window).build());
+
+new DatabaseFiller.Builder(connection, new DatabaseConfiguration.Builder(128, 10_000, new PostgresSupport())
+        .tableConfigurations(Set.of(new TableConfiguration("ledger", 10_000, Set.of(bookedAt))))
+        .build())
+    .asOf(Instant.parse("2026-04-01T00:00:00Z"))   // [2026-01-01, 2026-04-01): every row routes to ledger_2026_q1
+    .build()
+    .fill();
+```
+
+Pin `asOf` so the window sits inside the partitions that exist. If you leave it unpinned it is today's
+UTC date, and a window that reaches a period with no partition (and no `DEFAULT`) fails with the
+"no partition of relation ... found for row" error described above. A window that spans several
+partitions spreads the rows over them.
 
 ## Configuration options reference
 
@@ -649,6 +787,8 @@ the rows equal those of a sequential fill.
   reproducible)
 - **Seed**: Base seed for reproducible generation; the same schema and seed always produce the same
   data (defaults to `0`)
+- **asOf** (`DatabaseFiller.Builder.asOf(Instant)`): the anchor [relative date windows](#relative-date-ranges-and-asof)
+  are measured from; pin it for reproducible output (defaults to the start of the current UTC day)
 - **Commit Strategy**: How the engine commits — leave autocommit alone (default), commit once per
   table, or commit every N batches
 - **Bulk Load Strategy**: Fill in foreign-key dependency order (default), or `unorderedBulk()` to

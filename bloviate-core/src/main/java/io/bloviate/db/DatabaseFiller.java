@@ -40,6 +40,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -86,6 +88,10 @@ import java.util.function.BooleanSupplier;
  * and {@link Builder#catalog(String)} pick another schema, and {@link Builder#includeTables(String...)}
  * and {@link Builder#excludeTables(String...)} narrow the tables, for example to leave a derived table
  * to an after hook.
+ *
+ * <p>Relative date windows ({@link io.bloviate.gen.RelativeWindow}, "within the last 90 days") are
+ * measured from one {@link Builder#asOf(Instant) asOf} anchor per fill, shared by every table, partition
+ * and worker; pin it for output that is reproducible run to run.
  *
  * <p>Example usage:
  * <pre>{@code
@@ -149,6 +155,19 @@ public class DatabaseFiller implements Fillable {
     /** The catalog/schema every connection the fill uses is pointed at; {@link SchemaSelection#NONE} leaves them alone. */
     private final SchemaSelection schemaSelection;
 
+    /** The anchor for relative date windows when the caller pinned one; null to resolve it from {@link #clock}. */
+    private final Instant asOf;
+
+    /** Where an unpinned anchor is read from; the system UTC clock except in tests. */
+    private final Clock clock;
+
+    /**
+     * The context of the current (or most recent) {@link #fill()}: created once when the fill starts and
+     * handed to every {@link TableFiller}, whichever table, partition or worker thread it serves, so all
+     * of them share one anchor. Null before the first fill of an unpinned filler.
+     */
+    private volatile GenerationContext generationContext;
+
     /**
      * Fills all tables in the database with generated data.
      *
@@ -177,6 +196,10 @@ public class DatabaseFiller implements Fillable {
      * excludeTables} are not touched, and the fill fails before writing any row if a selected table
      * has a foreign key to one of them.
      *
+     * <p>The {@link Builder#asOf(Instant) asOf} anchor of relative date windows is settled here, once,
+     * before anything else runs: the pinned instant, or else the start of the current UTC day. Every
+     * table, partition and worker of this call shares it.
+     *
      * @throws SQLException if any database operation or hook script fails during the filling process,
      *                      or the driver cannot select the requested schema/catalog
      * @throws IllegalArgumentException if the table selection matches no table, or a selected table
@@ -184,6 +207,7 @@ public class DatabaseFiller implements Fillable {
      */
     @Override
     public void fill() throws SQLException {
+        generationContext = asOf != null ? GenerationContext.pinned(asOf) : GenerationContext.unpinned(clock);
         if (connection == null && threads <= 1) {
             // DataSource supplied but no parallelism requested: borrow ONE connection and use it for the
             // before hooks, the whole fill and the after hooks. Returning it in between would hand the
@@ -229,6 +253,23 @@ public class DatabaseFiller implements Fillable {
         }
 
         runHooks("after", afterHooks, sequentialConnection);
+    }
+
+    /**
+     * The anchor that relative date windows are measured from: the instant pinned with
+     * {@link Builder#asOf(Instant)}, or, for a filler without one, the instant the most recent
+     * {@link #fill()} resolved (the start of the current UTC day when it began), so a caller can pin it to
+     * reproduce that fill.
+     *
+     * @return the anchor, or empty if none was pinned and no fill has started yet
+     * @since 3.7.0
+     */
+    public Optional<Instant> asOf() {
+        if (asOf != null) {
+            return Optional.of(asOf);
+        }
+        GenerationContext context = generationContext;
+        return context == null ? Optional.empty() : Optional.of(context.peekAsOf());
     }
 
     /** A step run on a connection that is pointed at the selected schema; see {@link #inSchema}. */
@@ -503,6 +544,7 @@ public class DatabaseFiller implements Fillable {
         while (iterator.hasNext()) {
             new TableFiller.Builder(conn, database, configuration)
                     .table(iterator.next())
+                    .generationContext(generationContext)
                     .build().fill();
         }
     }
@@ -749,6 +791,7 @@ public class DatabaseFiller implements Fillable {
                         .table(table)
                         .constraints(constraintsFor(conn, table))
                         .commitStrategy(effectiveParallelCommitStrategy())
+                        .generationContext(generationContext)
                         .build().fill());
     }
 
@@ -767,6 +810,7 @@ public class DatabaseFiller implements Fillable {
                         .constraints(constraintsFor(conn, table))
                         .commitStrategy(effectiveParallelCommitStrategy())
                         .rowRange(startInclusive, endExclusive)
+                        .generationContext(generationContext)
                         .build().fill());
     }
 
@@ -1167,6 +1211,8 @@ public class DatabaseFiller implements Fillable {
         private final List<String> excludePatterns = new ArrayList<>();
         private String catalog;
         private String schema;
+        private Instant asOf;
+        private Clock clock = Clock.systemUTC();
 
         /**
          * Creates a builder that fills sequentially on a single caller-managed connection — the
@@ -1379,6 +1425,36 @@ public class DatabaseFiller implements Fillable {
             return this;
         }
 
+        /**
+         * Pins the anchor that {@link io.bloviate.gen.RelativeWindow relative date windows} ("within the
+         * last 90 days") are measured from. One anchor is used for the whole fill, by every table,
+         * partition and worker thread.
+         *
+         * <p><strong>Reproducibility.</strong> The same seed and the same pinned {@code asOf} produce
+         * identical output on every run and JDK. Without a pinned {@code asOf} the anchor is the start of
+         * the current UTC day (00:00Z), read from the clock when {@link DatabaseFiller#fill()} begins and
+         * logged once at INFO when a relative window first uses it; the data is then reproducible only by
+         * pinning the logged instant (also available from {@link DatabaseFiller#asOf()}). A fill that uses
+         * no relative window is unaffected either way and never reads the clock for its data.
+         *
+         * @param asOf the anchor instant, used as is; null (the default) resolves it from the clock
+         * @return this builder
+         * @since 3.7.0
+         */
+        public Builder asOf(Instant asOf) {
+            this.asOf = asOf;
+            return this;
+        }
+
+        /**
+         * Reads the clock an unpinned {@code asOf} is resolved from. Package-private so a test can settle
+         * the anchor without depending on the day it happens to run.
+         */
+        Builder clock(Clock clock) {
+            this.clock = Objects.requireNonNull(clock, "clock must not be null");
+            return this;
+        }
+
         private static String requireName(String value, String what) {
             Objects.requireNonNull(value, what + " must not be null");
             if (value.isBlank()) {
@@ -1411,6 +1487,10 @@ public class DatabaseFiller implements Fillable {
         this.afterHooks = List.copyOf(builder.afterHooks);
         this.tableSelection = new TableSelection(builder.includePatterns, builder.excludePatterns);
         this.schemaSelection = new SchemaSelection(builder.catalog, builder.schema);
+        this.asOf = builder.asOf;
+        this.clock = builder.clock;
+        // a pinned anchor is known now; an unpinned one is settled when fill() starts
+        this.generationContext = asOf != null ? GenerationContext.pinned(asOf) : null;
 
         if (connection != null && threads > 1) {
             logger.warn("threads({}) is ignored when filling on a single Connection; use the DataSource constructor for parallel fills", threads);

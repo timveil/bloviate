@@ -365,6 +365,14 @@ Two important properties fall out of this design:
 Every generator — built-in, registry-supplied, or per-column override — is constructed with this
 engine-managed seed, so reproducibility holds no matter how a column's generator was chosen.
 
+The one other input a factory can receive is the fill's `GenerationContext`, created once when
+`DatabaseFiller.fill()` starts and handed to every `TableFiller` (so to every table, partition and worker):
+it carries the `asOf` anchor that relative date windows resolve against. `ColumnGeneratorFactory` and
+`GeneratorFactory` gained a default `create(..., GenerationContext)` overload that ignores it, so existing
+factories are untouched. A pinned `asOf` keeps the data a pure function of seed and anchor; wall-clock
+time is only read, once, when none is pinned (see
+[Relative date ranges and asOf](./CONFIGURATION.md#relative-date-ranges-and-asof)).
+
 The per-column seed feeds an [`IndexedRandom`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/util/IndexedRandom.java) —
 a repositionable SplitMix64 stream (the construction behind `java.util.SplittableRandom`) that the
 engine positions to the absolute row index before every cell, so each value is a pure function of

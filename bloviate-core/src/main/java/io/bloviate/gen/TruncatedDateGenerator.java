@@ -273,6 +273,26 @@ public class TruncatedDateGenerator extends AbstractDataGenerator<LocalDate> {
         }
 
         /**
+         * Draws from a {@link RelativeWindow} resolved against the fill's anchor instead of from
+         * explicit bounds: sets the inclusive start and exclusive end from the window, so the range is
+         * {@code [window.start(), window.end())}. Equivalent to calling {@link #start} and {@link #end}
+         * with the window's bounds.
+         * The window's bounds are taken as dates in UTC, each rounded up to the next midnight when it has
+         * a time of day (see {@link RelativeWindow.Resolved#startDate()}), so a period start is generated
+         * only if its midnight lies inside the window.
+         *
+         * @param window the resolved window, for example
+         *               {@code RelativeWindow.withinLast("90d").resolve(context.asOf())}
+         * @return this builder, for chaining
+         * @since 3.7.0
+         */
+        public Builder window(RelativeWindow.Resolved window) {
+            this.startInclusive = window.startDate();
+            this.endExclusive = window.endDate();
+            return this;
+        }
+
+        /**
          * Chooses how the value is bound. {@code false} (the default) binds a {@link LocalDate} for a
          * {@code DATE} column; {@code true} binds midnight of that date as a zone-less
          * {@link LocalDateTime} for a {@code TIMESTAMP} or {@code TIMESTAMP WITH TIME ZONE} column.

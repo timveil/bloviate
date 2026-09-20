@@ -208,7 +208,12 @@ A few properties are hard guarantees:
 - **Seed reproducibility within a version.** For a given Bloviate version, the same schema filled
   with the same seed must produce byte-for-byte identical data on every run, on every platform and
   JDK. Nothing that feeds generation may depend on run-to-run or JDK-dependent state (hash iteration
-  order, wall-clock time, identity hash codes, default locale/timezone).
+  order, wall-clock time, identity hash codes, default locale/timezone). The sanctioned way to get
+  data that is relative to "now" is an explicit, pinned `asOf` anchor for
+  [relative date windows](docs/CONFIGURATION.md#relative-date-ranges-and-asof): the same seed and the same
+  pinned `asOf` are byte-for-byte reproducible. That does not relax the rule: nothing else may read the
+  clock, a fill that uses no relative window never depends on it, and one that leaves `asOf` unpinned
+  reads it once, at fill start, logs the result, and is reproducible only by pinning that value.
 - **Cross-version changes are allowed but must be deliberate.** A new release may change the data a
   seed produces (e.g. a fixed traversal order or an improved generator), but the change must be
   intentional, called out in the release notes, and accompanied by regenerating the golden dump in

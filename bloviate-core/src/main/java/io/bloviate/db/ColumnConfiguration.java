@@ -16,6 +16,8 @@
 
 package io.bloviate.db;
 
+import io.bloviate.gen.RelativeWindow;
+
 /**
  * Overrides the data generator used for a single column, replacing the
  * generator that would otherwise be auto-detected from the column's JDBC type.
@@ -31,4 +33,26 @@ package io.bloviate.db;
  * @since 1.0.0
  */
 public record ColumnConfiguration(String columnName, ColumnGeneratorFactory generatorFactory) {
+
+    /**
+     * Overrides a column with a generator that draws from a {@link RelativeWindow}, measured from the
+     * fill's {@code asOf} anchor (see {@code DatabaseFiller.Builder#asOf}):
+     *
+     * <pre>{@code
+     * ColumnConfiguration.relative("placed_at", RelativeWindow.withinLast("90d"),
+     *         (random, window) -> new SqlTimestampGenerator.Builder(random).window(window).build());
+     * }</pre>
+     *
+     * <p>Shorthand for {@code new ColumnConfiguration(column, ColumnGeneratorFactory.relative(window, factory))}.
+     *
+     * @param columnName the name of the column to override (matched case-insensitively)
+     * @param window     the window, relative to the anchor
+     * @param factory    builds the generator from the seeded random source and the resolved window
+     * @return the column configuration
+     * @since 3.7.0
+     */
+    public static ColumnConfiguration relative(String columnName, RelativeWindow window,
+                                               ColumnGeneratorFactory.Windowed factory) {
+        return new ColumnConfiguration(columnName, ColumnGeneratorFactory.relative(window, factory));
+    }
 }

@@ -64,6 +64,9 @@ public class TableFiller implements Fillable {
     private final long rangeStartInclusive;
     private final long rangeEndExclusive;
 
+    /** What generators may read besides their seed (the {@code asOf} anchor); shared across a whole fill. */
+    private final GenerationContext generationContext;
+
     /**
      * Constructs a new TableFiller with an explicit {@link CommitStrategy} override.
      *
@@ -83,6 +86,7 @@ public class TableFiller implements Fillable {
         this.partitioned = false;
         this.rangeStartInclusive = 0;
         this.rangeEndExclusive = 0;
+        this.generationContext = GenerationContext.unpinned();
     }
 
     /**
@@ -176,10 +180,10 @@ public class TableFiller implements Fillable {
             DataGenerator<?> dataGenerator;
             String source;
             if (columnConfiguration != null) {
-                dataGenerator = columnConfiguration.generatorFactory().create(random);
+                dataGenerator = columnConfiguration.generatorFactory().create(random, generationContext);
                 source = "column-config";
             } else {
-                DataGenerator<?> custom = registry != null ? registry.resolve(column, random) : null;
+                DataGenerator<?> custom = registry != null ? registry.resolve(column, random, generationContext) : null;
                 if (custom != null) {
                     dataGenerator = custom;
                     source = "registry";
@@ -445,6 +449,7 @@ public class TableFiller implements Fillable {
         private boolean partitioned;
         private long rangeStartInclusive;
         private long rangeEndExclusive;
+        private GenerationContext generationContext;
 
         /**
          * Creates a builder for a filler bound to the given connection, database metadata, and
@@ -520,6 +525,21 @@ public class TableFiller implements Fillable {
         }
 
         /**
+         * Supplies the {@link GenerationContext} handed to generator factories, so several fillers of
+         * one fill share one {@code asOf} anchor for relative date windows. {@link DatabaseFiller} sets
+         * it. When unset (or null), the filler makes its own {@linkplain GenerationContext#unpinned()
+         * unpinned} context, anchored to the current UTC day.
+         *
+         * @param generationContext the context to use, or null for an unpinned one
+         * @return this builder
+         * @since 3.7.0
+         */
+        public Builder generationContext(GenerationContext generationContext) {
+            this.generationContext = generationContext;
+            return this;
+        }
+
+        /**
          * Builds a {@link TableFiller} from the configured parameters.
          *
          * @return a new filler ready to fill the configured table
@@ -543,5 +563,6 @@ public class TableFiller implements Fillable {
         this.partitioned = builder.partitioned;
         this.rangeStartInclusive = builder.rangeStartInclusive;
         this.rangeEndExclusive = builder.rangeEndExclusive;
+        this.generationContext = builder.generationContext != null ? builder.generationContext : GenerationContext.unpinned();
     }
 }
