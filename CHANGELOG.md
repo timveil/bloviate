@@ -1,3 +1,9 @@
+## [3.3.0](https://github.com/timveil/bloviate/compare/v3.2.0...v3.3.0) (2026-09-20)
+
+### ✨ Features
+
+* **core:** add SQL hook runner and before/after fill hooks ([#630](https://github.com/timveil/bloviate/issues/630)) ([04cbfb0](https://github.com/timveil/bloviate/commit/04cbfb0e4b9a565ce2b5ec198041b72f97ed0d26))
+
 ## [3.2.0](https://github.com/timveil/bloviate/compare/v3.1.0...v3.2.0) (2026-08-03)
 
 ### ✨ Features
