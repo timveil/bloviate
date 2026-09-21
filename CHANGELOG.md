@@ -1,3 +1,9 @@
+## [3.9.1](https://github.com/timveil/bloviate/compare/v3.9.0...v3.9.1) (2026-09-21)
+
+### 🐛 Bug Fixes
+
+* **core:** bind temporal values in UTC, not the JVM's default zone ([#652](https://github.com/timveil/bloviate/issues/652)) ([96a4e75](https://github.com/timveil/bloviate/commit/96a4e75ee375e562c08257fe8667aa49f0dae3f9)), closes [#640](https://github.com/timveil/bloviate/issues/640)
+
 ## [3.9.0](https://github.com/timveil/bloviate/compare/v3.8.2...v3.9.0) (2026-09-21)
 
 ### ✨ Features
