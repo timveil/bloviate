@@ -104,10 +104,11 @@ class SeedGoldenDumpTest {
                 // the bridge table's column has two parents; disable enforcement so its rows insert
                 // regardless of which parent the resolution order follows
                 statement.execute("SET REFERENTIAL_INTEGRITY FALSE");
-                // pin the SESSION time zone: java.sql.Timestamp values are converted to the
-                // wall-clock TIMESTAMP column through it, so the dump must not depend on the
-                // machine's zone. (TimeZone.setDefault is not enough — H2 caches the JVM zone
-                // statically the first time any test loads it.)
+                // pin the SESSION time zone: the dump reads TIMESTAMP columns back through it, so
+                // it must not depend on the machine's zone. (TimeZone.setDefault is not enough — H2
+                // caches the JVM zone statically the first time any test loads it.) Since #640 the
+                // write side no longer needs this: every temporal binds through a UTC calendar of
+                // its own, which is why the golden file is unchanged by that fix.
                 statement.execute("SET TIME ZONE 'UTC'");
             }
 

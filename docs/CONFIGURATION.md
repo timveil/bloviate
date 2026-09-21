@@ -193,6 +193,26 @@ new DatabaseFiller.Builder(connection, config).build().fill();
 The seed defaults to `0` when you use the four-argument constructor, so existing code keeps a
 single, stable dataset without changes.
 
+**Time zones do not enter into it.** A `java.sql.Date`, `Time` or `Timestamp` is an instant, and
+turning one into the value a column holds needs a zone. Bloviate binds every temporal through an
+explicit **UTC** calendar, so the stored value is the same on every machine: a `DATE`, `TIME`,
+`TIMESTAMP` or `DATETIME` column gets the instant's UTC wall clock, and a column that carries a zone
+(`TIMESTAMP WITH TIME ZONE`, `timestamptz`) gets the instant itself. Before 3.9.1 the zone was left
+to the driver, which used the JVM's default, so the same seed produced values five hours apart on a
+machine in `America/New_York` and one in `UTC` (issue #640). **If your JVM was not already running in
+UTC, the values a seed produces change in 3.9.1** — they stop following the machine. A JVM already on
+UTC, which is the usual container and CI setup, is unaffected.
+
+One thing a client cannot pin: MySQL's `TIMESTAMP` is an instant that the *server* converts from the
+session time zone on write and back to it on read. Its stored value therefore follows the session
+zone by definition, whatever a client sends. `DATE`, `TIME` and `DATETIME` carry no zone and do not
+move. Set the session zone explicitly (a `before` [SQL hook](#sql-hooks) running
+`SET time_zone = '+00:00'`) if you need MySQL `TIMESTAMP` columns pinned too.
+
+A **custom generator** that binds a `java.sql` temporal itself should go through
+`io.bloviate.gen.TemporalBinding`, which is the one place this zone rule lives; the
+`java.time`-based generators (`TruncatedDateGenerator`) are already zone-independent.
+
 ## Relative date ranges and asOf
 
 Date and timestamp generators default to a fixed window around 2020-01-01, so on their own they miss
