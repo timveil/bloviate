@@ -1,3 +1,9 @@
+## [3.9.2](https://github.com/timveil/bloviate/compare/v3.9.1...v3.9.2) (2026-09-21)
+
+### 🐛 Bug Fixes
+
+* **core:** fail on a mutual foreign-key cycle instead of skipping it ([#653](https://github.com/timveil/bloviate/issues/653)) ([b00ce19](https://github.com/timveil/bloviate/commit/b00ce19aada0541137655cb7f3274d3aafa5657c)), closes [#618](https://github.com/timveil/bloviate/issues/618)
+
 ## [3.9.1](https://github.com/timveil/bloviate/compare/v3.9.0...v3.9.1) (2026-09-21)
 
 ### 🐛 Bug Fixes
