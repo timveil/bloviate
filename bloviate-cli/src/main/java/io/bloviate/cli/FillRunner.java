@@ -22,6 +22,7 @@ import io.bloviate.db.SqlScript;
 import io.bloviate.db.TableConfiguration;
 import io.bloviate.ext.DatabaseSupport;
 import io.bloviate.util.JdbcUrls;
+import io.bloviate.util.MetadataPatterns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -200,7 +201,9 @@ final class FillRunner {
             DatabaseMetaData metaData = connection.getMetaData();
             String catalog = plan.catalog() != null ? plan.catalog() : connection.getCatalog();
             String schema = plan.schema() != null ? plan.schema() : connection.getSchema();
-            try (ResultSet resultSet = metaData.getTables(catalog, schema, null, new String[]{"TABLE"})) {
+            // the schema is a LIKE pattern here, so it is escaped to match only itself
+            MetadataPatterns patterns = MetadataPatterns.forMetaData(metaData);
+            try (ResultSet resultSet = metaData.getTables(catalog, patterns.literal(schema), null, new String[]{"TABLE"})) {
                 while (resultSet.next()) {
                     tables.add(resultSet.getString("TABLE_NAME"));
                 }
