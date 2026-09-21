@@ -1,3 +1,9 @@
+## [3.8.2](https://github.com/timveil/bloviate/compare/v3.8.1...v3.8.2) (2026-09-21)
+
+### 🐛 Bug Fixes
+
+* **ext:** size MySQL BIT(n) and respect signed TINYINT ranges ([#650](https://github.com/timveil/bloviate/issues/650)) ([19d2f3e](https://github.com/timveil/bloviate/commit/19d2f3e63bbd96897f0e94a2df2bc9fc48fe76fb)), closes [#641](https://github.com/timveil/bloviate/issues/641) [#641](https://github.com/timveil/bloviate/issues/641)
+
 ## [3.8.1](https://github.com/timveil/bloviate/compare/v3.8.0...v3.8.1) (2026-09-21)
 
 ### 🐛 Bug Fixes
