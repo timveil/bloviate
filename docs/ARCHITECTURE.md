@@ -423,10 +423,10 @@ classDiagram
 | --- | --- |
 | [`DefaultSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/DefaultSupport.java) | Nothing — cross-database JDBC types only |
 | [`PostgresSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/PostgresSupport.java) | `uuid`, `json`/`jsonb`, `inet`, `cidr`, `macaddr`/`macaddr8`, `interval`, `bit`/`varbit`, `xml`, and `text`/`int` arrays |
-| [`MySQLSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/MySQLSupport.java) | `JSON` columns generate valid JSON instead of arbitrary text |
+| [`MySQLSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/MySQLSupport.java) | `JSON` columns generate valid JSON instead of arbitrary text; `BIT(n)` generates an n-bit number, not a bit string |
 | [`MariaDBSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/MariaDBSupport.java) | Extends `MySQLSupport` — MariaDB columns surface through JDBC essentially as MySQL's |
 | [`CockroachDBSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/CockroachDBSupport.java) | Extends `PostgresSupport` (CockroachDB is PG wire-compatible) |
-| [`H2Support`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/H2Support.java) | Signed `TINYINT` (`-128..127`), `UUID` (reported as `BINARY`), and valid `JSON` |
+| [`H2Support`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/H2Support.java) | `UUID` (reported as `BINARY`) and valid `JSON` |
 | [`SQLiteSupport`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/ext/SQLiteSupport.java) | Nothing — SQLite's affinity types collapse onto `INTEGER`/`FLOAT`/`VARCHAR`, already covered by the defaults |
 
 You don't have to pick manually. `DatabaseSupport.forConnection(connection)` reads

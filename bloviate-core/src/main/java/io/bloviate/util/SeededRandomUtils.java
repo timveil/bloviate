@@ -203,21 +203,33 @@ public record SeededRandomUtils(RandomGenerator random) {
      * Returns a random {@code int} within the range {@code [startInclusive, endExclusive)}. When
      * the two bounds are equal, that value is returned.
      *
-     * @param startInclusive the inclusive lower bound (must be non-negative)
+     * <p>A negative lower bound is allowed, which a signed column needs (a JDBC {@code TINYINT} is
+     * {@code -128..127}). The draw is still {@code start + nextInt(span)}, so a range that was legal
+     * before &mdash; both bounds non-negative &mdash; yields exactly the values it always did, and
+     * seed reproducibility across this change is limited to columns that could not be generated at
+     * all before.
+     *
+     * @param startInclusive the inclusive lower bound
      * @param endExclusive   the exclusive upper bound (must be {@code >= startInclusive})
      * @return a random {@code int} in the range
-     * @throws IllegalArgumentException if {@code endExclusive < startInclusive} or
-     *                                  {@code startInclusive} is negative
+     * @throws IllegalArgumentException if {@code endExclusive < startInclusive}
      */
     public int nextInt(final int startInclusive, final int endExclusive) {
         Validate.isTrue(endExclusive >= startInclusive, "Start value must be smaller or equal to end value.");
-        Validate.isTrue(startInclusive >= 0, "Both range values must be non-negative.");
 
         if (startInclusive == endExclusive) {
             return startInclusive;
         }
 
-        return startInclusive + random.nextInt(endExclusive - startInclusive);
+        // the span is computed as a long: a range straddling zero can be wider than an int, and
+        // the subtraction would then wrap round to a negative bound
+        long span = (long) endExclusive - startInclusive;
+
+        if (span > Integer.MAX_VALUE) {
+            return (int) (startInclusive + random.nextLong(span));
+        }
+
+        return startInclusive + random.nextInt((int) span);
     }
 
     /**
@@ -267,15 +279,16 @@ public record SeededRandomUtils(RandomGenerator random) {
      * the two bounds are equal, that value is returned. The value is generated directly as a
      * {@code long} so the top of wide ranges (above {@code 2^53}) remains reachable.
      *
-     * @param startInclusive the inclusive lower bound (must be non-negative)
+     * <p>A negative lower bound is allowed, as it is for {@link #nextInt(int, int)}; the draw is
+     * unchanged for every range that was legal before.
+     *
+     * @param startInclusive the inclusive lower bound
      * @param endExclusive   the exclusive upper bound (must be {@code >= startInclusive})
      * @return a random {@code long} in the range
-     * @throws IllegalArgumentException if {@code endExclusive < startInclusive} or
-     *                                  {@code startInclusive} is negative
+     * @throws IllegalArgumentException if {@code endExclusive < startInclusive}
      */
     public long nextLong(final long startInclusive, final long endExclusive) {
         Validate.isTrue(endExclusive >= startInclusive, "Start value must be smaller or equal to end value.");
-        Validate.isTrue(startInclusive >= 0, "Both range values must be non-negative.");
 
         if (startInclusive == endExclusive) {
             return startInclusive;

@@ -27,6 +27,9 @@ import java.util.Set;
 
 class MariaDbFillerTest extends BaseMariaDbTest {
 
+    /** Enough rows that a generator confined to part of a column's range is caught (see #641). */
+    private static final int ROWS = 100;
+
     @Test
     void fillTestTables() throws SQLException {
         // standard_table exercises the full set of standard MariaDB types with zero configuration.
@@ -44,6 +47,16 @@ class MariaDbFillerTest extends BaseMariaDbTest {
             assertRowCount(connection, "json_doc", 5);
             assertRowCount(connection, "standard_table", 5);
         });
+    }
+
+    @Test
+    void fillBitAndTinyIntWidths() throws SQLException {
+        // issue #641, on the MariaDB side: the BIT(n) and TINYINT DDL is identical on both servers,
+        // so this reuses the MySQL fixture. MariaDB's driver differs in what it reports for a
+        // BOOLEAN column, which the same assertions cover.
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, ROWS, new MariaDBSupport(), new HashSet<>());
+        fillDatabase("create_numeric_widths.mysql.sql", configuration,
+                connection -> assertNumericWidthFidelity(connection, ROWS));
     }
 
     @Test

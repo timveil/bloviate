@@ -22,9 +22,19 @@ package io.bloviate.ext;
  * <p>MariaDB is a MySQL fork that speaks the MySQL wire protocol, so its columns surface
  * through JDBC essentially as MySQL's do. This class therefore extends {@link MySQLSupport}
  * and inherits its full type handling and its session-variable bulk-load mechanism
- * ({@code FOREIGN_KEY_CHECKS}/{@code UNIQUE_CHECKS}). The cross-database defaults cover the
- * standard types; {@code TINYINT UNSIGNED} surfaces as JDBC {@code TINYINT} (type name
- * {@code "TINYINT UNSIGNED"}) and accepts the inherited 0&ndash;255 generator.
+ * ({@code FOREIGN_KEY_CHECKS}/{@code UNIQUE_CHECKS}), including its {@code BIT(n)} handling. The
+ * cross-database defaults cover the standard types; an unsigned column surfaces with
+ * {@code UNSIGNED} in its type name, which is how the signed and unsigned integer ranges are told
+ * apart.
+ *
+ * <p><strong>{@code BOOLEAN} is filled as a small integer.</strong> Both servers implement
+ * {@code BOOLEAN} as {@code TINYINT(1)} and both drivers report it as JDBC {@code BIT}. MySQL's
+ * driver names it {@code TINYINT}, so {@link MySQLSupport} recognises it and fills {@code 0}/{@code 1};
+ * MariaDB's driver strips the width from the declared type, which leaves {@code BIT} &mdash;
+ * indistinguishable from a real {@code BIT(3)}, since it reports {@code TINYINT}'s precision of 3 as
+ * the size. Such a column is filled with {@code 0..7}, which a {@code TINYINT(1)} stores and reads
+ * back as its truth value. Configure a {@link io.bloviate.gen.BooleanGenerator} per column
+ * ({@link io.bloviate.db.ColumnConfiguration}) where strictly {@code 0}/{@code 1} matters.
  *
  * <p><strong>JSON cannot be auto-detected.</strong> Unlike MySQL — whose driver reports a
  * {@code JSON} column with type name {@code "JSON"}, letting {@link MySQLSupport} route it to

@@ -29,6 +29,7 @@ import java.sql.Statement;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BaseDatabaseTestCase {
 
@@ -78,6 +79,54 @@ public class BaseDatabaseTestCase {
             resultSet.next();
             assertEquals(expected, resultSet.getLong(1), query);
         }
+    }
+
+    /** Asserts a scalar query returns at least {@code minimum}. */
+    protected static void assertAtLeast(Connection connection, String query, long minimum) throws SQLException {
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+            resultSet.next();
+            long actual = resultSet.getLong(1);
+            assertTrue(actual >= minimum, query + " returned " + actual + ", expected at least " + minimum);
+        }
+    }
+
+    /**
+     * Asserts that a {@code numeric_widths} fixture (see {@code create_numeric_widths.mysql.sql}) was
+     * filled inside every column's real range <em>and</em> across it (issue #641). The range checks
+     * catch the values MySQL would reject; the spread checks catch a generator that stays valid by
+     * producing only a narrow corner of the column, which is how {@code BIT(n)} and a signed
+     * {@code TINYINT} would silently regress.
+     *
+     * <p>The spread checks are safe with a fixed seed and this many rows: a correct generator misses
+     * a half of its range on every one of {@code rows} draws with probability 2^-rows.
+     *
+     * @param connection an open connection to the filled database
+     * @param rows       the number of rows the table was filled with; 100 or more
+     */
+    protected static void assertNumericWidthFidelity(Connection connection, int rows) throws SQLException {
+        assertRowCount(connection, "numeric_widths", rows);
+
+        // a BIT column reads as a number when something forces the conversion, hence the "+ 0"
+        assertCount(connection, "select count(*) from numeric_widths where bit_1 + 0 > 1", 0);
+        assertCount(connection, "select count(*) from numeric_widths where bit_3 + 0 > 7", 0);
+        assertCount(connection, "select count(*) from numeric_widths where bit_8 + 0 > 255", 0);
+        assertCount(connection, "select count(*) from numeric_widths where bit_17 + 0 > 131071", 0);
+
+        // each BIT(n) uses its width rather than the bottom bit the previous generator was stuck on
+        assertAtLeast(connection, "select count(distinct bit_3 + 0) from numeric_widths", 3);
+        assertAtLeast(connection, "select count(*) from numeric_widths where bit_8 + 0 > 1", 1);
+        assertAtLeast(connection, "select count(*) from numeric_widths where bit_17 + 0 > 255", 1);
+        assertAtLeast(connection, "select count(*) from numeric_widths where bit_64 + 0 > 4294967295", 1);
+
+        // a signed TINYINT reaches below zero; an unsigned one reaches past a signed byte's maximum
+        assertAtLeast(connection, "select count(*) from numeric_widths where tiny_signed < 0", 1);
+        assertAtLeast(connection, "select count(*) from numeric_widths where tiny_unsigned > 127", 1);
+
+        // BOOLEAN is TINYINT(1), which both drivers report as JDBC BIT. Connector/J sizes it 1, so
+        // MySQL gets 0/1; MariaDB's driver reports TINYINT's precision of 3 and cannot be told from
+        // a real BIT(3), so it gets 0..7 — every one of which is a valid truth value there
+        assertCount(connection, "select count(*) from numeric_widths where bool_flag < 0 or bool_flag > 7", 0);
     }
 
     /**

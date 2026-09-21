@@ -26,6 +26,9 @@ import java.util.Set;
 
 class MySqlFillerTest extends BaseMySqlTest {
 
+    /** Enough rows that a generator confined to part of a column's range is caught (see #641). */
+    private static final int ROWS = 100;
+
     @Test
     void fillTPCC() throws SQLException {
         Set<TableConfiguration> tableConfigurations = new HashSet<>();
@@ -59,6 +62,15 @@ class MySqlFillerTest extends BaseMySqlTest {
             assertRowCount(connection, "json_doc", 5);
             assertRowCount(connection, "standard_table", 5);
         });
+    }
+
+    @Test
+    void fillBitAndTinyIntWidths() throws SQLException {
+        // issue #641: BIT(n) above n=1 failed with "Data too long" because the value was generated as
+        // a bit string, and a signed TINYINT overflowed because the generator produced 0..255
+        DatabaseConfiguration configuration = new DatabaseConfiguration(128, ROWS, new MySQLSupport(), new HashSet<>());
+        fillDatabase("create_numeric_widths.mysql.sql", configuration,
+                connection -> assertNumericWidthFidelity(connection, ROWS));
     }
 
     @Test

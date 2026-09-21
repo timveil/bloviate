@@ -7,7 +7,7 @@
 CREATE TABLE standard_table
 (
     id INT NOT NULL AUTO_INCREMENT,
-    a  TINYINT UNSIGNED, -- JDBC TINYINT; the inherited 0..255 generator fits the unsigned range
+    a  TINYINT UNSIGNED, -- JDBC TINYINT; the type name marks it unsigned, so 0..255 is generated
     b  SMALLINT,
     c  INT,
     d  BIGINT,
