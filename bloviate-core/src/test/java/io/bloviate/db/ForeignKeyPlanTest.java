@@ -74,7 +74,7 @@ class ForeignKeyPlanTest {
         ForeignKeyPlan plan = ForeignKeyPlan.of(database(parent));
 
         assertSame(label, plan.seedSource(label));
-        assertTrue(plan.referencedTables(label).isEmpty());
+        assertTrue(plan.wrapChain(label).isEmpty());
         assertFalse(plan.databaseGenerated(label));
     }
 
@@ -130,7 +130,8 @@ class ForeignKeyPlanTest {
         // the driver reported first
         assertSame(nationId, seedSource);
 
-        assertEquals(Set.of("region", "nation"), plan.referencedTables(bridgeRef));
+        // one level bounded by both keys: the value has to be in each, so the smaller bounds it
+        assertEquals(List.of(List.of("nation", "region")), plan.wrapChain(bridgeRef));
     }
 
     /**
@@ -188,7 +189,10 @@ class ForeignKeyPlanTest {
         // parent's primary key would have paired sequence 1 with accounts.id
         assertSame(accountId, plan.seedSource(documentAccount));
         assertSame(tenantId, plan.seedSource(documentTenant));
-        assertEquals(Set.of("accounts", "tenants"), plan.referencedTables(documentTenant));
+        // the composite key governs, and the standalone key to tenants is implied by it rather than an
+        // extra bound, so the chain folds through accounts and then through accounts' own parent
+        assertEquals(List.of(List.of("accounts"), List.of("tenants")), plan.wrapChain(documentTenant));
+        assertEquals(List.of(List.of("accounts")), plan.wrapChain(documentAccount));
     }
 
     /** A key the database assigns has no seed to share, so the child is told to count instead. */
@@ -204,16 +208,44 @@ class ForeignKeyPlanTest {
         ForeignKeyPlan plan = ForeignKeyPlan.of(database(authors, books));
 
         assertTrue(plan.databaseGenerated(bookAuthor));
-        assertFalse(plan.databaseGenerated(authorId));
+        // the generated column itself is reported too, harmlessly: it is left out of its own insert,
+        // so nothing generates it
+        assertTrue(plan.databaseGenerated(authorId));
     }
 
     /**
-     * The tables a value must exist in include the whole chain, not just the immediate parent: a
-     * grandchild's value has to be a key of its parent, whose value has to be a key of the grandparent,
-     * so the smallest of the three bounds it.
+     * A column referencing one generated key and one ordinary key. Counting only the shared column
+     * would leave the ordinary key on its random values with nothing to match, so the whole class
+     * counts: the ordinary key is filled 1..N too.
      */
     @Test
-    void referencedTablesFollowTheWholeChain() {
+    void aClassContainingAGeneratedKeyCountsAsAWhole() {
+        Column generatedId = generated("id", "generated_parent");
+        Table generatedParent = new Table("generated_parent", key("generated_parent", generatedId),
+                List.of(generatedId), List.of());
+
+        Column ordinaryCode = col("code", "ordinary_parent");
+        Table ordinaryParent = new Table("ordinary_parent", key("ordinary_parent", ordinaryCode),
+                List.of(ordinaryCode), List.of());
+
+        Column bridgeRef = col("ref", "bridge");
+        Table bridge = new Table("bridge", null, List.of(bridgeRef), List.of(
+                foreignKey(key("generated_parent", generatedId), bridgeRef),
+                foreignKey(key("ordinary_parent", ordinaryCode), bridgeRef)));
+
+        ForeignKeyPlan plan = ForeignKeyPlan.of(database(generatedParent, ordinaryParent, bridge));
+
+        assertTrue(plan.databaseGenerated(bridgeRef));
+        assertTrue(plan.databaseGenerated(ordinaryCode), "the ordinary key must count too, or it has nothing to match");
+    }
+
+    /**
+     * The chain covers every level, not just the immediate parent: a grandchild reads a row of its
+     * parent, which reads a row of the grandparent. The counts fold in that order rather than being
+     * reduced to their minimum, which is what keeps a composite key's columns on one parent row.
+     */
+    @Test
+    void theWrapChainFollowsEveryLevel() {
         Column grandparentId = col("id", "grandparent");
         Table grandparent = new Table("grandparent", key("grandparent", grandparentId), List.of(grandparentId), List.of());
 
@@ -227,7 +259,7 @@ class ForeignKeyPlanTest {
 
         ForeignKeyPlan plan = ForeignKeyPlan.of(database(grandparent, parent, child));
 
-        assertEquals(Set.of("parent", "grandparent"), plan.referencedTables(childRef));
+        assertEquals(List.of(List.of("parent"), List.of("grandparent")), plan.wrapChain(childRef));
     }
 
     /** A self-referencing key is bounded by its own table, and still resolves to the key it names. */
@@ -241,6 +273,6 @@ class ForeignKeyPlanTest {
         ForeignKeyPlan plan = ForeignKeyPlan.of(database(employees));
 
         assertSame(id, plan.seedSource(managerId));
-        assertEquals(Set.of("employees"), plan.referencedTables(managerId));
+        assertEquals(List.of(List.of("employees")), plan.wrapChain(managerId));
     }
 }

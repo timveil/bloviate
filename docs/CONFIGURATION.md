@@ -203,17 +203,24 @@ unless the key spaces overlap, and equality is the only overlap reproducible wit
 If you did not mean the keys to be interchangeable, the schema is telling you something.
 
 **Row counts bound it.** A foreign-key column cycles through its parent's keys once it runs past them,
-so a child with more rows than its parent is fine — it reuses parents. The limit is the smallest row
-count in the whole chain above it (a grandchild's value must be a key of its parent, whose value must
-be a key of the grandparent), taken from each table's `TableConfiguration` where it has one and from
-the default row count otherwise.
+so a child with more rows than its parent is fine — it reuses parents. Row *i* of a child reads row
+`i % parentRows` of its parent, which in turn reads row `(i % parentRows) % grandparentRows` of the
+grandparent, all the way up. The counts come from each table's `TableConfiguration` where it has one
+and from the default row count otherwise.
 
 **Keys the database generates.** A `serial` or `IDENTITY` key column is left out of its own insert, so
 the database assigns it and there is no seed to share. Bloviate counts instead: a table filled from
 empty is given 1..N in insertion order, and the child counts through the same range. This assumes the
 parent's sequence starts at 1 — filling a table that already holds rows, or whose sequence has been
 advanced, leaves the child pointing at keys the parent was not given. Fill into an empty schema, or
-reset the sequence first (`TRUNCATE ... RESTART IDENTITY`).
+reset the sequence first (`TRUNCATE ... RESTART IDENTITY`). Because the class carries one set of
+values, a key linked to a generated one is filled by counting too, so both ends match.
+
+One shape this cannot cover: a generated column inside a *composite* key whose parent is filled with
+[intra-table partitions](#intra-table-partitioning). The database hands out identities in completion
+order across the workers, while the key's other columns are generated from the logical row index, so
+the two need not describe the same parent row. Give such a parent an ordinary key column, or fill it
+without partitions.
 
 ## Foreign-key cycles
 

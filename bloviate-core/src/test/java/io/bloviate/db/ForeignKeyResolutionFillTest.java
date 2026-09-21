@@ -116,6 +116,42 @@ class ForeignKeyResolutionFillTest {
     }
 
     /**
+     * The same shape with row counts that are not multiples of each other: 6 tenants, 10 accounts, 50
+     * documents. Each column's index has to be reduced by its parent's count <em>and then</em> by its
+     * parent's own parent's, in that order. Reducing each column by the smallest count in its chain
+     * instead puts {@code tenant_id} and {@code account_id} on different account rows — document 13
+     * would pair tenant 1 with account 3, which is not a row of {@code accounts}.
+     */
+    @Test
+    void aCompositeKeyStaysOnOneParentRowWhenTheCountsAreNotMultiples() throws SQLException {
+        String url = fresh("tenant_uneven", """
+                create table tenants (id int primary key, name varchar(20) not null);
+                create table accounts (
+                    id int primary key,
+                    tenant_id int not null references tenants (id),
+                    label varchar(20) not null,
+                    constraint uq_accounts_tenant unique (tenant_id, id));
+                create table documents (
+                    id int primary key,
+                    tenant_id int not null,
+                    account_id int not null,
+                    constraint fk_documents_account foreign key (tenant_id, account_id) references accounts (tenant_id, id));
+                """);
+
+        try (Connection connection = DriverManager.getConnection(url)) {
+            new DatabaseFiller.Builder(connection, configuration(Set.of(
+                    new TableConfiguration("tenants", 6),
+                    new TableConfiguration("accounts", 10),
+                    new TableConfiguration("documents", 50)))).build().fill();
+
+            assertEquals(50, count(connection, "documents"));
+            assertEquals(0, count(connection, """
+                    select count(*) from documents d
+                     where not exists (select 1 from accounts a where a.tenant_id = d.tenant_id and a.id = d.account_id)"""));
+        }
+    }
+
+    /**
      * One column in two <em>composite</em> keys, each to a composite primary key. Positional matching is
      * right here, so only sharing is in question: {@code tenant_id} used to be filled from whichever key
      * the driver reported first, leaving the other with nothing to match. The two parents' tenant
@@ -191,6 +227,35 @@ class ForeignKeyResolutionFillTest {
             assertEquals(ROWS, count(connection, "authors"));
             assertEquals(ROWS, count(connection, "books"));
             assertEquals(0, count(connection, "select count(*) from books b where b.author_id not in (select id from authors)"));
+        }
+    }
+
+    /**
+     * A column referencing a generated key <em>and</em> an ordinary one. The generated key forces the
+     * whole class to count rather than share a seed, so the ordinary key is filled 1..N as well;
+     * counting only the shared column would leave the ordinary key on random values with nothing to
+     * match.
+     */
+    @Test
+    void aColumnReferencingAGeneratedKeyAndAnOrdinaryOneSatisfiesBoth() throws SQLException {
+        String url = fresh("mixed_generated", """
+                create table generated_parent (id int generated always as identity primary key, name varchar(20) not null);
+                create table ordinary_parent (code int primary key, name varchar(20) not null);
+                create table bridge (
+                    id int primary key,
+                    ref int not null,
+                    constraint fk_bridge_generated foreign key (ref) references generated_parent (id),
+                    constraint fk_bridge_ordinary foreign key (ref) references ordinary_parent (code));
+                """);
+
+        try (Connection connection = DriverManager.getConnection(url)) {
+            new DatabaseFiller.Builder(connection, configuration(null)).build().fill();
+
+            assertEquals(ROWS, count(connection, "bridge"));
+            assertEquals(0, count(connection, """
+                    select count(*) from bridge b
+                     where b.ref not in (select id from generated_parent)
+                        or b.ref not in (select code from ordinary_parent)"""));
         }
     }
 

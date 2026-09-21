@@ -243,16 +243,19 @@ works that out once for the whole database, from three rules:
   same values, so the rule ties them into one class. A schema that points one column at two unrelated
   keys therefore makes those two keys equal, column for column; that is inherent, since a value cannot
   be in both key spaces unless the key spaces overlap.
-- **How far.** A column may emit no more distinct values than the smallest key space it references has
-  rows, counting the whole chain up — a grandchild's value must be a key of its parent, whose value
-  must be a key of the grandparent. Past that the generator wraps (`position(rowIndex % keySpace)`, or
-  a reseed on the legacy non-positionable path) and replays those same keys. The limit comes from each
-  table's `TableConfiguration` when it has one and the default row count otherwise, so a child sized
-  larger than its parent stays inside it however the parent was sized.
+- **How far.** Row *i* of a child reads row `i % parentRows` of its parent, which itself reads row
+  `(i % parentRows) % grandparentRows` of the grandparent, and so on up the chain — so a child sized
+  larger than any of its ancestors cycles through their keys rather than running past them. The counts
+  come from each table's `TableConfiguration` when it has one and the default row count otherwise.
+  Folding *in order* is what keeps a composite key's columns on one parent row: reduce each column by
+  the smallest count in its chain instead and, where the counts are not multiples of each other, the
+  columns land on different parent rows and the tuple matches nothing. A level is bounded by several
+  tables only when a column references keys that do not imply one another, and then the smallest wins.
 
 A key the *database* assigns (`serial`, `IDENTITY`) is left out of its own insert, so there is no seed
 to share with it. A table filled from empty is assigned 1..N in insertion order, which the child
-reproduces by counting through the same range.
+reproduces by counting through the same range — and, because a class carries one set of values, every
+column of that class counts rather than only the ones referencing the generated key.
 
 ```mermaid
 flowchart TD
