@@ -1,3 +1,9 @@
+## [3.9.0](https://github.com/timveil/bloviate/compare/v3.8.2...v3.9.0) (2026-09-21)
+
+### ✨ Features
+
+* **ext:** read CHECK and enum constraints on CockroachDB ([#651](https://github.com/timveil/bloviate/issues/651)) ([85584c7](https://github.com/timveil/bloviate/commit/85584c7f817dfe3a9e34e12ae3bd41ddd3e87450)), closes [#479](https://github.com/timveil/bloviate/issues/479) [#619](https://github.com/timveil/bloviate/issues/619) [#633](https://github.com/timveil/bloviate/issues/633)
+
 ## [3.8.2](https://github.com/timveil/bloviate/compare/v3.8.1...v3.8.2) (2026-09-21)
 
 ### 🐛 Bug Fixes
