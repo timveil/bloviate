@@ -17,7 +17,6 @@
 package io.bloviate.db;
 
 import io.bloviate.ext.PostgresSupport;
-import org.jgrapht.traverse.NotDirectedAcyclicGraphException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,8 +41,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Observed on PostgreSQL 18 when #614 was written:
  * <ul>
- *   <li>mutual cycle, sequential path: {@code NotDirectedAcyclicGraphException: Graph is not a DAG};</li>
- *   <li>mutual cycle, parallel path: no exception, a warning, and both tables left empty;</li>
+ *   <li>mutual cycle, sequential path: {@code NotDirectedAcyclicGraphException: Graph is not a DAG}
+ *       &mdash; fixed in #618: both ordered paths now fail alike, naming the tables;</li>
+ *   <li>mutual cycle, parallel path: no exception, a warning, and both tables left empty &mdash; fixed
+ *       in #618;</li>
  *   <li>FK to a serial or identity primary key: {@code Key (author_id)=(1077167994) is not present in
  *       table "authors"} &mdash; the child is given random integers, not the generated 1..N;</li>
  *   <li>child larger than an unconfigured parent: the first 10 rows are valid (the default row count)
@@ -110,28 +110,28 @@ class PostgresForeignKeyShapesTest extends BaseDatabaseTestCase {
     // ---------------------------------------------------------------------------------------------
 
     /**
-     * Pins the sequential path: a raw JGraphT exception with no table names. Replace this and the
-     * parallel pin below with {@link #noPathLeavesCyclicTablesSilentlyUnfilled()} when #618 lands.
+     * Both ordered paths now reject the cycle the same way, naming the tables (#618). This replaces the
+     * two pins that recorded the old split behaviour: a raw {@code NotDirectedAcyclicGraphException}
+     * with no table names on the sequential path, and a normal return with both tables left empty on
+     * the parallel one.
      */
     @Test
-    void cycleOnTheSequentialPathThrowsARawGraphException() {
-        Exception thrown = assertThrows(Exception.class,
-                () -> fixture.fillSequential("fk_cycle", configuration(16, ROWS, null)));
+    void cycleOnEitherOrderedPathFailsNamingTheTables() {
+        for (String path : List.of("sequential", "parallel")) {
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                    () -> {
+                        if ("sequential".equals(path)) {
+                            fixture.fillSequential("fk_cycle", configuration(16, ROWS, null));
+                        } else {
+                            fixture.fillParallel("fk_cycle", configuration(16, ROWS, null), 4);
+                        }
+                    },
+                    path);
 
-        assertInstanceOf(NotDirectedAcyclicGraphException.class, thrown);
-        assertEquals("Graph is not a DAG", thrown.getMessage());
-    }
-
-    /**
-     * Pins the parallel path: the same schema completes <em>without an exception</em> and leaves both
-     * tables empty (the only trace is a WARN log line). See the sequential pin above.
-     */
-    @Test
-    void cycleOnTheParallelPathSilentlySkipsTheTables() throws SQLException {
-        fixture.fillParallel("fk_cycle", configuration(16, ROWS, null), 4);
-
-        assertEquals(0, fixture.count("fk_cycle.accounts"));
-        assertEquals(0, fixture.count("fk_cycle.users"));
+            assertTrue(thrown.getMessage().contains("accounts") && thrown.getMessage().contains("users"),
+                    path + ": " + thrown.getMessage());
+            assertTrue(thrown.getMessage().contains("Nothing was written"), path + ": " + thrown.getMessage());
+        }
     }
 
     /**
@@ -140,7 +140,6 @@ class PostgresForeignKeyShapesTest extends BaseDatabaseTestCase {
      * must not return normally with empty tables. This asserts that for both paths.
      */
     @Test
-    @Disabled("#618: the ordered parallel path completes normally but skips cyclic tables")
     void noPathLeavesCyclicTablesSilentlyUnfilled() throws SQLException {
         assertFilledOrFailedLoudly(() -> fixture.fillSequential("fk_cycle", configuration(16, ROWS, null)));
 
