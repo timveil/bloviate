@@ -24,6 +24,7 @@ import java.sql.JDBCType;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DatabaseSupportTest {
@@ -158,6 +159,69 @@ class DatabaseSupportTest {
         assertInstanceOf(IntegerGenerator.class, generatorFor(support, JDBCType.INTEGER, 10, "int4"));
         assertThrows(UnsupportedOperationException.class,
                 () -> generatorFor(support, JDBCType.OTHER, null, "geometry"));
+    }
+
+    // ---- integer widths and signedness (issue #641) ----------------------------------------
+
+    @Test
+    void tinyIntSignednessComesFromTheTypeName() {
+        // JDBC's TINYINT is signed; MySQL and MariaDB mark an unsigned column in the type name,
+        // and the two drivers spell it differently
+        assertWholeNumberRange(new DefaultSupport(), JDBCType.TINYINT, 3, "TINYINT", -128, 127);
+        assertWholeNumberRange(new H2Support(), JDBCType.TINYINT, 3, "TINYINT", -128, 127);
+        assertWholeNumberRange(new MySQLSupport(), JDBCType.TINYINT, 3, "TINYINT UNSIGNED", 0, 255);
+        assertWholeNumberRange(new MariaDBSupport(), JDBCType.TINYINT, 3, "tinyint(3) unsigned", 0, 255);
+    }
+
+    @Test
+    void mySqlBitColumnsAreNumbersSizedToTheirWidth() {
+        DatabaseSupport support = new MySQLSupport();
+
+        // a MySQL BIT(n) holds an n-bit integer, not the '0'/'1' string the standard defines
+        assertInstanceOf(LongGenerator.class, generatorFor(support, JDBCType.BIT, 8, "BIT"));
+        assertWholeNumberRange(support, JDBCType.BIT, 3, "BIT", 0, 7);
+        assertWholeNumberRange(support, JDBCType.BIT, 8, "BIT", 0, 255);
+        assertWholeNumberRange(support, JDBCType.BIT, 17, "bit(17)", 0, 131_071);
+
+        // the widest columns reach past Long.MAX_VALUE, so they draw from the widest range a long has
+        assertWholeNumberRange(support, JDBCType.BIT, 64, "BIT", 0, Long.MAX_VALUE - 1);
+        // a width the driver cannot have reported for a BIT column is clamped, never trusted upward
+        assertWholeNumberRange(support, JDBCType.BIT, 9999, "BIT", 0, Long.MAX_VALUE - 1);
+    }
+
+    @Test
+    void mySqlKeepsSingleBitValuesForBooleanColumns() {
+        DatabaseSupport support = new MySQLSupport();
+
+        assertInstanceOf(BitGenerator.class, generatorFor(support, JDBCType.BIT, 1, "BIT"));
+        assertInstanceOf(BitGenerator.class, generatorFor(support, JDBCType.BIT, null, "BIT"));
+        // with tinyInt1isBit on (the default) TINYINT(1) — and so BOOLEAN — also arrives as JDBC BIT.
+        // Connector/J names it TINYINT, so it stays a single bit whatever size comes with it
+        assertWholeNumberRange(support, JDBCType.BIT, 1, "TINYINT", 0, 1);
+        assertWholeNumberRange(support, JDBCType.BIT, 3, "TINYINT", 0, 1);
+    }
+
+    /**
+     * Draws enough values to assert both that none leaves {@code [min, max]} and that the generator
+     * reaches into the upper half of it, which is what a range collapsed onto its bottom bit (or
+     * onto the wrong sign) fails.
+     */
+    private static void assertWholeNumberRange(DatabaseSupport support, JDBCType type, Integer maxSize, String typeName,
+                                               long min, long max) {
+        DataGenerator<?> generator = support.getDataGenerator(column(type, maxSize, typeName), RANDOM);
+
+        long midpoint = min + (max - min) / 2;
+        boolean sawUpperHalf = false;
+
+        for (int i = 0; i < 2_000; i++) {
+            long value = ((Number) generator.generate()).longValue();
+            assertTrue(value >= min && value <= max,
+                    typeName + "(" + maxSize + ") produced " + value + ", outside [" + min + ", " + max + "]");
+            sawUpperHalf |= value > midpoint;
+        }
+
+        assertTrue(sawUpperHalf || min == max,
+                typeName + "(" + maxSize + ") never reached above " + midpoint + "; its range is not being used");
     }
 
     @Test

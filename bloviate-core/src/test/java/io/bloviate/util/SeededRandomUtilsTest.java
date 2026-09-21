@@ -18,6 +18,8 @@ package io.bloviate.util;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.random.RandomGenerator;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -117,12 +119,47 @@ class SeededRandomUtilsTest {
     void boundedNumericHelpersRejectInvalidBounds() {
         SeededRandomUtils u = utils(9L);
         assertThrows(IllegalArgumentException.class, () -> u.nextInt(10, 5));
-        assertThrows(IllegalArgumentException.class, () -> u.nextInt(-1, 5));
         assertThrows(IllegalArgumentException.class, () -> u.nextDouble(10, 5));
         assertThrows(IllegalArgumentException.class, () -> u.nextDouble(-1, 5));
         assertThrows(IllegalArgumentException.class, () -> u.nextFloat(10, 5));
         assertThrows(IllegalArgumentException.class, () -> u.nextFloat(-1, 5));
         assertThrows(IllegalArgumentException.class, () -> u.nextLong(10, 5));
-        assertThrows(IllegalArgumentException.class, () -> u.nextLong(-1, 5));
+    }
+
+    @Test
+    void wholeNumberHelpersAcceptANegativeLowerBound() {
+        // a signed column needs them: a JDBC TINYINT is -128..127 (issue #641)
+        SeededRandomUtils u = utils(11L);
+        boolean sawNegative = false;
+        for (int i = 0; i < 1_000; i++) {
+            int n = u.nextInt(Byte.MIN_VALUE, Byte.MAX_VALUE + 1);
+            assertTrue(n >= Byte.MIN_VALUE && n <= Byte.MAX_VALUE, "int " + n);
+            sawNegative |= n < 0;
+
+            long l = u.nextLong(-50L, 50L);
+            assertTrue(l >= -50L && l < 50L, "long " + l);
+        }
+        assertTrue(sawNegative, "a range below zero must actually produce negative values");
+    }
+
+    @Test
+    void nextIntSpansTheWholeIntRangeWithoutOverflowing() {
+        // end - start wraps round to a negative bound in int arithmetic for a range this wide
+        SeededRandomUtils u = utils(12L);
+        for (int i = 0; i < 1_000; i++) {
+            int n = u.nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
+            assertTrue(n >= Integer.MIN_VALUE && n < Integer.MAX_VALUE, "int " + n);
+        }
+    }
+
+    @Test
+    void aNonNegativeRangeDrawsExactlyWhatItAlwaysDid() {
+        // the reproducibility guarantee for the negative-bound change: the draw for a range that
+        // was already legal is still start + nextInt(span) against the same seeded source
+        SeededRandomUtils u = utils(13L);
+        RandomGenerator reference = RandomGenerators.create(13L);
+        for (int i = 0; i < 100; i++) {
+            assertEquals(5 + reference.nextInt(5), u.nextInt(5, 10));
+        }
     }
 }

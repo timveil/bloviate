@@ -21,6 +21,7 @@ import io.bloviate.gen.*;
 
 import java.sql.JDBCType;
 import java.util.EnumMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.random.RandomGenerator;
 
@@ -36,6 +37,9 @@ import java.util.random.RandomGenerator;
  * @see GeneratorFactory
  */
 public abstract class AbstractDatabaseSupport implements DatabaseSupport {
+
+    /** Exclusive upper bound of an unsigned 8-bit column: 255 is a legal value, 256 is not. */
+    private static final int UNSIGNED_BYTE_BOUND = 256;
 
     // built lazily on first use (double-checked): calling the overridable configure() from the
     // constructor would hand a subclass the registry before its own fields are initialized — a
@@ -83,6 +87,22 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
         // no customizations by default
     }
 
+    /**
+     * Whether a column's type is an <em>unsigned</em> integer type.
+     *
+     * <p>JDBC metadata carries no signedness column, so the only signal is the type name: MySQL and
+     * MariaDB report an unsigned column as {@code "TINYINT UNSIGNED"}, {@code "INT UNSIGNED"} and so
+     * on. Databases without unsigned integer types never match, which is the signed default.
+     *
+     * @param column the column to inspect
+     * @return {@code true} if the column's type name marks it unsigned
+     * @since 3.8.1
+     */
+    protected static boolean unsigned(Column column) {
+        String typeName = column.typeName();
+        return typeName != null && typeName.toUpperCase(Locale.ROOT).contains("UNSIGNED");
+    }
+
     private void registerDefaults(Map<JDBCType, GeneratorFactory> map) {
         map.put(JDBCType.BIT, (column, random) -> {
             // COLUMN_SIZE is nullable metadata; an unreported size is treated as the SQL
@@ -94,7 +114,13 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
             return new BitStringGenerator.Builder(random).size(maxSize).build();
         });
 
-        map.put(JDBCType.TINYINT, (column, random) -> new ShortGenerator.Builder(random).start(0).end(255).build());
+        // JDBC's TINYINT is a signed 8-bit type (-128..127). MySQL and MariaDB also have an unsigned
+        // TINYINT (0..255); JDBC metadata has no signedness column, so their drivers report it by
+        // appending UNSIGNED to the type name. Generating the unsigned range for a signed column
+        // overflowed it, which MySQL rejects with "Out of range value".
+        map.put(JDBCType.TINYINT, (column, random) -> unsigned(column)
+                ? new ShortGenerator.Builder(random).start(0).end(UNSIGNED_BYTE_BOUND).build()
+                : new ShortGenerator.Builder(random).start(Byte.MIN_VALUE).end(Byte.MAX_VALUE + 1).build());
         map.put(JDBCType.SMALLINT, (column, random) -> new ShortGenerator.Builder(random).build());
         map.put(JDBCType.INTEGER, (column, random) -> new IntegerGenerator.Builder(random).build());
         map.put(JDBCType.BIGINT, (column, random) -> new LongGenerator.Builder(random).build());

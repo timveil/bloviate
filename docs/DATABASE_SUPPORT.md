@@ -19,24 +19,35 @@ All of them resolve the cross-database defaults for the common JDBC types (integ
 strings, dates/times, booleans, binary, …). `PostgresSupport`, `MySQLSupport`, and `H2Support` add
 handling for vendor-specific types on top of those defaults.
 
+## Integer signedness
+
+JDBC's `TINYINT` is a signed 8-bit type, so `-128..127` is generated for it. MySQL and MariaDB also
+have an unsigned `TINYINT` (`0..255`); JDBC metadata has no signedness column, so Bloviate reads it
+from the type name the driver reports (`TINYINT UNSIGNED`) and widens the range to match.
+
 ## Vendor types
 
 **PostgreSQL vendor types:** `uuid`, `json`, `jsonb`, `inet`, `cidr`, `macaddr`, `macaddr8`,
 `interval`, `bit`/`bit varying`, `xml`, and `text`/`integer`/`bigint` arrays.
 
-**MySQL vendor types:** `JSON` (generated as valid JSON rather than arbitrary text). `ENUM`, `SET`,
+**MySQL vendor types:** `JSON` (generated as valid JSON rather than arbitrary text) and `BIT(n)`.
+MySQL's `BIT(n)` holds an *n-bit unsigned integer*, not the bit string the SQL standard (and
+PostgreSQL) define, so a number bounded by the column's declared width is generated. `TINYINT(1)` —
+and so `BOOLEAN` — arrives as JDBC `BIT` too: MySQL's driver names it `TINYINT`, so it is recognised
+and filled with `0`/`1`, while MariaDB's driver reports it as `BIT` of width 3 and it is filled with
+`0`–`7`, every value of which is a valid truth value for the column. `ENUM`, `SET`,
 `GEOMETRY`, and `YEAR` are **not** supported — they need value-aware or binary generation that
 standard JDBC metadata doesn't expose.
 
-**MariaDB:** extends `MySQLSupport`, so standard types fill with no configuration and
-`TINYINT UNSIGNED` uses the inherited 0–255 generator. MariaDB's `JSON` type, however, is an alias
+**MariaDB:** extends `MySQLSupport`, so standard types (including `BIT(n)`) fill with no
+configuration. MariaDB's `JSON` type, however, is an alias
 for `LONGTEXT` and the driver reports it through JDBC as `LONGTEXT` (not a distinct `JSON` type),
 so Bloviate **cannot auto-detect it**. Because MariaDB also adds an automatic `CHECK (json_valid(…))`,
 supply a per-column `JsonbGenerator` override (via `ColumnConfiguration`) for any `JSON` column.
 
 **H2 vendor types:** `UUID` (the driver reports it as 16-byte `BINARY`; a real UUID is generated)
 and `JSON` (generated as valid JSON). `ARRAY`, `INTERVAL`, `ENUM`, and `GEOMETRY` are **not** yet
-supported. Note H2's `TINYINT` is signed (max 127), unlike MySQL's unsigned default.
+supported.
 
 **SQLite:** SQLite uses dynamic typing with column *affinity*, so declared types collapse — through
 the JDBC metadata Bloviate reads — onto `INTEGER` / `FLOAT` / `VARCHAR`. There are no native

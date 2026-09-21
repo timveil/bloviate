@@ -18,7 +18,6 @@ package io.bloviate.ext;
 
 import io.bloviate.gen.ByteGenerator;
 import io.bloviate.gen.JsonbGenerator;
-import io.bloviate.gen.ShortGenerator;
 import io.bloviate.gen.UUIDGenerator;
 
 import java.sql.JDBCType;
@@ -33,8 +32,6 @@ import java.util.Map;
  * and {@code BLOB}). This class customizes the few types where H2 diverges:
  *
  * <ul>
- *   <li>{@code TINYINT} — H2's is a <em>signed</em> 8-bit type ({@code -128..127}), whereas the
- *       cross-database default targets MySQL's unsigned {@code 0..255} range and would overflow.</li>
  *   <li>{@code UUID} — the H2 driver reports it as JDBC {@link JDBCType#BINARY} (16 bytes) with
  *       type name {@code "UUID"}; a real UUID is generated rather than 16 random bytes.</li>
  *   <li>{@code JSON} — surfaces as JDBC {@link JDBCType#OTHER} with type name {@code "JSON"}; H2
@@ -57,12 +54,6 @@ public class H2Support extends AbstractDatabaseSupport {
 
     @Override
     protected void configure(Map<JDBCType, GeneratorFactory> registry) {
-
-        // H2 TINYINT is signed (max 127); the cross-database default targets the unsigned 0..255
-        // range (MySQL) and would overflow an H2 TINYINT column. Generate 0..127, which is valid
-        // for the signed type (the generator requires a non-negative range).
-        registry.put(JDBCType.TINYINT, (column, random) ->
-                new ShortGenerator.Builder(random).start(0).end(127).build());
 
         // H2 reports UUID as JDBC BINARY (16 bytes), type name "UUID"; generate a real UUID for
         // those and leave ordinary binary columns on a byte generator.

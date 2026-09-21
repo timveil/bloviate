@@ -1,5 +1,6 @@
 -- Comprehensive H2 type coverage. Standard types map through the cross-database defaults; the
--- H2-specific UUID and JSON types are handled by H2Support. TINYINT is signed (-128..127) in H2.
+-- H2-specific UUID and JSON types are handled by H2Support. TINYINT is signed (-128..127) in H2,
+-- which is what the cross-database default generates for a type name without UNSIGNED in it.
 
 CREATE TABLE standard_table
 (

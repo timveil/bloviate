@@ -9,7 +9,7 @@ CREATE TABLE json_doc
 CREATE TABLE standard_table
 (
     id INT NOT NULL AUTO_INCREMENT,
-    a  TINYINT UNSIGNED, -- the default TINYINT generator produces 0..255 (unsigned range)
+    a  TINYINT UNSIGNED, -- the type name marks it unsigned, so the 0..255 range is generated
     b  SMALLINT,
     c  INT,
     d  BIGINT,
