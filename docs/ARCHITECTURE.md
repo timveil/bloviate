@@ -167,9 +167,11 @@ with a warning — the fill proceeds, and parent/child ordering inside that tabl
 A *mutual* cycle (two or more tables referencing each other, directly or through a chain) is different:
 no order satisfies it, because whichever table is filled first has a foreign key with no parent row to
 point at. Both ordering paths reject it before a row is written, with an error naming every cycle. The
-one way to fill such a schema is `BulkLoadStrategy.unorderedBulk()`, which disables constraint
-enforcement and needs no order at all — available on a `DataSource` where the support implements bulk
-loading, which is PostgreSQL, MySQL and MariaDB.
+one way to fill such a schema is `BulkLoadStrategy.unorderedBulk()`, which needs no order at all
+because it does not enforce constraints. It is only selected for a `DataSource` running more than one
+worker thread, and where the support implements bulk loading: PostgreSQL, MySQL and MariaDB (by
+suspending enforcement) and BigQuery (whose key constraints are always `NOT ENFORCED`, so there is
+nothing to suspend).
 
 ### Parallel fill — topological levels
 

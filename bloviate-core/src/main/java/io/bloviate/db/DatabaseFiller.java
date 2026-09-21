@@ -1101,12 +1101,15 @@ public class DatabaseFiller implements Fillable {
      * silently left them empty (issue #618). Both now fail here instead, before a row is written, with
      * every cycle named.
      *
-     * <p>{@link BulkLoadStrategy#unorderedBulk()} is the exception and keeps working: it disables
-     * constraint enforcement and fills every table at once, so it needs no order and has no cycle to
-     * break. That is what the message points at &mdash; qualified, because it is only available on a
-     * {@link javax.sql.DataSource} and where {@link io.bloviate.ext.DatabaseSupport#supportsBulkLoad()}
-     * is true. Elsewhere it falls back to the level-parallel path and lands back here, so the message
-     * says so rather than sending an H2 or SQLite user round the same loop.
+     * <p>{@link BulkLoadStrategy#unorderedBulk()} is the exception and keeps working: it fills every
+     * table at once without enforcing constraints, so it needs no order and has no cycle to break. That
+     * is what the message points at &mdash; qualified, because two things have to hold for it to be
+     * chosen. It needs a {@link javax.sql.DataSource} with more than one worker thread (with one, the
+     * fill takes the sequential path and the strategy is only warned about), and a support where
+     * {@link io.bloviate.ext.DatabaseSupport#supportsBulkLoad()} is true: PostgreSQL, MySQL, MariaDB
+     * and BigQuery. Anywhere else it falls back to the level-parallel path and lands back here, so the
+     * message states both conditions rather than sending an H2, SQLite or single-threaded user round
+     * the same loop.
      *
      * <p>A table referencing itself is not a cycle here: {@link #buildReversedDependencyGraph} leaves
      * the self-edge out (and warns), because a self-reference constrains the order of rows within one
@@ -1131,9 +1134,10 @@ public class DatabaseFiller implements Fillable {
                 + " reference each other, so no fill order satisfies them: whichever is filled first, its "
                 + "foreign key has no parent row to point at yet. Break the cycle in the schema, leave every table "
                 + "of it out with excludeTables (dropping only one leaves the others referencing a table that is "
-                + "not being filled), or, on a DataSource and a database whose support implements bulk loading "
-                + "(PostgreSQL, MySQL, MariaDB), fill with BulkLoadStrategy.unorderedBulk(), which disables "
-                + "constraint enforcement and needs no order. Nothing was written.");
+                + "not being filled), or fill with BulkLoadStrategy.unorderedBulk(), which needs no order "
+                + "because it does not enforce constraints. That last one needs a DataSource with threads(n) "
+                + "above 1 (on one thread the fill is sequential and the strategy is ignored) and a support "
+                + "that implements bulk loading: PostgreSQL, MySQL, MariaDB and BigQuery. Nothing was written.");
     }
 
     /**

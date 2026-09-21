@@ -187,10 +187,11 @@ Three ways forward:
 - break the cycle in the schema;
 - leave **every** table of the cycle out with `excludeTables(...)` — dropping only one side leaves the
   others referencing a table that is not being filled, which fails for that reason instead;
-- fill with [`BulkLoadStrategy.unorderedBulk()`](#bulk-load-unordered-fill), which disables constraint
-  enforcement and fills every table at once, so it needs no order. This one needs a `DataSource` and a
-  database whose support implements bulk loading (PostgreSQL, MySQL, MariaDB); anywhere else it falls
-  back to the ordered path and fails the same way.
+- fill with [`BulkLoadStrategy.unorderedBulk()`](#bulk-load-unordered-fill), which fills every table at
+  once without enforcing constraints, so it needs no order. Two things have to hold for it to be
+  chosen: a `DataSource` with `threads(n)` above 1 (on a single connection the fill is sequential and
+  the strategy is only warned about), and a support that implements bulk loading — PostgreSQL, MySQL,
+  MariaDB and BigQuery. Anywhere else it falls back to the ordered path and fails the same way.
 
 A table referencing *itself* is not a cycle: it constrains the order of rows within that one table, not
 the order of tables. Those fill normally, with a warning, and making a row's parent exist before its
