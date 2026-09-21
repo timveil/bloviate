@@ -23,6 +23,7 @@ import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.JdbcUrls;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jgrapht.Graph;
+import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.EdgeReversedGraph;
@@ -540,6 +541,8 @@ public class DatabaseFiller implements Fillable {
      * @throws SQLException if any table fill fails
      */
     private void fillSequential(Connection conn, Database database, Graph<Table, DefaultEdge> reversedGraph) throws SQLException {
+        requireAcyclic(reversedGraph);
+
         TopologicalOrderIterator<Table, DefaultEdge> iterator = new TopologicalOrderIterator<>(reversedGraph);
         while (iterator.hasNext()) {
             new TableFiller.Builder(conn, database, configuration)
@@ -569,6 +572,8 @@ public class DatabaseFiller implements Fillable {
      * @throws SQLException if any table fill fails or the run is interrupted
      */
     private void fillParallel(Database database, Graph<Table, DefaultEdge> reversedGraph) throws SQLException {
+        requireAcyclic(reversedGraph);
+
         List<List<Table>> levels = fillLevels(reversedGraph);
 
         // never spin up more workers than the widest level can use; a partitioned table contributes
@@ -984,7 +989,10 @@ public class DatabaseFiller implements Fillable {
      *
      * <p>If the graph contains a cycle (e.g. mutually referencing tables), the tables in the cycle
      * never reach in-degree zero and are omitted from the levels — matching the sequential
-     * {@link TopologicalOrderIterator}, which likewise cannot order a cycle.
+     * {@link TopologicalOrderIterator}, which likewise cannot order a cycle. A fill never reaches
+     * that state: {@link #requireAcyclic} rejects a cyclic graph before this runs, because silently
+     * returning fewer tables than were asked for is worse than failing (issue #618). The warning
+     * below remains for a direct caller.
      *
      * @param graph the reversed dependency graph (an edge points from a parent to a child)
      * @return the tables grouped into dependency-respecting levels, parents before children
@@ -1083,6 +1091,52 @@ public class DatabaseFiller implements Fillable {
     }
 
     /**
+     * Fails if the dependency graph contains a cycle &mdash; two or more tables that reference each
+     * other, directly or through a chain.
+     *
+     * <p>No order fills such a schema: whichever table goes first, its foreign key points at rows that
+     * do not exist yet. The ordered paths used to disagree about this. The sequential one let a raw
+     * {@code NotDirectedAcyclicGraphException} out of the topological iterator, and the level-parallel
+     * one logged a warning and <strong>filled neither table</strong>, so a fill reported success having
+     * silently left them empty (issue #618). Both now fail here instead, before a row is written, with
+     * every cycle named.
+     *
+     * <p>{@link BulkLoadStrategy#unorderedBulk()} is the exception and keeps working: it disables
+     * constraint enforcement and fills every table at once, so it needs no order and has no cycle to
+     * break. That is what the message points at &mdash; qualified, because it is only available on a
+     * {@link javax.sql.DataSource} and where {@link io.bloviate.ext.DatabaseSupport#supportsBulkLoad()}
+     * is true. Elsewhere it falls back to the level-parallel path and lands back here, so the message
+     * says so rather than sending an H2 or SQLite user round the same loop.
+     *
+     * <p>A table referencing itself is not a cycle here: {@link #buildReversedDependencyGraph} leaves
+     * the self-edge out (and warns), because a self-reference constrains the order of rows within one
+     * table rather than the order of tables.
+     *
+     * @param graph the reversed dependency graph
+     * @throws IllegalArgumentException if any set of tables is mutually dependent
+     */
+    static void requireAcyclic(Graph<Table, DefaultEdge> graph) {
+        List<String> cycles = new KosarajuStrongConnectivityInspector<>(graph).stronglyConnectedSets().stream()
+                // a component of one vertex is a plain table; only a larger one is a cycle
+                .filter(component -> component.size() > 1)
+                .map(component -> component.stream().map(Table::name).sorted().toList().toString())
+                .sorted()
+                .toList();
+
+        if (cycles.isEmpty()) {
+            return;
+        }
+
+        throw new IllegalArgumentException("cannot fill: the tables " + String.join(" and ", cycles)
+                + " reference each other, so no fill order satisfies them: whichever is filled first, its "
+                + "foreign key has no parent row to point at yet. Break the cycle in the schema, leave every table "
+                + "of it out with excludeTables (dropping only one leaves the others referencing a table that is "
+                + "not being filled), or, on a DataSource and a database whose support implements bulk loading "
+                + "(PostgreSQL, MySQL, MariaDB), fill with BulkLoadStrategy.unorderedBulk(), which disables "
+                + "constraint enforcement and needs no order. Nothing was written.");
+    }
+
+    /**
      * Fails if any table has a foreign key to a table that is not in {@code database}: the referencing
      * table's values are seeded from the parent's primary key, and the parent must be filled first, so a
      * parent left out of the selection (or living in another schema) cannot be honoured. Reported for
@@ -1139,10 +1193,16 @@ public class DatabaseFiller implements Fillable {
      *
      * @param database the database to order
      * @return the tables in dependency-respecting fill order
+     * @throws IllegalArgumentException if a foreign key's parent is not among {@code database}'s
+     *                                  tables, or if the tables are mutually dependent; see
+     *                                  {@link #requireForeignKeyTargetsPresent} and {@link #requireAcyclic}
      */
     static List<Table> fillOrder(Database database) {
+        Graph<Table, DefaultEdge> graph = buildReversedDependencyGraph(database);
+        requireAcyclic(graph);
+
         List<Table> ordered = new ArrayList<>();
-        new TopologicalOrderIterator<>(buildReversedDependencyGraph(database)).forEachRemaining(ordered::add);
+        new TopologicalOrderIterator<>(graph).forEachRemaining(ordered::add);
         return ordered;
     }
 
