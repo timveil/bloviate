@@ -172,6 +172,31 @@ Notes:
   col)` with a comma rather than `EXTRACT(day FROM col)`, and casts literals as `::STRING`. Every
   other database reads no `CHECK`s, so give those columns an explicit generator.
 
+## Foreign-key cycles
+
+Two or more tables that reference each other — directly, or through a chain — cannot be filled in any
+order: whichever goes first, its foreign key has no parent row to point at. A fill fails before writing
+anything, naming every cycle it found:
+
+```
+cannot fill: the tables [invoice, payment] reference each other, so no fill order satisfies them: ...
+```
+
+Three ways forward:
+
+- break the cycle in the schema;
+- leave **every** table of the cycle out with `excludeTables(...)` — dropping only one side leaves the
+  others referencing a table that is not being filled, which fails for that reason instead;
+- fill with [`BulkLoadStrategy.unorderedBulk()`](#bulk-load-unordered-fill), which fills every table at
+  once without enforcing constraints, so it needs no order. Two things have to hold for it to be
+  chosen: a `DataSource` with `threads(n)` above 1 (on a single connection the fill is sequential and
+  the strategy is only warned about), and a support that implements bulk loading — PostgreSQL, MySQL,
+  MariaDB and BigQuery. Anywhere else it falls back to the ordered path and fails the same way.
+
+A table referencing *itself* is not a cycle: it constrains the order of rows within that one table, not
+the order of tables. Those fill normally, with a warning, and making a row's parent exist before its
+child is up to you.
+
 ## Reproducible data with seeds
 
 `DatabaseConfiguration` takes a base **seed**. The same schema filled with the same seed always

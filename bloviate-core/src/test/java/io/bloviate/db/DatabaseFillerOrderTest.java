@@ -19,9 +19,12 @@ package io.bloviate.db;
 import org.junit.jupiter.api.Test;
 
 import java.sql.JDBCType;
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -166,5 +169,103 @@ class DatabaseFillerOrderTest {
         assertTrue(indexOf(order, "d") < indexOf(order, "c"));
         assertTrue(indexOf(order, "b") < indexOf(order, "a"));
         assertTrue(indexOf(order, "c") < indexOf(order, "a"));
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // mutual foreign-key cycles (issue #618)
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * A set of tables that reference each other in a ring: {@code names[0] -> names[1] -> ... -> names[0]}.
+     * Each table's foreign key has to name a {@link PrimaryKey} of the next table, so the primary keys
+     * are built first and the tables wired to them afterwards.
+     */
+    private static List<Table> cycle(String... names) {
+        List<PrimaryKey> primaryKeys = new ArrayList<>();
+        for (String name : names) {
+            primaryKeys.add(new PrimaryKey(name, List.of(new KeyColumn(1, id(name)))));
+        }
+
+        List<Table> tables = new ArrayList<>();
+        for (int i = 0; i < names.length; i++) {
+            String name = names[i];
+            String next = names[(i + 1) % names.length];
+            Column fk = fk(name, next + "_id");
+            tables.add(new Table(name, primaryKeys.get(i), List.of(id(name), fk),
+                    List.of(new ForeignKey(List.of(new KeyColumn(1, fk)), primaryKeys.get((i + 1) % names.length)))));
+        }
+        return tables;
+    }
+
+    @Test
+    void twoTablesReferencingEachOtherFailNamingBoth() {
+        Database database = new Database("test", "1", null, null, cycle("invoice", "payment"));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> DatabaseFiller.fillOrder(database));
+
+        assertTrue(e.getMessage().contains("invoice") && e.getMessage().contains("payment"), e.getMessage());
+        assertTrue(e.getMessage().contains("Nothing was written"), e.getMessage());
+        // the message has to say what to do about it, not just that it happened
+        assertTrue(e.getMessage().contains("unorderedBulk"), e.getMessage());
+    }
+
+    @Test
+    void aLongerCycleIsReportedAsOneCycle() {
+        Database database = new Database("test", "1", null, null, cycle("a", "b", "c"));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> DatabaseFiller.fillOrder(database));
+
+        assertTrue(e.getMessage().contains("[a, b, c]"), "the whole ring belongs in one group: " + e.getMessage());
+    }
+
+    @Test
+    void everyCycleIsReportedAtOnce() {
+        List<Table> tables = new ArrayList<>(cycle("x1", "x2"));
+        tables.addAll(cycle("y1", "y2"));
+        Database database = new Database("test", "1", null, null, tables);
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> DatabaseFiller.fillOrder(database));
+
+        assertTrue(e.getMessage().contains("[x1, x2]"), e.getMessage());
+        assertTrue(e.getMessage().contains("[y1, y2]"), e.getMessage());
+    }
+
+    @Test
+    void aCycleFailsEvenWhenOtherTablesCouldBeOrdered() {
+        List<Table> tables = new ArrayList<>(cycle("left", "right"));
+        Table standalone = parentless("standalone");
+        tables.add(standalone);
+        tables.add(childOf("dependent", standalone));
+        Database database = new Database("test", "1", null, null, tables);
+
+        // the level-parallel path used to fill the orderable tables and silently skip the cycle
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> DatabaseFiller.fillOrder(database));
+
+        assertTrue(e.getMessage().contains("[left, right]"), e.getMessage());
+        // the tables that could have been ordered are not named: they are not the problem
+        assertFalse(e.getMessage().contains("standalone"), e.getMessage());
+    }
+
+    /**
+     * A self-reference orders rows inside one table, not tables against each other, so it is not a
+     * cycle and must keep filling.
+     */
+    @Test
+    void aSelfReferencingTableIsNotACycle() {
+        Column id = id("tree");
+        Column fk = fk("tree", "parent_id");
+        PrimaryKey pk = new PrimaryKey("tree", List.of(new KeyColumn(1, id)));
+        Table tree = new Table("tree", pk, List.of(id, fk), List.of(new ForeignKey(List.of(new KeyColumn(1, fk)), pk)));
+        Database database = new Database("test", "1", null, null, List.of(tree, parentless("other")));
+
+        assertEquals(2, DatabaseFiller.fillOrder(database).size());
+    }
+
+    @Test
+    void anAcyclicGraphPassesTheCycleCheck() {
+        Table parent = parentless("parent");
+        Database database = new Database("test", "1", null, null, List.of(childOf("child", parent), parent));
+
+        assertDoesNotThrow(() -> DatabaseFiller.requireAcyclic(DatabaseFiller.buildReversedDependencyGraph(database)));
     }
 }

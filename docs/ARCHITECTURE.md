@@ -160,9 +160,18 @@ That diagram is rendered straight from the DOT above.
 [**Open it in GraphvizOnline →**](https://dreampuf.github.io/GraphvizOnline/#strict%20digraph%20tpcc%20%7B%0A%20%20warehouse%20%5B%20label%3D%22warehouse%22%20%5D%3B%0A%20%20item%20%5B%20label%3D%22item%22%20%5D%3B%0A%20%20stock%20%5B%20label%3D%22stock%22%20%5D%3B%0A%20%20district%20%5B%20label%3D%22district%22%20%5D%3B%0A%20%20customer%20%5B%20label%3D%22customer%22%20%5D%3B%0A%20%20history%20%5B%20label%3D%22history%22%20%5D%3B%0A%20%20open_order%20%5B%20label%3D%22open_order%22%20%5D%3B%0A%20%20new_order%20%5B%20label%3D%22new_order%22%20%5D%3B%0A%20%20order_line%20%5B%20label%3D%22order_line%22%20%5D%3B%0A%20%20warehouse%20-%3E%20stock%3B%0A%20%20item%20-%3E%20stock%3B%0A%20%20warehouse%20-%3E%20district%3B%0A%20%20district%20-%3E%20customer%3B%0A%20%20district%20-%3E%20history%3B%0A%20%20customer%20-%3E%20history%3B%0A%20%20customer%20-%3E%20open_order%3B%0A%20%20open_order%20-%3E%20new_order%3B%0A%20%20open_order%20-%3E%20order_line%3B%0A%20%20stock%20-%3E%20order_line%3B%0A%7D%0A)
 — the very link `DatabaseFiller` logs at fill time, where you can pan, zoom, and edit the DOT yourself.
 
-**Cycle handling.** Self-referencing foreign keys (a table pointing at itself) can't be topologically
-ordered cleanly, so they're detected and logged with a warning rather than silently producing broken
-data.
+**Cycle handling.** A *self*-referencing foreign key (a table pointing at itself) constrains the order
+of rows within one table, not the order of tables, so the self-edge is left out of the graph and logged
+with a warning — the fill proceeds, and parent/child ordering inside that table is yours to arrange.
+
+A *mutual* cycle (two or more tables referencing each other, directly or through a chain) is different:
+no order satisfies it, because whichever table is filled first has a foreign key with no parent row to
+point at. Both ordering paths reject it before a row is written, with an error naming every cycle. The
+one way to fill such a schema is `BulkLoadStrategy.unorderedBulk()`, which needs no order at all
+because it does not enforce constraints. It is only selected for a `DataSource` running more than one
+worker thread, and where the support implements bulk loading: PostgreSQL, MySQL and MariaDB (by
+suspending enforcement) and BigQuery (whose key constraints are always `NOT ENFORCED`, so there is
+nothing to suspend).
 
 ### Parallel fill — topological levels
 
