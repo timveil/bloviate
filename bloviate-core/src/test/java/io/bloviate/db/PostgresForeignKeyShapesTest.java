@@ -17,6 +17,7 @@
 package io.bloviate.db;
 
 import io.bloviate.ext.PostgresSupport;
+import io.bloviate.gen.SequentialIntegerGenerator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -230,17 +231,35 @@ class PostgresForeignKeyShapesTest extends BaseDatabaseTestCase {
     // ---------------------------------------------------------------------------------------------
 
     /**
+     * Gives {@code children} a primary key that repeats after ten values, so the eleventh row collides
+     * with the first: rows 0..9 are unique and the batch of 10 commits, row 10 fails. The failure is a
+     * property of the configured generator rather than of the data, so it lands on the same row every
+     * run, on every database.
+     *
+     * <p>These two cases used to get their failure from the child's <em>foreign key</em> running past an
+     * unconfigured parent's key space. That was the #617 bug, so with it fixed the fill succeeds and
+     * proves nothing about committing; {@link #childLargerThanAnUnconfiguredParentStaysWithinTheParentKeys}
+     * now pins that shape as working. What these tests are about — where a fill stops and what survives
+     * it — needs only <em>some</em> deterministic mid-fill failure.
+     */
+    private static TableConfiguration childrenWithARepeatingPrimaryKey() {
+        return new TableConfiguration("children", 100, Set.of(new ColumnConfiguration("id",
+                random -> new SequentialIntegerGenerator.Builder(random).start(1).end(10).build())));
+    }
+
+    /**
      * A constraint violation fails fast, and under the default commit strategy (the caller's autocommit)
      * nothing is rolled back: the parent table is complete and the failing table keeps every batch that
-     * succeeded before the bad one. Here the child has 100 rows against 10 parents and a batch size of
-     * 10, so exactly the first batch is committed. A re-run therefore hits primary-key violations.
+     * succeeded before the bad one. With a batch size of 10 and a key that repeats at row 10, exactly
+     * the first batch is committed. A re-run therefore hits primary-key violations.
      */
     @Test
     void failureUnderTheDefaultCommitStrategyLeavesTheFailingTablePartiallyFilled() throws SQLException {
         SQLException failure = assertThrows(SQLException.class, () -> fixture.fillSequential("partial_fail",
-                configuration(10, 10, Set.of(new TableConfiguration("children", 100)))));
+                configuration(10, 10, Set.of(childrenWithARepeatingPrimaryKey()))));
 
-        assertTrue(failure.getMessage().contains("violates foreign key constraint \"children_parent_id_fkey\""), failure.getMessage());
+        assertTrue(failure.getMessage().contains("duplicate key value violates unique constraint")
+                && failure.getMessage().contains("children_pkey"), failure.getMessage());
         assertEquals(10, fixture.count("partial_fail.parents"));
         assertEquals(10, fixture.count("partial_fail.children"));
     }
@@ -252,7 +271,7 @@ class PostgresForeignKeyShapesTest extends BaseDatabaseTestCase {
     @Test
     void failureUnderPerTableCommitRollsBackTheFailingTableButKeepsEarlierTables() throws SQLException {
         DatabaseConfiguration configuration = new DatabaseConfiguration(10, 10, new PostgresSupport(),
-                Set.of(new TableConfiguration("children", 100)), 42L, CommitStrategy.perTable());
+                Set.of(childrenWithARepeatingPrimaryKey()), 42L, CommitStrategy.perTable());
 
         assertThrows(SQLException.class, () -> fixture.fillSequential("partial_fail", configuration));
 

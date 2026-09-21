@@ -116,6 +116,39 @@ class ForeignKeyResolutionFillTest {
     }
 
     /**
+     * One column in two <em>composite</em> keys, each to a composite primary key. Positional matching is
+     * right here, so only sharing is in question: {@code tenant_id} used to be filled from whichever key
+     * the driver reported first, leaving the other with nothing to match. The two parents' tenant
+     * columns now carry the same values, so a shipment's tenant is a row of both.
+     */
+    @Test
+    void aColumnInTwoCompositeKeysSatisfiesBothParents() throws SQLException {
+        String url = fresh("tenant_shared", """
+                create table regions (tenant_id int not null, id bigint not null, primary key (tenant_id, id));
+                create table warehouses (tenant_id int not null, id bigint not null, primary key (tenant_id, id));
+                create table shipments (
+                    id bigint primary key,
+                    tenant_id int not null,
+                    region_id bigint not null,
+                    warehouse_id bigint not null,
+                    constraint fk_shipments_region foreign key (tenant_id, region_id) references regions (tenant_id, id),
+                    constraint fk_shipments_warehouse foreign key (tenant_id, warehouse_id) references warehouses (tenant_id, id));
+                """);
+
+        try (Connection connection = DriverManager.getConnection(url)) {
+            new DatabaseFiller.Builder(connection, configuration(null)).build().fill();
+
+            assertEquals(ROWS, count(connection, "regions"));
+            assertEquals(ROWS, count(connection, "warehouses"));
+            assertEquals(ROWS, count(connection, "shipments"));
+            assertEquals(0, count(connection, """
+                    select count(*) from shipments s
+                     where not exists (select 1 from regions r where r.tenant_id = s.tenant_id and r.id = s.region_id)
+                        or not exists (select 1 from warehouses w where w.tenant_id = s.tenant_id and w.id = s.warehouse_id)"""));
+        }
+    }
+
+    /**
      * A key naming a single {@code UNIQUE} column that is not the parent's first primary-key column.
      * Positional matching filled {@code b_ref} with {@code two_part.a} values, which need not appear in
      * {@code two_part.b} at all.
