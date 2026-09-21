@@ -141,6 +141,13 @@ public class DatabaseFiller implements Fillable {
     // each fill() so a reused filler re-reads the catalog
     private final ConcurrentMap<String, Map<String, ColumnConstraint>> constraintCache = new ConcurrentHashMap<>();
 
+    /**
+     * How each foreign-key column lines up with the key it references. Derived from the whole
+     * database, so it is per-fill state like {@link #constraintCache}: one derivation shared by every
+     * table and every partition, rather than one per fill task. Immutable once built.
+     */
+    private volatile ForeignKeyPlan foreignKeyPlan;
+
     /** Worker threads for parallel table fill; {@code 1} (the default) keeps the fill sequential. */
     private final int threads;
 
@@ -346,6 +353,10 @@ public class DatabaseFiller implements Fillable {
         // fails before any row is written if a selected table references a table that is not selected
         Graph<Table, DefaultEdge> reversedGraph = buildReversedDependencyGraph(database);
 
+        // the foreign-key plan is per-fill state like the constraint cache: it covers the whole
+        // database, so every table and every partition of this fill shares one derivation
+        foreignKeyPlan = ForeignKeyPlan.of(database);
+
         visualizeGraph(reversedGraph, database.catalog());
 
         warnIfEngineManagedCommitDiscouraged();
@@ -547,6 +558,7 @@ public class DatabaseFiller implements Fillable {
         while (iterator.hasNext()) {
             new TableFiller.Builder(conn, database, configuration)
                     .table(iterator.next())
+                    .foreignKeyPlan(foreignKeyPlan)
                     .generationContext(generationContext)
                     .build().fill();
         }
@@ -795,6 +807,7 @@ public class DatabaseFiller implements Fillable {
                 new TableFiller.Builder(conn, database, configuration)
                         .table(table)
                         .constraints(constraintsFor(conn, table))
+                        .foreignKeyPlan(foreignKeyPlan)
                         .commitStrategy(effectiveParallelCommitStrategy())
                         .generationContext(generationContext)
                         .build().fill());
@@ -813,6 +826,7 @@ public class DatabaseFiller implements Fillable {
                 new TableFiller.Builder(conn, database, configuration)
                         .table(table)
                         .constraints(constraintsFor(conn, table))
+                        .foreignKeyPlan(foreignKeyPlan)
                         .commitStrategy(effectiveParallelCommitStrategy())
                         .rowRange(startInclusive, endExclusive)
                         .generationContext(generationContext)

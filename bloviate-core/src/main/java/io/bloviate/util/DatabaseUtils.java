@@ -216,7 +216,7 @@ public class DatabaseUtils {
 
         for (String tableName : tableNames) {
             PrimaryKey primaryKey = primaryKeyFor(metaData, catalog, schema, tableName, columnsByTable, primaryKeysByTable);
-            List<ForeignKey> foreignKeys = getForeignKeys(metaData, catalog, schema, tableName, columnsByTable, primaryKeysByTable, partitions);
+            List<ForeignKey> foreignKeys = getForeignKeys(metaData, catalog, schema, tableName, columnsByTable, partitions);
 
             tables.add(new Table(tableName, primaryKey, columnsByTable.get(tableName), foreignKeys));
         }
@@ -226,7 +226,6 @@ public class DatabaseUtils {
 
     private static List<ForeignKey> getForeignKeys(DatabaseMetaData metaData, String catalog, String schema, String tableName,
                                                    Map<String, List<Column>> columnsByTable,
-                                                   Map<String, PrimaryKey> primaryKeysByTable,
                                                    Map<String, String> partitions) throws SQLException {
 
         List<Key> importedKeys = getImportedKeys(metaData, catalog, schema, tableName);
@@ -275,7 +274,16 @@ public class DatabaseUtils {
                 foreignKeys.add(new ForeignKey(columns, new PrimaryKey(primaryKeyTable, List.of()),
                         otherSchema ? primaryKeySchema : null, otherCatalog ? primaryKeyCatalog : null));
             } else {
-                foreignKeys.add(new ForeignKey(columns, primaryKeyFor(metaData, catalog, schema, primaryKeyTable, columnsByTable, primaryKeysByTable)));
+                // the columns the constraint actually names (PKCOLUMN_NAME), not the parent's declared
+                // primary key. They are the same for the common `references parent(id)` case, but a key
+                // to a UNIQUE target, or to primary-key columns in another order, is only correct this
+                // way; taken from the same rows as `columns`, the two lists pair up by construction.
+                List<KeyColumn> referencedColumns = new ArrayList<>();
+                for (Key key : keys) {
+                    referencedColumns.add(new KeyColumn(key.sequence(),
+                            columnFor(metaData, catalog, schema, key.primaryTableName(), key.primaryColumnName(), columnsByTable)));
+                }
+                foreignKeys.add(new ForeignKey(columns, new PrimaryKey(primaryKeyTable, referencedColumns)));
             }
 
         }
@@ -517,95 +525,28 @@ public class DatabaseUtils {
     }
 
     /**
-     * Traverses foreign key relationships to find the root primary key column.
+     * Traverses foreign key relationships to find the key column a column ultimately references.
      *
-     * <p>Given a column that may be part of a foreign key, this method follows
-     * the foreign key chain to find the ultimate primary key column that should
-     * be used as the source for generating related data values.
+     * <p>Given a column that may be part of a foreign key, this follows the chain &mdash; through the
+     * columns each key actually names, so a key to a {@code UNIQUE} target resolves correctly &mdash;
+     * to the key column at the end of it. A chain that closes on itself stops there rather than
+     * recursing without bound.
      *
-     * <p>This is particularly useful for ensuring referential integrity when
-     * generating test data across related tables.
+     * <p>This describes the schema. It is <em>not</em> the rule the engine seeds by: a column shared by
+     * several foreign keys has more than one chain, and {@link io.bloviate.db.ForeignKeyPlan} resolves
+     * all of them together so the column's values satisfy every key at once. Use that to reason about
+     * generated data; use this to ask what a key points at.
      *
      * @param database the database containing all table metadata
-     * @param table the table containing the column to analyze
-     * @param column the column to find the associated primary key for
-     * @return the root primary key column, or null if no foreign key relationship exists
+     * @param table the table containing the column to analyze, kept for source compatibility and not
+     *        otherwise needed &mdash; a {@link Column} names its own table
+     * @param column the column to find the associated key column for
+     * @return the referenced key column, or null if no foreign key relationship exists
+     * @throws IllegalArgumentException if a foreign key references a table that is not among the
+     *         tables being filled
      */
     public static Column getAssociatedPrimaryKeyColumn(Database database, Table table, Column column) {
-        return getAssociatedPrimaryKeyColumn(database, table, column, new HashSet<>());
-    }
-
-    /**
-     * Cycle-safe implementation of {@link #getAssociatedPrimaryKeyColumn(Database, Table, Column)}.
-     * {@code visited} accumulates the columns already resolved on the current foreign-key chain (a
-     * {@link Column} carries its owning table name, so it identifies a table/column pair); if one
-     * recurs (a circular FK schema, e.g. A&rarr;B&rarr;A) the traversal stops and returns {@code null}
-     * instead of recursing without bound to a {@link StackOverflowError}.
-     */
-    private static Column getAssociatedPrimaryKeyColumn(Database database, Table table, Column column, Set<Column> visited) {
-
-        if (!visited.add(column)) {
-            logger.warn("circular foreign-key reference detected at [{}.{}]; stopping primary-key resolution",
-                    table.name(), column.name());
-            return null;
-        }
-
-        // get this tables foreign keys
-        List<ForeignKey> foreignKeys = table.foreignKeys();
-
-        if (foreignKeys != null && !foreignKeys.isEmpty()) {
-
-            for (ForeignKey foreignKey : foreignKeys) {
-
-                // get the columns on this table specified in the foreign key
-                List<KeyColumn> keyColumns = foreignKey.foreignKeyColumns();
-
-                for (KeyColumn keyColumn : keyColumns) {
-                    int keyColumnSequence = keyColumn.sequence();
-
-                    // this is a column on this table
-                    Column foreignKeyColumn = keyColumn.column();
-
-                    if (foreignKeyColumn.equals(column)) {
-
-                        // for the column on this table that is a foreign key, grab the associated column the another table where it is the primary key
-                        PrimaryKey primaryKey = foreignKey.primaryKey();
-
-                        // for the primary key grab its full table data; the parent can be missing when a
-                        // table selection left it out, which deserves more than "table not found"
-                        // (a parent in another schema is never the same-named table of this one)
-                        Table primaryTable = (foreignKey.referencesOtherSchema()
-                                ? Optional.<Table>empty()
-                                : database.findTable(primaryKey.tableName())).orElseThrow(() ->
-                                new IllegalArgumentException(String.format(
-                                        "table [%s] column [%s] references table [%s], which is not among the tables being filled; "
-                                                + "include it in the table selection",
-                                        table.name(), column.name(), primaryKey.tableName())));
-
-                        for (KeyColumn primaryKeyColumn : primaryKey.keyColumns()) {
-
-                            int primaryKeyColumnSequence = primaryKeyColumn.sequence();
-
-                            // let's make sure we are matching the right column in sequence
-                            if (primaryKeyColumnSequence == keyColumnSequence) {
-
-                                Column primaryKeyColumnColumn = primaryKeyColumn.column();
-
-                                Column possibleRoot = getAssociatedPrimaryKeyColumn(database, primaryTable, primaryKeyColumnColumn, visited);
-
-                                if (possibleRoot != null) {
-                                    return possibleRoot;
-                                }
-
-                                return primaryKeyColumnColumn;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return null;
+        return ForeignKeyPlan.of(database).referencedRoot(column);
     }
 
 }

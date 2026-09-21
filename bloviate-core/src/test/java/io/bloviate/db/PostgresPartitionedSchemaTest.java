@@ -60,9 +60,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *   <li>a foreign key to a partitioned parent: {@code IllegalArgumentException: table with name
  *       [orders] not found};</li>
  *   <li>a foreign key to {@code UNIQUE (tenant_id, id)}: {@code violates foreign key constraint
- *       "projects_tenant_id_customer_id_fkey"};</li>
- *   <li>a column shared by two foreign keys: the first FK (regions) is satisfied and the second is
- *       not, {@code violates foreign key constraint "shipments_tenant_id_warehouse_id_fkey"};</li>
+ *       "projects_tenant_id_customer_id_fkey"} &mdash; fixed and enabled by #617;</li>
+ *   <li>a column shared by two foreign keys: the first FK (regions) was satisfied and the second was
+ *       not, {@code violates foreign key constraint "shipments_tenant_id_warehouse_id_fkey"} &mdash;
+ *       fixed and enabled by #617;</li>
  *   <li>{@code date_trunc('month', d) = d}: {@code invalid input syntax for type date: "month"};</li>
  *   <li>{@code EXTRACT(day FROM d) = 1}: {@code violates check constraint
  *       "statements_period_start_check"} (a random date such as 2019-12-29 was generated).</li>
@@ -219,13 +220,11 @@ class PostgresPartitionedSchemaTest extends BaseDatabaseTestCase {
     }
 
     /**
-     * Desired outcome for #617: an FK to {@code UNIQUE (tenant_id, id)} pairs each FK column with the
-     * column it actually references. Today FK columns are matched to the parent's primary key
-     * {@code (id)} by position, so {@code tenant_id} is seeded from {@code customers.id} and
-     * {@code customer_id} from nothing.
+     * An FK to {@code UNIQUE (tenant_id, id)} pairs each FK column with the column it actually
+     * references. FK columns used to be matched to the parent's primary key {@code (id)} by position,
+     * so {@code tenant_id} was filled from {@code customers.id} and {@code customer_id} from nothing.
      */
     @Test
-    @Disabled("#617: FK to a UNIQUE key is mapped by position onto the primary key's columns")
     void foreignKeyToUniqueKeyIsFilled() throws SQLException {
         fixture.fillSequential("tenant_unique", configuration());
 
@@ -233,12 +232,13 @@ class PostgresPartitionedSchemaTest extends BaseDatabaseTestCase {
     }
 
     /**
-     * Desired outcome for #617: a column shared by two foreign keys satisfies both. Both FKs here
-     * reference composite primary keys, so positional matching is right and only sharing is in
-     * question. Today only the first FK seeds {@code tenant_id}.
+     * A column shared by two foreign keys satisfies both. Both FKs here reference composite primary
+     * keys, so positional matching is right and only sharing is in question: {@code tenant_id} used to
+     * be filled from the first FK alone, leaving the second with nothing to match. Since #617 the
+     * columns a shared key ties together are filled from one seed, so {@code regions.tenant_id} and
+     * {@code warehouses.tenant_id} carry the same values and a shipment's tenant is in both.
      */
     @Test
-    @Disabled("#617: a column shared by two foreign keys is seeded from only the first")
     void columnSharedByTwoForeignKeysSatisfiesBoth() throws SQLException {
         fixture.fillSequential("tenant_shared", configuration());
 
@@ -320,7 +320,9 @@ class PostgresPartitionedSchemaTest extends BaseDatabaseTestCase {
      * partition key of {@code orders} constrained, see {@link #placedAtIn2024}). The {@code rollup} table is filled like any other; it is not derived.
      */
     @Test
-    @Disabled("#613: needs #617 (tenant-scoped FKs); partitioned tables (#615) and the first-of-month CHECKs (#619) are done")
+    @Disabled("#613: the tenant-scoped FKs (#617), partitioned tables (#615) and first-of-month CHECKs "
+            + "(#619) are done; this still needs saas.orders' partition key constrained to the range its "
+            + "leaves cover, as placedAtIn2024 does for the single-scenario schemas")
     void wholeMotivatingSchemaIsFilled() throws SQLException {
         fixture.fillSequential("saas", configuration());
 

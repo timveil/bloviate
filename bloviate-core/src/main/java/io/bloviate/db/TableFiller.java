@@ -20,6 +20,7 @@ import io.bloviate.ext.DatabaseSupport;
 import io.bloviate.ext.GeneratorRegistry;
 import io.bloviate.gen.DataGenerator;
 import io.bloviate.gen.IndexedDataGenerator;
+import io.bloviate.gen.SequentialIntegerGenerator;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.Mixers;
 import io.bloviate.util.IndexedRandom;
@@ -59,6 +60,9 @@ public class TableFiller implements Fillable {
     /** Pre-resolved constraint metadata, or null to read from the catalog at fill time. */
     private final Map<String, ColumnConstraint> constraints;
 
+    /** Pre-resolved foreign-key plan, or null to derive one from the metadata at fill time. */
+    private final ForeignKeyPlan foreignKeyPlan;
+
     /** True when this filler handles a sub-range (one partition) of the table rather than all rows. */
     private final boolean partitioned;
     private final long rangeStartInclusive;
@@ -83,6 +87,7 @@ public class TableFiller implements Fillable {
         this.table = Objects.requireNonNull(table, "table must not be null");
         this.commitStrategy = commitStrategy != null ? commitStrategy : databaseConfiguration.commitStrategy();
         this.constraints = null;
+        this.foreignKeyPlan = null;
         this.partitioned = false;
         this.rangeStartInclusive = 0;
         this.rangeEndExclusive = 0;
@@ -119,6 +124,10 @@ public class TableFiller implements Fillable {
         // 0 means "this column never reseeds"; a positive value is the parent row count past which
         // a foreign-key generator must wrap around to stay within the parent key space
         long[] maxInvocations = new long[columnCount];
+        // the row counts a foreign-key column's row index is reduced by, nearest parent first: row i of
+        // a child reads row i % parentRows of its parent, which reads (i % parentRows) % grandparentRows
+        // of the grandparent. Empty for a column that is not a foreign key (issue #617).
+        long[][] wrapModuli = new long[columnCount][];
         // the column's IndexedRandom when its generator is positionable (the engine repositions it
         // to the absolute row index before every row); null keeps the legacy sequential-draw path
         IndexedRandom[] positionables = new IndexedRandom[columnCount];
@@ -127,6 +136,12 @@ public class TableFiller implements Fillable {
         GeneratorRegistry registry = databaseConfiguration.generatorRegistry();
 
         TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
+
+        // how every foreign-key column lines up with the key it references: which seed it shares, how
+        // far it may run before wrapping, and whether the key is one the database assigns itself.
+        // Resolved from the whole database, so DatabaseFiller derives it once per fill and shares it;
+        // deriving one here is the fallback for a TableFiller built directly.
+        ForeignKeyPlan foreignKeyPlan = this.foreignKeyPlan != null ? this.foreignKeyPlan : ForeignKeyPlan.of(database);
 
         long baseSeed = databaseConfiguration.seed();
 
@@ -144,26 +159,30 @@ public class TableFiller implements Fillable {
 
             Column column = filteredColumns.get(idx);
 
-            long seed;
+            // every column generates from its seed source: itself, unless a foreign key links it to a
+            // key, in which case the whole linked class shares one seed and the values line up
+            long seed = DatabaseUtils.columnSeed(foreignKeyPlan.seedSource(column), baseSeed);
 
-            Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(database, table, column);
-
-            if (associatedPrimaryKeyColumn != null) {
-
-                // check to see if table has custom configuration
-                TableConfiguration primaryTableConfiguration = databaseConfiguration.tableConfiguration(associatedPrimaryKeyColumn.tableName());
-
-                if (primaryTableConfiguration != null) {
-                    // this is the number of rows in the primary table.  a foreign key random generator can't be called more than this number of times.
-                    maxInvocations[idx] = primaryTableConfiguration.rowCount();
+            // a foreign key replays its parent's rows, so its row index is reduced by the parent's row
+            // count, then by the parent's own parent's, and so on up the chain. Folding in order is what
+            // keeps a composite key's columns on one parent row (issue #617).
+            List<List<String>> wrapChain = foreignKeyPlan.wrapChain(column);
+            long[] moduli = new long[wrapChain.size()];
+            for (int level = 0; level < moduli.length; level++) {
+                // several tables at one level means the value must be a key of each, so the smallest
+                // bounds it; one table is the ordinary case
+                long rows = Long.MAX_VALUE;
+                for (String levelTable : wrapChain.get(level)) {
+                    rows = Math.min(rows, rowCount(levelTable));
                 }
-
-                // seed the foreign key from its associated primary key so the two line up;
-                // columnSeed is a pure function of the column, so both resolve to the same seed
-                seed = DatabaseUtils.columnSeed(associatedPrimaryKeyColumn, baseSeed);
-            } else {
-                seed = DatabaseUtils.columnSeed(column, baseSeed);
+                moduli[level] = rows;
             }
+            wrapModuli[idx] = moduli;
+
+            // the immediate parent's row count: the cycle length for the legacy reseed path, and the
+            // size of the key space a database-generated key is counted through
+            long keySpace = moduli.length == 0 ? 0 : moduli[0];
+            maxInvocations[idx] = keySpace;
 
             // resolve the generator by precedence; the generator is always seeded by the engine
             // so it stays reproducible regardless of which path provides it:
@@ -187,6 +206,19 @@ public class TableFiller implements Fillable {
                 if (custom != null) {
                     dataGenerator = custom;
                     source = "registry";
+                } else if (foreignKeyPlan.databaseGenerated(column)) {
+                    // this column's class contains a key the database assigns (serial, IDENTITY), which
+                    // is left out of its own insert, so there is no seed for the class to share. A table
+                    // filled from empty is assigned 1..N in insertion order, which counting reproduces
+                    // exactly. A column that references a key counts through that key's space; one that
+                    // is only linked to the class counts through its own table, so it covers what the
+                    // others draw from.
+                    long counted = keySpace > 0 ? keySpace : rowCount(table.name());
+                    dataGenerator = new SequentialIntegerGenerator.Builder(random)
+                            .start(1)
+                            .end((int) Math.clamp(counted, 1, Integer.MAX_VALUE))
+                            .build();
+                    source = "generated-key";
                 } else {
                     // honor a CHECK/enum constraint when one applies and the user hasn't overridden the column
                     ColumnConstraint constraint = constraints.get(column.name().toLowerCase(Locale.ROOT));
@@ -232,10 +264,7 @@ public class TableFiller implements Fillable {
 
         int batchSize = databaseConfiguration.batchSize();
 
-        long totalRowCount = databaseConfiguration.defaultRowCount();
-        if (tableConfiguration != null) {
-            totalRowCount = tableConfiguration.rowCount();
-        }
+        long totalRowCount = rowCount(table.name());
 
         // when a sub-range is configured this filler handles one partition of the table; otherwise
         // it fills the whole table on the original, byte-for-byte-unchanged path
@@ -287,9 +316,16 @@ public class TableFiller implements Fillable {
                     if (positioned != null) {
                         // position the random source at this row's absolute index so the value is a
                         // pure function of (columnSeed, rowIndex); a foreign-key column positions at
-                        // the parent's index instead (i mod parent rows), which both replays the
-                        // parent's exact value and makes wraparound a formula rather than a reseed
-                        positioned.position(maxInvocation > 0 ? i % maxInvocation : i);
+                        // the parent's index instead, reduced up the chain of parents, which both
+                        // replays the parent's exact value and makes wraparound a formula, not a reseed
+                        long[] moduli = wrapModuli[col];
+                        long index = i;
+                        for (long modulus : moduli) {
+                            if (modulus > 0) {
+                                index %= modulus;
+                            }
+                        }
+                        positioned.position(index);
                     } else if (maxInvocation > 0 && i != 0 && i % maxInvocation == 0) {
                         // legacy path (non-positionable generator): the foreign-key generator has
                         // exhausted the parent key space; reseed its random source so it replays the
@@ -405,6 +441,16 @@ public class TableFiller implements Fillable {
      *       different partitioning, as they carry no cross-row contract.</li>
      * </ul>
      */
+    /**
+     * How many rows a table is filled with: its own {@link TableConfiguration} when it has one,
+     * otherwise the configuration's default. This is the size of that table's key space, which is why
+     * a foreign key into it wraps here (issue #617).
+     */
+    private long rowCount(String tableName) {
+        TableConfiguration configuration = databaseConfiguration.tableConfiguration(tableName);
+        return configuration != null ? configuration.rowCount() : databaseConfiguration.defaultRowCount();
+    }
+
     private void seekGeneratorsTo(DataGenerator<?>[] generators, IndexedRandom[] positionables,
                                   long[] reseedSeeds, long[] maxInvocations, long startRow) {
         for (int col = 0; col < generators.length; col++) {
@@ -446,6 +492,7 @@ public class TableFiller implements Fillable {
         private Table table;
         private CommitStrategy commitStrategy;
         private Map<String, ColumnConstraint> constraints;
+        private ForeignKeyPlan foreignKeyPlan;
         private boolean partitioned;
         private long rangeStartInclusive;
         private long rangeEndExclusive;
@@ -500,6 +547,22 @@ public class TableFiller implements Fillable {
          */
         public Builder constraints(Map<String, ColumnConstraint> constraints) {
             this.constraints = constraints;
+            return this;
+        }
+
+        /**
+         * Supplies a pre-resolved {@link ForeignKeyPlan} instead of deriving one at fill time.
+         *
+         * <p>The plan covers the whole database, so it is the same for every table and partition of a
+         * fill. {@link DatabaseFiller} derives it once and shares it; deriving one per filler would
+         * repeat the work for every table, and again for every partition of an intra-table fill.
+         *
+         * @param foreignKeyPlan the plan to use, or null to derive one from the metadata
+         * @return this builder, for chaining
+         * @since 3.10.0
+         */
+        public Builder foreignKeyPlan(ForeignKeyPlan foreignKeyPlan) {
+            this.foreignKeyPlan = foreignKeyPlan;
             return this;
         }
 
@@ -560,6 +623,7 @@ public class TableFiller implements Fillable {
         this.databaseConfiguration = builder.databaseConfiguration;
         this.commitStrategy = builder.commitStrategy != null ? builder.commitStrategy : builder.databaseConfiguration.commitStrategy();
         this.constraints = builder.constraints;
+        this.foreignKeyPlan = builder.foreignKeyPlan;
         this.partitioned = builder.partitioned;
         this.rangeStartInclusive = builder.rangeStartInclusive;
         this.rangeEndExclusive = builder.rangeEndExclusive;

@@ -172,6 +172,56 @@ Notes:
   col)` with a comma rather than `EXTRACT(day FROM col)`, and casts literals as `::STRING`. Every
   other database reads no `CHECK`s, so give those columns an explicit generator.
 
+## Foreign keys and the values they reference
+
+A foreign-key column is not checked against the parent's rows — it *replays* them. Bloviate generates
+it from the same seed at the same row index as the key it points at, so the values match without
+reading anything back. Three things follow, and they are worth knowing before you read generated data.
+
+**It follows the columns the constraint names.** A key to a `UNIQUE` target works, not just one to the
+parent's primary key. The tenant pattern is the usual case:
+
+```sql
+create table accounts (
+    id        int primary key,
+    tenant_id int not null references tenants (id),
+    unique (tenant_id, id));
+
+create table documents (
+    tenant_id  int not null,
+    account_id int not null,
+    foreign key (tenant_id, account_id) references accounts (tenant_id, id),
+    foreign key (tenant_id) references tenants (id));
+```
+
+**A column in several keys makes those keys equal.** `documents.tenant_id` above belongs to two keys at
+once, so its value has to exist in both. Bloviate guarantees that by generating every column linked by
+a foreign key — in either direction — from one shared seed. For an ordinary parent/child chain nothing
+changes. But point one column at two *unrelated* keys and those two key columns come out carrying
+identical values, row for row. That is not a quirk to work around: a value cannot be in two key spaces
+unless the key spaces overlap, and equality is the only overlap reproducible without reading rows back.
+If you did not mean the keys to be interchangeable, the schema is telling you something.
+
+**Row counts bound it.** A foreign-key column cycles through its parent's keys once it runs past them,
+so a child with more rows than its parent is fine — it reuses parents. Row *i* of a child reads row
+`i % parentRows` of its parent, which in turn reads row `(i % parentRows) % grandparentRows` of the
+grandparent, all the way up. The counts come from each table's `TableConfiguration` where it has one
+and from the default row count otherwise.
+
+**Keys the database generates.** A `serial` or `IDENTITY` key column is left out of its own insert, so
+the database assigns it and there is no seed to share. Bloviate counts instead: a table filled from
+empty is given 1..N in insertion order, and the child counts through the same range. This assumes the
+parent's sequence starts at 1 — filling a table that already holds rows, or whose sequence has been
+advanced, leaves the child pointing at keys the parent was not given. Fill into an empty schema, or
+reset the sequence first (`TRUNCATE ... RESTART IDENTITY`). Because the class carries one set of
+values, a key linked to a generated one is filled by counting too, so both ends match.
+
+One shape this cannot cover: a generated column inside a *composite* key whose parent is filled with
+[intra-table partitions](#intra-table-partitioning). The database hands out identities in completion
+order across the workers, while the key's other columns are generated from the logical row index, so
+the two need not describe the same parent row. Give such a parent an ordinary key column, or fill it
+without partitions.
+
 ## Foreign-key cycles
 
 Two or more tables that reference each other — directly, or through a chain — cannot be filled in any
@@ -202,7 +252,9 @@ child is up to you.
 `DatabaseConfiguration` takes a base **seed**. The same schema filled with the same seed always
 produces identical data, so test fixtures are deterministic; change the seed for a different — but
 still reproducible — dataset. Per-column seeds are derived from stable column identity, and foreign
-keys are seeded from their referenced primary key, so referential fidelity holds for any seed.
+keys share the seed of the key they reference (see
+[foreign keys and the values they reference](#foreign-keys-and-the-values-they-reference)), so
+referential fidelity holds for any seed.
 
 ```java
 import io.bloviate.db.*;
