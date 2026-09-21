@@ -837,7 +837,7 @@ the rows equal those of a sequential fill.
 **What is not supported.**
 
 - Only PostgreSQL (with `PostgresSupport`) discovers partitions. On other databases nothing changes:
-  MySQL, MariaDB, CockroachDB, H2, SQLite and BigQuery do not expose partitions as separate tables through
+  MySQL, MariaDB, CockroachDB, H2, SQLite, DuckDB and BigQuery do not expose partitions as separate tables through
   JDBC, so a partitioned table is one table there (or, for CockroachDB, not SQL-partitioned at all). A
   PostgreSQL fill configured with `DefaultSupport` does not know about partitions, so it keeps the
   behaviour described in the note below.
