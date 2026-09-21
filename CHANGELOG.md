@@ -1,3 +1,9 @@
+## [3.11.0](https://github.com/timveil/bloviate/compare/v3.10.0...v3.11.0) (2026-09-21)
+
+### ✨ Features
+
+* **ext:** add DuckDB support ([#655](https://github.com/timveil/bloviate/issues/655)) ([61e0452](https://github.com/timveil/bloviate/commit/61e04521a26f6402ddb36a7c8d736f5115eec0c1)), closes [#451](https://github.com/timveil/bloviate/issues/451)
+
 ## [3.10.0](https://github.com/timveil/bloviate/compare/v3.9.2...v3.10.0) (2026-09-21)
 
 ### ✨ Features
