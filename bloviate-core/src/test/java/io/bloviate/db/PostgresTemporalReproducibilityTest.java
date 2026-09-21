@@ -94,10 +94,17 @@ class PostgresTemporalReproducibilityTest extends BasePostgresTest {
 
         List<String> rows = new ArrayList<>();
         fillDatabase("create_tables.postgres.sql", configuration, connection -> {
-            // k=date, l=time, m=timestamp, n=timestamptz on the standard_table fixture
+            // k=date, l=time, m=timestamp, n=timestamptz on the standard_table fixture.
+            //
+            // The timestamptz is read AT TIME ZONE 'UTC', which pins the READ rather than the write.
+            // A timestamptz stores an instant, and the driver renders one through the JVM's default
+            // zone, so reading it with getString() under two different zones yields two spellings of
+            // the same moment (2019-12-21 20:04:55-05 and 2019-12-22 10:04:55+09). That says nothing
+            // about what was stored, which is what this test is about; the server-side conversion
+            // gives one spelling per instant whatever zone either side is in.
             try (Statement statement = connection.createStatement();
                  ResultSet resultSet = statement.executeQuery(
-                         "select k, l, m, n from standard_table order by id")) {
+                         "select k, l, m, n at time zone 'UTC' as n from standard_table order by id")) {
                 while (resultSet.next()) {
                     rows.add(resultSet.getString("k") + "|" + resultSet.getString("l") + "|"
                             + resultSet.getString("m") + "|" + resultSet.getString("n"));
