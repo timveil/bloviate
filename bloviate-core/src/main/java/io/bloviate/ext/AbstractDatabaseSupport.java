@@ -96,7 +96,7 @@ public abstract class AbstractDatabaseSupport implements DatabaseSupport {
      *
      * @param column the column to inspect
      * @return {@code true} if the column's type name marks it unsigned
-     * @since 3.8.1
+     * @since 3.8.2
      */
     protected static boolean unsigned(Column column) {
         String typeName = column.typeName();

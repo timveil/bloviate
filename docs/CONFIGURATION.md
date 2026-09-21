@@ -112,8 +112,8 @@ distributions learned from real data.
 
 ## Constraint conformance
 
-On **PostgreSQL**, Bloviate reads each table's `CHECK` constraints and `ENUM` types and generates
-values that satisfy them — **automatically, no configuration**. So given:
+On **PostgreSQL** and **CockroachDB**, Bloviate reads each table's `CHECK` constraints and `ENUM`
+types and generates values that satisfy them — **automatically, no configuration**. So given:
 
 ```sql
 CREATE TYPE order_status AS ENUM ('NEW', 'PAID', 'SHIPPED', 'CANCELLED');
@@ -156,11 +156,21 @@ Notes:
   `date_trunc` units (`day`, `week`, ...), and **`CHECK`s over more than one column**.
 - Before 3.5.0 a quoted function argument was read as an allowed value, so
   `date_trunc('month', d) = d` made the fill fail with `invalid input syntax for type date: "month"`.
+- Before 3.9.0 no `CHECK` or `ENUM` was read on **CockroachDB**, so those columns were filled from
+  their type default. Most such fills failed outright — an enum column got an arbitrary string, and a
+  range or `IN` check rejected the value — but a column whose check the type default happened to
+  satisfy did fill, and **the values it produces change in 3.9.0**, because they now come from the
+  constraint. Re-pin any CockroachDB fixture you compare byte-for-byte.
 - A per-column override or a [registry](./GENERATORS.md#custom-generator-registry) rule always
   wins, so you can still take full control of a constrained column.
 - Open the connection with `stringtype=unspecified` (already required for PostgreSQL's extension
-  types) so enum/`IN` values bind. Constraint reading is PostgreSQL-only today: CockroachDB (and
-  every other database) reads no `CHECK`s, so give those columns an explicit generator.
+  types) so enum/`IN` values bind. This applies to CockroachDB too, which is reached through the same
+  driver.
+- **CockroachDB** is covered by the same reader (since 3.9.0): it serves the same `pg_catalog`
+  queries, and the definitions it stores differ only in spellings the parser accepts on both — it
+  keeps `BETWEEN` verbatim where PostgreSQL expands it into two comparisons, writes `extract('day',
+  col)` with a comma rather than `EXTRACT(day FROM col)`, and casts literals as `::STRING`. Every
+  other database reads no `CHECK`s, so give those columns an explicit generator.
 
 ## Reproducible data with seeds
 
