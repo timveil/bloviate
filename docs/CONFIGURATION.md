@@ -156,6 +156,11 @@ Notes:
   `date_trunc` units (`day`, `week`, ...), and **`CHECK`s over more than one column**.
 - Before 3.5.0 a quoted function argument was read as an allowed value, so
   `date_trunc('month', d) = d` made the fill fail with `invalid input syntax for type date: "month"`.
+- Before 3.9.0 no `CHECK` or `ENUM` was read on **CockroachDB**, so those columns were filled from
+  their type default. Most such fills failed outright — an enum column got an arbitrary string, and a
+  range or `IN` check rejected the value — but a column whose check the type default happened to
+  satisfy did fill, and **the values it produces change in 3.9.0**, because they now come from the
+  constraint. Re-pin any CockroachDB fixture you compare byte-for-byte.
 - A per-column override or a [registry](./GENERATORS.md#custom-generator-registry) rule always
   wins, so you can still take full control of a constrained column.
 - Open the connection with `stringtype=unspecified` (already required for PostgreSQL's extension
