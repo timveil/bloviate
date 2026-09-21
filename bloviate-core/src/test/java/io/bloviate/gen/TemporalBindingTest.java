@@ -34,7 +34,6 @@ import java.util.TimeZone;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Issue #640: what a fill stores must not depend on the JVM's default time zone.
@@ -166,7 +165,8 @@ class TemporalBindingTest {
         TemporalBinding.setTimestamp(statement, COLUMN, TIMESTAMP);
 
         assertEquals(2, calendars.size());
-        assertNotSame(calendars.get(0), calendars.get(1));
-        assertSame(calendars.get(0).getTimeZone().getID(), calendars.get(1).getTimeZone().getID());
+        assertNotSame(calendars.get(0), calendars.get(1), "a shared calendar could be mutated by two threads at once");
+        assertEquals("UTC", calendars.get(0).getTimeZone().getID());
+        assertEquals("UTC", calendars.get(1).getTimeZone().getID());
     }
 }
