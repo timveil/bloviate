@@ -12,18 +12,25 @@ explicitly, or let Bloviate detect it from the connection.
 | MariaDB | `MariaDBSupport` | Extends `MySQLSupport` (MariaDB speaks the MySQL wire protocol) |
 | H2 | `H2Support` | Standard JDBC types **plus** `UUID` and `JSON` (embedded; no Docker) |
 | SQLite | `SQLiteSupport` | Standard JDBC types via type affinity (embedded; no Docker) |
+| DuckDB | `DuckDBSupport` | Standard JDBC types **plus** unsigned integers, `UUID`, `JSON`, `BIT`, `ENUM`, `HUGEINT` and the sub-second timestamps (embedded; no Docker) |
 | BigQuery | `BigQuerySupport` | All scalar types **incl.** `JSON`, `GEOGRAPHY`, `INTERVAL`, `DATETIME`; no composites |
 | Generic JDBC | `DefaultSupport` | Standard JDBC types only |
 
 All of them resolve the cross-database defaults for the common JDBC types (integers, decimals,
-strings, dates/times, booleans, binary, …). `PostgresSupport`, `MySQLSupport`, and `H2Support` add
-handling for vendor-specific types on top of those defaults.
+strings, dates/times, booleans, binary, …). `PostgresSupport`, `MySQLSupport`, `H2Support` and
+`DuckDBSupport` add handling for vendor-specific types on top of those defaults.
 
 ## Integer signedness
 
 JDBC's `TINYINT` is a signed 8-bit type, so `-128..127` is generated for it. MySQL and MariaDB also
 have an unsigned `TINYINT` (`0..255`); JDBC metadata has no signedness column, so Bloviate reads it
 from the type name the driver reports (`TINYINT UNSIGNED`) and widens the range to match.
+
+DuckDB has a full set of unsigned integers and reports them differently: `UTINYINT`, `USMALLINT` and
+`UINTEGER` arrive as the next *signed* JDBC type up (`SMALLINT`, `INTEGER`, `BIGINT`), with only the
+type name saying they are unsigned, while `UBIGINT` and `UHUGEINT` arrive as `OTHER`. Generating the
+widened signed range would produce negatives, which DuckDB rejects outright, so `DuckDBSupport`
+ranges each of them from zero.
 
 ## Vendor types
 
@@ -206,7 +213,7 @@ on driver 4.4.0 and later; they simply stay on DML.
 | Database | Partitioned tables |
 |----------|--------------------|
 | PostgreSQL | Declarative partitioning (`RANGE`, `LIST`, `HASH`, multi-level) is filled **through the parent**: the driver reports it as `PARTITIONED TABLE`, `PostgresSupport` discovers it and excludes every partition (`pg_class.relispartition`, including intermediate partitions), and the database routes rows. Constrain the partition key with a `ColumnConfiguration`; see [Partitioned tables](CONFIGURATION.md#partitioned-tables). |
-| CockroachDB, MySQL, MariaDB, H2, SQLite, BigQuery | Unchanged. Their partitions are not exposed as separate tables through JDBC, so a partitioned table is discovered as one ordinary table. |
+| CockroachDB, MySQL, MariaDB, H2, SQLite, DuckDB, BigQuery | Unchanged. Their partitions are not exposed as separate tables through JDBC, so a partitioned table is discovered as one ordinary table. |
 | Generic JDBC (`DefaultSupport`) | Unchanged: only `TABLE` is discovered. |
 
 The behaviour is two hooks on `DatabaseSupport`, both opt-in and defaulting to today's behaviour:

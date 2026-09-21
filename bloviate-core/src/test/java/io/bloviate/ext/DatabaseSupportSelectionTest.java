@@ -55,6 +55,12 @@ class DatabaseSupportSelectionTest {
     }
 
     @Test
+    void selectsDuckDbByProductName() {
+        // the driver reports exactly "DuckDB"
+        assertInstanceOf(DuckDBSupport.class, DatabaseSupport.forProduct("DuckDB"));
+    }
+
+    @Test
     void selectsSqliteByProductName() {
         assertInstanceOf(SQLiteSupport.class, DatabaseSupport.forProduct("SQLite"));
     }

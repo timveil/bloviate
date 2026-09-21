@@ -126,7 +126,7 @@ public interface DatabaseSupport {
      * <em>top-level</em> partitioned table it belongs to (for multi-level partitioning, an intermediate
      * partition and its own partitions all map to the top-level table). A top-level table in a different
      * schema is written {@code schema.table}. The default returns an empty map: MySQL, MariaDB,
-     * CockroachDB, H2, SQLite and BigQuery do not expose partitions as separate tables through JDBC, so
+     * CockroachDB, H2, SQLite, DuckDB and BigQuery do not expose partitions as separate tables through JDBC, so
      * nothing has to be excluded.
      *
      * @param connection an open connection to query the catalog with
@@ -233,7 +233,8 @@ public interface DatabaseSupport {
      * {@code "cockroach"} map to {@link CockroachDBSupport}, {@code "mariadb"} to
      * {@link MariaDBSupport}, {@code "mysql"} to {@link MySQLSupport}, {@code "postgres"} to
      * {@link PostgresSupport}, {@code "h2"} to {@link H2Support}, {@code "sqlite"} to
-     * {@link SQLiteSupport}, and {@code "bigquery"} to {@link BigQuerySupport}. Anything else
+     * {@link SQLiteSupport}, {@code "duckdb"} to {@link DuckDBSupport}, and {@code "bigquery"} to
+     * {@link BigQuerySupport}. Anything else
      * (including {@code null}) falls back to {@link DefaultSupport}.
      *
      * <p><strong>CockroachDB note:</strong> CockroachDB is typically reached through the
@@ -279,6 +280,9 @@ public interface DatabaseSupport {
             }
             if (name.contains("h2")) {
                 return new H2Support();
+            }
+            if (name.contains("duckdb")) {
+                return new DuckDBSupport();
             }
             if (name.contains("bigquery")) {
                 return new BigQuerySupport();
