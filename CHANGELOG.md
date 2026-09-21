@@ -1,3 +1,9 @@
+## [3.8.1](https://github.com/timveil/bloviate/compare/v3.8.0...v3.8.1) (2026-09-21)
+
+### 🐛 Bug Fixes
+
+* **core:** escape LIKE wildcards in metadata schema and table lookups ([#649](https://github.com/timveil/bloviate/issues/649)) ([0c9357c](https://github.com/timveil/bloviate/commit/0c9357cf876db2dd4b21a24e84406650eb6ef4e1)), closes [#632](https://github.com/timveil/bloviate/issues/632)
+
 ## [3.8.0](https://github.com/timveil/bloviate/compare/v3.7.0...v3.8.0) (2026-09-20)
 
 ### ✨ Features
