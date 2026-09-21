@@ -294,6 +294,30 @@ class FillCommandTest {
     }
 
     @Test
+    void aSchemaWithAnUnderscoreDoesNotSeeTheOtherSchemasTables() throws SQLException {
+        // getTables takes the schema as a LIKE pattern, so TENANT_1 would also match TENANTX1 and
+        // --table-rows would accept the other schema's table as if it were one of this schema's
+        database.execute("""
+                create schema tenant_1;
+                create schema tenantx1;
+                create table tenant_1.widgets (id int primary key, label varchar(20));
+                create table tenantx1.gadgets (id int primary key);
+                """);
+
+        CliRun run = fill("--schema", "TENANT_1", "--rows", "7", "--table-rows", "gadgets=3");
+
+        assertEquals(2, run.code(), run.err());
+        assertTrue(run.err().startsWith("bloviate: --table-rows names no table"), run.err());
+        assertEquals(0, database.count("tenantx1.gadgets"));
+
+        CliRun valid = fill("--schema", "TENANT_1", "--rows", "7");
+
+        assertEquals(0, valid.code(), valid.err());
+        assertEquals(7, database.count("tenant_1.widgets"));
+        assertEquals(0, database.count("tenantx1.gadgets"), "the other schema must be untouched");
+    }
+
+    @Test
     void aSchemaThatDoesNotExistIsAFillFailure() {
         CliRun run = fill("--schema", "NOPE");
 

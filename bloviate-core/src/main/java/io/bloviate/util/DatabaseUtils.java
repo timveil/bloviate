@@ -185,7 +185,12 @@ public class DatabaseUtils {
 
         List<String> discoveredNames = new ArrayList<>();
 
-        try (ResultSet tablesResultSet = metaData.getTables(catalog, schema, null, support.discoveredTableTypes().toArray(String[]::new))) {
+        // getTables takes the schema as a LIKE pattern, so a schema whose name contains _ or %
+        // would also match other schemas; MetadataPatterns narrows it back to the one name
+        MetadataPatterns patterns = MetadataPatterns.forMetaData(metaData);
+
+        try (ResultSet tablesResultSet = metaData.getTables(catalog, patterns.literal(schema), null,
+                support.discoveredTableTypes().toArray(String[]::new))) {
             while (tablesResultSet.next()) {
                 String tableName = tablesResultSet.getString("TABLE_NAME");
                 if (!partitions.containsKey(tableName)) {
@@ -431,9 +436,20 @@ public class DatabaseUtils {
         throw new IllegalStateException(String.format("can't find column in table [%s] with name [%s]", tableName, columnName));
     }
 
+    /**
+     * Reads one table's columns.
+     *
+     * <p>{@code getColumns} takes the schema and the table name as LIKE patterns, so both are escaped:
+     * unescaped, a table named {@code order_items} would also match {@code orderXitems} and this list
+     * would carry the other table's columns too. The escaper is read per call rather than threaded
+     * through the metadata read: every driver answers {@code getSearchStringEscape()} from a constant,
+     * and this method already issues a catalog query.
+     */
     private static List<Column> getColumns(DatabaseMetaData metaData, String catalog, String schema, String tableName) throws SQLException {
 
-        try (ResultSet columnsResultSet = metaData.getColumns(catalog, schema, tableName, null)) {
+        MetadataPatterns patterns = MetadataPatterns.forMetaData(metaData);
+
+        try (ResultSet columnsResultSet = metaData.getColumns(catalog, patterns.literal(schema), patterns.literal(tableName), null)) {
 
             List<Column> columns = new ArrayList<>();
 

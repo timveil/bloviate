@@ -612,7 +612,9 @@ The name is passed to the driver as given, so its case must match the database's
 `"REPORTING"` differ on PostgreSQL, and H2 folds unquoted names to upper case). Bloviate checks that the
 connection reports the requested value after setting it, so a schema that does not exist, or a driver
 that ignores the request, is a `SQLException` from `fill()` ("cannot select schema [x]...") rather than a
-silent fill of the wrong schema. Databases differ:
+silent fill of the wrong schema. The name is a literal, never a pattern: JDBC's catalog calls take
+the schema and table name as LIKE patterns, so Bloviate escapes `_` and `%` before passing them on and
+a schema named `tenant_1` matches `tenant_1` alone, not `tenantx1`. Databases differ:
 
 - **PostgreSQL, H2, CockroachDB:** use `schema(...)`. PostgreSQL cannot change database on a connection,
   so `catalog(...)` there fails unless it names the current database.
