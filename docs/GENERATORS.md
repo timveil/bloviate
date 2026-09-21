@@ -343,6 +343,12 @@ directly with `end(...)`) to the window end minus one millisecond. A generator t
 `GeneratorFactory.contextual(...)`. Offset syntax, boundary semantics and the rule that makes the output
 reproducible (pin `asOf`) are in [Relative date ranges and asOf](./CONFIGURATION.md#relative-date-ranges-and-asof).
 
+`SqlDateGenerator`, `SqlTimeGenerator`, `SqlTimestampGenerator`, `SkewedTimestampGenerator` and
+`CurrentSqlTimestampGenerator` bind their values in **UTC**, not the JVM's default zone, so what they
+store is the same on every machine — see
+[Reproducible data with seeds](./CONFIGURATION.md#reproducible-data-with-seeds). A custom generator
+that binds a `java.sql` temporal should do the same, through `io.bloviate.gen.TemporalBinding`.
+
 ## Data generator types
 
 Bloviate includes generators for all common database types:

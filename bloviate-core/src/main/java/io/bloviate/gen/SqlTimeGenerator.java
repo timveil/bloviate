@@ -45,12 +45,12 @@ public class SqlTimeGenerator extends AbstractDataGenerator<Time> {
 
     @Override
     public void set(Connection connection, PreparedStatement statement, int parameterIndex, Time value) throws SQLException {
-        statement.setTime(parameterIndex, value);
+        TemporalBinding.setTime(statement, parameterIndex, value);
     }
 
     @Override
     public Time get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getTime(columnIndex);
+        return TemporalBinding.getTime(resultSet, columnIndex);
     }
 
     /**

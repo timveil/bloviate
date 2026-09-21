@@ -54,12 +54,12 @@ public class SqlDateGenerator extends AbstractDataGenerator<Date> {
 
     @Override
     public void set(Connection connection, PreparedStatement statement, int parameterIndex, Date value) throws SQLException {
-        statement.setDate(parameterIndex, value);
+        TemporalBinding.setDate(statement, parameterIndex, value);
     }
 
     @Override
     public Date get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getDate(columnIndex);
+        return TemporalBinding.getDate(resultSet, columnIndex);
     }
 
     /**

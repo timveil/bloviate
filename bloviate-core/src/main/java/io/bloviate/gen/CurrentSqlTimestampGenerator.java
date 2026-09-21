@@ -37,12 +37,12 @@ public class CurrentSqlTimestampGenerator extends AbstractDataGenerator<Timestam
 
     @Override
     public void set(Connection connection, PreparedStatement statement, int parameterIndex, Timestamp value) throws SQLException {
-        statement.setTimestamp(parameterIndex, value);
+        TemporalBinding.setTimestamp(statement, parameterIndex, value);
     }
 
     @Override
     public Timestamp get(ResultSet resultSet, int columnIndex) throws SQLException {
-        return resultSet.getTimestamp(columnIndex);
+        return TemporalBinding.getTimestamp(resultSet, columnIndex);
     }
 
     /** Fluent builder for {@link CurrentSqlTimestampGenerator}. */
