@@ -46,8 +46,12 @@ import static org.junit.jupiter.api.Assertions.fail;
  * happen — but never accidentally. Any change that alters a generator's draw sequence, the
  * per-column seed derivation, or metadata traversal order that feeds seeding will fail this test
  * loudly instead of shipping silently. The schema deliberately covers foreign-key chains, a column
- * participating in two foreign keys (whose resolution depends on foreign-key grouping order), and
- * a spread of type families (integers, strings, numerics, temporals, UUID, binary, boolean).
+ * participating in two foreign keys, and a spread of type families (integers, strings, numerics,
+ * temporals, UUID, binary, boolean).
+ *
+ * <p>Foreign keys are enforced throughout. Until #617 the shared column could satisfy only one of its
+ * two keys, so the fill needed {@code SET REFERENTIAL_INTEGRITY FALSE} to insert at all; the dump now
+ * doubles as proof that every generated key matches a row that exists.
  *
  * <p><strong>If this test fails, first decide whether the data change is intentional.</strong> If
  * it is not, fix the regression. If it is (a deliberate, release-noted improvement), regenerate
@@ -101,9 +105,6 @@ class SeedGoldenDumpTest {
                         statement.execute(sql);
                     }
                 }
-                // the bridge table's column has two parents; disable enforcement so its rows insert
-                // regardless of which parent the resolution order follows
-                statement.execute("SET REFERENTIAL_INTEGRITY FALSE");
                 // pin the SESSION time zone: the dump reads TIMESTAMP columns back through it, so
                 // it must not depend on the machine's zone. (TimeZone.setDefault is not enough — H2
                 // caches the JVM zone statically the first time any test loads it.) Since #640 the

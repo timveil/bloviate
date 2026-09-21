@@ -20,6 +20,7 @@ import io.bloviate.ext.DatabaseSupport;
 import io.bloviate.ext.GeneratorRegistry;
 import io.bloviate.gen.DataGenerator;
 import io.bloviate.gen.IndexedDataGenerator;
+import io.bloviate.gen.SequentialIntegerGenerator;
 import io.bloviate.util.DatabaseUtils;
 import io.bloviate.util.Mixers;
 import io.bloviate.util.IndexedRandom;
@@ -128,6 +129,10 @@ public class TableFiller implements Fillable {
 
         TableConfiguration tableConfiguration = databaseConfiguration.tableConfiguration(table.name());
 
+        // how every foreign-key column lines up with the key it references: which seed it shares, how
+        // far it may run before wrapping, and whether the key is one the database assigns itself
+        ForeignKeyPlan foreignKeyPlan = ForeignKeyPlan.of(database);
+
         long baseSeed = databaseConfiguration.seed();
 
         // value constraints (CHECK / enum) for this table's columns, so generated values conform
@@ -144,26 +149,19 @@ public class TableFiller implements Fillable {
 
             Column column = filteredColumns.get(idx);
 
-            long seed;
+            // every column generates from its seed source: itself, unless a foreign key links it to a
+            // key, in which case the whole linked class shares one seed and the values line up
+            long seed = DatabaseUtils.columnSeed(foreignKeyPlan.seedSource(column), baseSeed);
 
-            Column associatedPrimaryKeyColumn = DatabaseUtils.getAssociatedPrimaryKeyColumn(database, table, column);
-
-            if (associatedPrimaryKeyColumn != null) {
-
-                // check to see if table has custom configuration
-                TableConfiguration primaryTableConfiguration = databaseConfiguration.tableConfiguration(associatedPrimaryKeyColumn.tableName());
-
-                if (primaryTableConfiguration != null) {
-                    // this is the number of rows in the primary table.  a foreign key random generator can't be called more than this number of times.
-                    maxInvocations[idx] = primaryTableConfiguration.rowCount();
-                }
-
-                // seed the foreign key from its associated primary key so the two line up;
-                // columnSeed is a pure function of the column, so both resolve to the same seed
-                seed = DatabaseUtils.columnSeed(associatedPrimaryKeyColumn, baseSeed);
-            } else {
-                seed = DatabaseUtils.columnSeed(column, baseSeed);
+            // a foreign key can produce no more distinct values than the smallest key space it
+            // references has rows; beyond that the generator wraps and replays those same keys, so a
+            // child larger than a parent stays inside it however the parent was sized (issue #617)
+            long keySpace = 0;
+            for (String referencedTable : foreignKeyPlan.referencedTables(column)) {
+                long referencedRows = rowCount(referencedTable);
+                keySpace = keySpace == 0 ? referencedRows : Math.min(keySpace, referencedRows);
             }
+            maxInvocations[idx] = keySpace;
 
             // resolve the generator by precedence; the generator is always seeded by the engine
             // so it stays reproducible regardless of which path provides it:
@@ -187,6 +185,15 @@ public class TableFiller implements Fillable {
                 if (custom != null) {
                     dataGenerator = custom;
                     source = "registry";
+                } else if (foreignKeyPlan.databaseGenerated(column)) {
+                    // the key this references is assigned by the database (serial, IDENTITY), so it is
+                    // left out of its own insert and there is no seed to share with it. A table filled
+                    // from empty is assigned 1..N in insertion order, which counting reproduces exactly.
+                    dataGenerator = new SequentialIntegerGenerator.Builder(random)
+                            .start(1)
+                            .end((int) Math.max(1, Math.min(keySpace, Integer.MAX_VALUE)))
+                            .build();
+                    source = "generated-key";
                 } else {
                     // honor a CHECK/enum constraint when one applies and the user hasn't overridden the column
                     ColumnConstraint constraint = constraints.get(column.name().toLowerCase(Locale.ROOT));
@@ -232,10 +239,7 @@ public class TableFiller implements Fillable {
 
         int batchSize = databaseConfiguration.batchSize();
 
-        long totalRowCount = databaseConfiguration.defaultRowCount();
-        if (tableConfiguration != null) {
-            totalRowCount = tableConfiguration.rowCount();
-        }
+        long totalRowCount = rowCount(table.name());
 
         // when a sub-range is configured this filler handles one partition of the table; otherwise
         // it fills the whole table on the original, byte-for-byte-unchanged path
@@ -405,6 +409,16 @@ public class TableFiller implements Fillable {
      *       different partitioning, as they carry no cross-row contract.</li>
      * </ul>
      */
+    /**
+     * How many rows a table is filled with: its own {@link TableConfiguration} when it has one,
+     * otherwise the configuration's default. This is the size of that table's key space, which is why
+     * a foreign key into it wraps here (issue #617).
+     */
+    private long rowCount(String tableName) {
+        TableConfiguration configuration = databaseConfiguration.tableConfiguration(tableName);
+        return configuration != null ? configuration.rowCount() : databaseConfiguration.defaultRowCount();
+    }
+
     private void seekGeneratorsTo(DataGenerator<?>[] generators, IndexedRandom[] positionables,
                                   long[] reseedSeeds, long[] maxInvocations, long startRow) {
         for (int col = 0; col < generators.length; col++) {

@@ -226,21 +226,44 @@ then loops `rowCount` times generating values and binding them to a `PreparedSta
 `batchSize` rows (default 1000), with a final flush for the remainder — keeping inserts efficient on
 large datasets.
 
-**Foreign-key fidelity.** This is subtle and clever. When a column is a foreign key, Bloviate seeds
-its generator from the *referenced primary key column's* seed (see [reproducibility](#reproducibility--deterministic-seeds-from-schema-identity)),
-so the FK generator reproduces exactly the same value sequence the parent table's PK generator
-produced — the values line up by construction. To avoid generating FK values that point at
-nonexistent parent rows, a `maxInvocationMap` caps how many distinct values an FK generator emits
-(the parent table's row count) and **reseeds** the generator when that boundary is hit, cycling it
-back through the same valid value range.
+**Foreign-key fidelity.** This is subtle and clever. Bloviate never reads a parent's rows back: a
+foreign-key column is made to *replay* the key it points at, generating from the same seed at the same
+row index (see [reproducibility](#reproducibility--deterministic-seeds-from-schema-identity)), so the
+values line up by construction.
+[`ForeignKeyPlan`](https://github.com/timveil/bloviate/blob/main/bloviate-core/src/main/java/io/bloviate/db/ForeignKeyPlan.java)
+works that out once for the whole database, from three rules:
+
+- **Which key.** Edges come from the columns the constraint actually names (`PKCOLUMN_NAME`), so a key
+  to a `UNIQUE` target — the tenant pattern, `PRIMARY KEY (id)` alongside `UNIQUE (tenant_id, id)` —
+  resolves to the columns it really references rather than to the parent's primary key by position.
+- **Which seed.** Columns linked by a foreign key, in either direction, form one class, and the whole
+  class generates from a single seed: the class's *seed source*. For an ordinary parent/child chain
+  that is the column at the far end, exactly as before. It matters when one column belongs to several
+  keys — its value must exist in *every* key it references, which only holds if those keys carry the
+  same values, so the rule ties them into one class. A schema that points one column at two unrelated
+  keys therefore makes those two keys equal, column for column; that is inherent, since a value cannot
+  be in both key spaces unless the key spaces overlap.
+- **How far.** A column may emit no more distinct values than the smallest key space it references has
+  rows, counting the whole chain up — a grandchild's value must be a key of its parent, whose value
+  must be a key of the grandparent. Past that the generator wraps (`position(rowIndex % keySpace)`, or
+  a reseed on the legacy non-positionable path) and replays those same keys. The limit comes from each
+  table's `TableConfiguration` when it has one and the default row count otherwise, so a child sized
+  larger than its parent stays inside it however the parent was sized.
+
+A key the *database* assigns (`serial`, `IDENTITY`) is left out of its own insert, so there is no seed
+to share with it. A table filled from empty is assigned 1..N in insertion order, which the child
+reproduces by counting through the same range.
 
 ```mermaid
 flowchart TD
-    A[For each column in table] --> B{Foreign key?}
-    B -->|yes| C["seed = columnSeed(referenced PK column)"]
+    A[For each column in table] --> B{"In a foreign key?"}
     B -->|no| D["seed = columnSeed(this column)"]
-    C --> E[resolve generator by precedence]
-    D --> E
+    B -->|yes| C{"Is the referenced key database-generated?"}
+    C -->|yes| I["count 1..N of the referenced table"]
+    C -->|no| J["seed = columnSeed(seed source of its class)<br/>wrap at the smallest referenced row count"]
+    D --> E[resolve generator by precedence]
+    I --> E
+    J --> E
     E --> F["generate value -> bind to PreparedStatement"]
     F --> G{rowCounter % batchSize == 0?}
     G -->|yes| H[executeBatch]
@@ -248,7 +271,7 @@ flowchart TD
 ```
 
 The inner loop is the hot path (it runs `rowCount × columnCount` times), so `TableFiller` resolves
-every column's generator, seed, and FK reseed-threshold *once* into positional arrays indexed by
+every column's generator, seed, and FK wrap limit *once* into positional arrays indexed by
 column ordinal — the loop then does array reads instead of hashing the `Column` on every cell.
 
 ### Commit strategy

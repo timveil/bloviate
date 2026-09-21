@@ -20,7 +20,6 @@ import io.bloviate.ext.PostgresSupport;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -46,9 +45,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *   <li>mutual cycle, parallel path: no exception, a warning, and both tables left empty &mdash; fixed
  *       in #618;</li>
  *   <li>FK to a serial or identity primary key: {@code Key (author_id)=(1077167994) is not present in
- *       table "authors"} &mdash; the child is given random integers, not the generated 1..N;</li>
- *   <li>child larger than an unconfigured parent: the first 10 rows are valid (the default row count)
- *       and {@code Batch entry 10 ... violates foreign key constraint "children_parent_id_fkey"};</li>
+ *       table "authors"} &mdash; the child was given random integers, not the generated 1..N; fixed in
+ *       #617, which counts through the values the database assigns instead;</li>
+ *   <li>child larger than an unconfigured parent: the first 10 rows were valid (the default row count)
+ *       and {@code Batch entry 10 ... violates foreign key constraint "children_parent_id_fkey"};
+ *       fixed in #617, which takes the wrap limit from the default row count too;</li>
  *   <li>self-referencing FK: fills, but every row's {@code manager_id} equals its own {@code id}.</li>
  * </ul>
  */
@@ -169,13 +170,11 @@ class PostgresForeignKeyShapesTest extends BaseDatabaseTestCase {
     // ---------------------------------------------------------------------------------------------
 
     /**
-     * Desired outcome for #617 (which lists "FK to an auto-increment PK" as unverified): a child's FK
-     * values are the identity values the parent was actually given. Today the parent's key column is
-     * excluded from the insert (the database generates 1..N) while the child is filled with random
-     * integers seeded from that column, so nothing matches.
+     * A child's FK values are the identity values the parent was actually given. The parent's key column
+     * is excluded from the insert, so the database generates 1..N and there is no seed for the child to
+     * share; since #617 the child counts through the same range instead of drawing random integers.
      */
     @Test
-    @Disabled("#617: a foreign key to a serial primary key is filled with random integers, not the generated values")
     void foreignKeyToSerialPrimaryKeyIsFilled() throws SQLException {
         fixture.fillSequential("fk_identity", configuration(16, ROWS, null));
 
@@ -186,7 +185,6 @@ class PostgresForeignKeyShapesTest extends BaseDatabaseTestCase {
 
     /** As above, for {@code GENERATED ALWAYS AS IDENTITY}. */
     @Test
-    @Disabled("#617: a foreign key to an identity primary key is filled with random integers, not the generated values")
     void foreignKeyToIdentityPrimaryKeyIsFilled() throws SQLException {
         fixture.fillSequential("fk_identity_always", configuration(16, ROWS, null));
 
@@ -214,12 +212,11 @@ class PostgresForeignKeyShapesTest extends BaseDatabaseTestCase {
     }
 
     /**
-     * Desired outcome for #617: the wrap limit falls back to the default row count when the parent has
-     * no {@code TableConfiguration}. Today the limit is only set for a configured parent, so the child
-     * runs past the parent's key space (rows 0..9 are valid, row 10 is not).
+     * The wrap limit falls back to the default row count when the parent has no
+     * {@code TableConfiguration}. It used to be set only for a configured parent, so the child ran past
+     * the parent's key space (rows 0..9 were valid, row 10 was not).
      */
     @Test
-    @Disabled("#617: the FK wrap limit is only set when the parent has a TableConfiguration, not from defaultRowCount")
     void childLargerThanAnUnconfiguredParentStaysWithinTheParentKeys() throws SQLException {
         fixture.fillSequential("fk_cardinality", configuration(16, 10, Set.of(new TableConfiguration("children", 100))));
 
