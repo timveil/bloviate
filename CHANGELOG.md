@@ -1,3 +1,9 @@
+## [3.10.0](https://github.com/timveil/bloviate/compare/v3.9.2...v3.10.0) (2026-09-21)
+
+### ✨ Features
+
+* **core:** fill foreign keys from the columns they reference ([#654](https://github.com/timveil/bloviate/issues/654)) ([8eac83c](https://github.com/timveil/bloviate/commit/8eac83c6a52c1672e3c19149439fbd4c6fc755e0)), closes [#617](https://github.com/timveil/bloviate/issues/617)
+
 ## [3.9.2](https://github.com/timveil/bloviate/compare/v3.9.1...v3.9.2) (2026-09-21)
 
 ### 🐛 Bug Fixes
