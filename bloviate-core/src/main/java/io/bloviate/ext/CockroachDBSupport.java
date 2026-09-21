@@ -22,8 +22,11 @@ package io.bloviate.ext;
  * <p>CockroachDB is reached through the PostgreSQL JDBC driver and is wire-compatible with
  * PostgreSQL, so its columns surface through JDBC exactly as PostgreSQL's do (UUID, JSONB,
  * INET, INTERVAL, bit strings, and {@code _text}/{@code _int4}/{@code _int8} arrays). This
- * class therefore extends {@link PostgresSupport} and inherits its full type handling; it
- * exists as a distinct type for explicit selection and product-name resolution.
+ * class therefore extends {@link PostgresSupport} and inherits its full type handling, including
+ * its {@code CHECK}/{@code ENUM} {@linkplain #readConstraints constraint reading} (issue #633):
+ * CockroachDB serves the same {@code pg_catalog} queries, and the definition text it stores differs
+ * only in details the parser accepts on both. What it does <em>not</em> share is its partitioning,
+ * its bulk-load switches and the driver's batch-rewrite parameter, each overridden below.
  *
  * @since 1.0.0
  * @see PostgresSupport
@@ -46,18 +49,6 @@ public class CockroachDBSupport extends PostgresSupport {
     @Override
     public String batchRewriteUrlParameter() {
         return null;
-    }
-
-    /**
-     * Constraint reading is PostgreSQL-specific (issue #479 first cut); CockroachDB's catalog differs,
-     * so it overrides {@link PostgresSupport}'s reader back to none.
-     *
-     * @return an empty map
-     * @since 2.14.0
-     */
-    @Override
-    public java.util.Map<String, io.bloviate.db.ColumnConstraint> readConstraints(java.sql.Connection connection, String schema, String table) {
-        return java.util.Map.of();
     }
 
     /**

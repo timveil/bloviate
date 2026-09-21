@@ -49,6 +49,12 @@ supply a per-column `JsonbGenerator` override (via `ColumnConfiguration`) for an
 and `JSON` (generated as valid JSON). `ARRAY`, `INTERVAL`, `ENUM`, and `GEOMETRY` are **not** yet
 supported.
 
+**CockroachDB:** extends `PostgresSupport` and is reached through the PostgreSQL driver, so its
+types and its `CHECK`/`ENUM` [constraint conformance](./CONFIGURATION.md#constraint-conformance)
+work as PostgreSQL's do (constraints since 3.9.0). It does not share PostgreSQL's declarative
+partitioning, its `session_replication_role` bulk-load switch, or the driver's
+`reWriteBatchedInserts` parameter, none of which CockroachDB has.
+
 **SQLite:** SQLite uses dynamic typing with column *affinity*, so declared types collapse — through
 the JDBC metadata Bloviate reads — onto `INTEGER` / `FLOAT` / `VARCHAR`. There are no native
 `BOOLEAN`/`DATE`/`DATETIME` types: booleans are filled as integers and dates/timestamps as text,

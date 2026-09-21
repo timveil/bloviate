@@ -35,8 +35,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Reads PostgreSQL value constraints — {@code ENUM} labels and the machine-readable forms of
+ * Reads {@code pg_catalog} value constraints — {@code ENUM} labels and the machine-readable forms of
  * {@code CHECK} constraints — so the fill engine can generate conforming values (issue #479).
+ *
+ * <p>The catalog queries and the parser serve <strong>CockroachDB</strong> as well as PostgreSQL
+ * (issue #633): the {@code pg_constraint} and {@code pg_enum} queries run unchanged there, and the
+ * definition text differs only in details the parser accepts on both — a {@code :::} cast, the comma
+ * form of {@code extract}, and a {@code BETWEEN} that PostgreSQL would have expanded.
  *
  * <p>Two catalog queries run per table: {@code pg_enum} for enum columns, and {@code pg_constraint}
  * (with {@code pg_get_constraintdef}) for single-column checks, whose definitions are then
@@ -63,19 +68,24 @@ final class PostgresConstraints {
     private static final String IDENT = "(\"(?:[^\"]|\"\")+\"|[A-Za-z_][A-Za-z0-9_$]*)";
     private static final String TYPE = "(?:character varying|double precision|(?:timestamp|time) with(?:out)? time zone"
             + "|bit varying|[A-Za-z_][A-Za-z0-9_]*)(?:\\(\\s*\\d+(?:\\s*,\\s*\\d+)?\\s*\\))?(?:\\[\\])?";
-    private static final String CAST = "(?:\\s*::\\s*" + TYPE + ")?";
+    // PostgreSQL writes "::", CockroachDB may write ":::"
+    private static final String CAST = "(?:\\s*::+\\s*" + TYPE + ")?";
     /** A bare column, optionally parenthesised and cast: {@code status}, {@code (status)::text}. */
     private static final String COLUMN = "\\(*\\s*" + IDENT + "\\s*\\)*" + CAST;
+    /** An optionally signed integer or decimal, as every one of these definitions writes one. */
+    private static final String NUMBER = "-?\\d+(?:\\.\\d+)?";
     /** A quoted or numeric literal with an optional cast. */
-    private static final String LITERAL = "(?:'(?:[^']|'')*'|-?\\d+(?:\\.\\d+)?)" + CAST;
+    private static final String LITERAL = "(?:'(?:[^']|'')*'|" + NUMBER + ")" + CAST;
     private static final String LIST_ITEMS = "(?<list>(?:" + LITERAL + "\\s*,\\s*)*" + LITERAL + ")";
 
     private static final Pattern DATE_TRUNC = Pattern.compile(
             "(?is)\\s*CHECK\\s*\\(+\\s*date_trunc\\(\\s*'([a-z]+)'" + CAST + "\\s*,\\s*" + COLUMN + "\\s*\\)\\s*=\\s*" + COLUMN
                     + "\\s*\\)+");
+    // the SQL-standard EXTRACT(day FROM col), PostgreSQL's date_part('day', col), and the comma
+    // form CockroachDB stores for both of them: extract('day'::STRING, col)
     private static final Pattern EXTRACT_DAY = Pattern.compile(
             "(?is)\\s*CHECK\\s*\\(+\\s*(?:EXTRACT\\(\\s*day\\s+FROM\\s+" + COLUMN + "\\s*\\)"
-                    + "|date_part\\(\\s*'day'" + CAST + "\\s*,\\s*" + COLUMN + "\\s*\\))"
+                    + "|(?:extract|date_part)\\(\\s*'day'" + CAST + "\\s*,\\s*" + COLUMN + "\\s*\\))"
                     + "\\s*=\\s*\\(*\\s*1(?:\\.0+)?\\s*\\)*" + CAST + "\\s*\\)+");
 
     private static final Pattern ANY_ARRAY = Pattern.compile(
@@ -86,13 +96,17 @@ final class PostgresConstraints {
     private static final Pattern EQUALS_LITERAL = Pattern.compile(
             "(?is)\\s*CHECK\\s*\\(+\\s*" + COLUMN + "\\s*=\\s*(?<list>" + LITERAL + ")\\s*\\)+");
     // one literal (quoted text in group 1, or a number in group 2), with any cast skipped
-    private static final Pattern LIST_ITEM = Pattern.compile("'((?:[^']|'')*)'" + CAST + "|(-?\\d+(?:\\.\\d+)?)" + CAST);
+    private static final Pattern LIST_ITEM = Pattern.compile("'((?:[^']|'')*)'" + CAST + "|(" + NUMBER + ")" + CAST);
 
     // one comparison of the bare column against a number: "(amount >= (0)::numeric)", "rating <= 5"
     private static final Pattern COMPARISON = Pattern.compile(
-            COLUMN + "\\s*(>=|<=|>|<)\\s*\\(*\\s*'?(-?\\d+(?:\\.\\d+)?)'?\\s*\\)*" + CAST);
+            COLUMN + "\\s*(>=|<=|>|<)\\s*\\(*\\s*'?(" + NUMBER + ")'?\\s*\\)*" + CAST);
     private static final Pattern RANGE_STRUCTURE = Pattern.compile(
             "(?is)[\\s()]*CHECK[\\s()]*(?:AND[\\s()]*)*");
+    // PostgreSQL expands BETWEEN into a pair of comparisons; CockroachDB stores it verbatim
+    private static final Pattern BETWEEN = Pattern.compile(
+            "(?is)\\s*CHECK\\s*\\(+\\s*" + COLUMN + "\\s+BETWEEN\\s+\\(*\\s*(?<min>" + NUMBER + ")\\s*\\)*" + CAST
+                    + "\\s+AND\\s+\\(*\\s*(?<max>" + NUMBER + ")\\s*\\)*" + CAST + "\\s*\\)+");
 
     private PostgresConstraints() {
     }
@@ -177,9 +191,11 @@ final class PostgresConstraints {
      *   <li>{@code col IN (...)}, {@code col = ANY (ARRAY[...])} and {@code col = 'literal'} against
      *       literals, where {@code col} is the bare column, optionally cast ({@code (status)::text});</li>
      *   <li>closed numeric ranges: {@code >=}/{@code >} paired with {@code <=}/{@code <} against numeric
-     *       literals on the bare column ({@code BETWEEN} is stored in this form);</li>
+     *       literals on the bare column (PostgreSQL stores {@code BETWEEN} in this form), and
+     *       {@code col BETWEEN min AND max} itself, which CockroachDB stores verbatim;</li>
      *   <li>first-of-period dates: {@code date_trunc('month'|'quarter'|'year', col) = col} and
-     *       {@code EXTRACT(day FROM col) = 1} (or the older {@code date_part('day', col) = 1}).</li>
+     *       {@code EXTRACT(day FROM col) = 1}, in either of its comma spellings
+     *       ({@code date_part('day', col) = 1}, {@code extract('day', col) = 1}).</li>
      * </ul>
      * Negations, disjunctions, patterns, one-sided ranges, arithmetic and multi-column expressions are
      * rejected.
@@ -210,7 +226,32 @@ final class PostgresConstraints {
         }
 
         ColumnConstraint categorical = parseCategorical(def);
-        return categorical != null ? categorical : parseRange(def);
+        if (categorical != null) {
+            return categorical;
+        }
+
+        ColumnConstraint between = parseBetween(def);
+        return between != null ? between : parseRange(def);
+    }
+
+    /**
+     * {@code col BETWEEN min AND max} on the bare column, which is always an inclusive closed range.
+     *
+     * <p>PostgreSQL expands {@code BETWEEN} into a pair of comparisons before storing the definition,
+     * so only CockroachDB reaches this. {@code BETWEEN SYMMETRIC} does not match &mdash; its bounds
+     * may be the wrong way round &mdash; and falls through to be rejected.
+     */
+    private static ColumnConstraint parseBetween(String def) {
+        Matcher matcher = BETWEEN.matcher(def);
+        if (!matcher.matches()) {
+            return null;
+        }
+        BigDecimal min = new BigDecimal(matcher.group("min"));
+        BigDecimal max = new BigDecimal(matcher.group("max"));
+        if (min.compareTo(max) > 0) {
+            return null; // an empty range: nothing satisfies it, so there is nothing to generate
+        }
+        return new ColumnConstraint(null, min, true, max, true);
     }
 
     /**

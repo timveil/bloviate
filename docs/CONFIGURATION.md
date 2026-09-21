@@ -112,8 +112,8 @@ distributions learned from real data.
 
 ## Constraint conformance
 
-On **PostgreSQL**, Bloviate reads each table's `CHECK` constraints and `ENUM` types and generates
-values that satisfy them — **automatically, no configuration**. So given:
+On **PostgreSQL** and **CockroachDB**, Bloviate reads each table's `CHECK` constraints and `ENUM`
+types and generates values that satisfy them — **automatically, no configuration**. So given:
 
 ```sql
 CREATE TYPE order_status AS ENUM ('NEW', 'PAID', 'SHIPPED', 'CANCELLED');
@@ -159,8 +159,13 @@ Notes:
 - A per-column override or a [registry](./GENERATORS.md#custom-generator-registry) rule always
   wins, so you can still take full control of a constrained column.
 - Open the connection with `stringtype=unspecified` (already required for PostgreSQL's extension
-  types) so enum/`IN` values bind. Constraint reading is PostgreSQL-only today: CockroachDB (and
-  every other database) reads no `CHECK`s, so give those columns an explicit generator.
+  types) so enum/`IN` values bind. This applies to CockroachDB too, which is reached through the same
+  driver.
+- **CockroachDB** is covered by the same reader (since 3.9.0): it serves the same `pg_catalog`
+  queries, and the definitions it stores differ only in spellings the parser accepts on both — it
+  keeps `BETWEEN` verbatim where PostgreSQL expands it into two comparisons, writes `extract('day',
+  col)` with a comma rather than `EXTRACT(day FROM col)`, and casts literals as `::STRING`. Every
+  other database reads no `CHECK`s, so give those columns an explicit generator.
 
 ## Reproducible data with seeds
 

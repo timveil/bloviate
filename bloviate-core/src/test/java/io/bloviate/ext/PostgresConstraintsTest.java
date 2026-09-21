@@ -30,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for the {@code pg_get_constraintdef} parser — the riskiest part of issue #479 — using
- * the verbose, normalized forms PostgreSQL actually emits.
+ * the verbose, normalized forms PostgreSQL actually emits, and the forms CockroachDB emits for the
+ * same constraints (issue #633).
  */
 class PostgresConstraintsTest {
 
@@ -226,5 +227,68 @@ class PostgresConstraintsTest {
         assertEquals(0, new BigDecimal("60").compareTo(c.max()));
         c = PostgresConstraints.parseCheck("CHECK ((((score)::numeric >= (0)::numeric) AND ((score)::numeric <= (100)::numeric)))");
         assertEquals(0, new BigDecimal("100").compareTo(c.max()));
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // CockroachDB spellings of the same constraints (issue #633)
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * CockroachDB stores {@code BETWEEN} verbatim, where PostgreSQL expands it into a pair of
+     * comparisons before storing the definition. It is always an inclusive closed range.
+     */
+    @Test
+    void parsesCockroachBetween() {
+        ColumnConstraint rating = PostgresConstraints.parseCheck("CHECK ((rating BETWEEN 1 AND 5))");
+        assertEquals(0, new BigDecimal("1").compareTo(rating.min()));
+        assertEquals(0, new BigDecimal("5").compareTo(rating.max()));
+        assertTrue(rating.minInclusive());
+        assertTrue(rating.maxInclusive());
+
+        ColumnConstraint amount = PostgresConstraints.parseCheck("CHECK ((amount BETWEEN 0 AND 9999.99))");
+        assertEquals(0, new BigDecimal("0").compareTo(amount.min()));
+        assertEquals(0, new BigDecimal("9999.99").compareTo(amount.max()));
+    }
+
+    @Test
+    void rejectsBetweenFormsThatCannotBeSatisfiedByConstruction() {
+        assertNull(PostgresConstraints.parseCheck("CHECK ((rating NOT BETWEEN 1 AND 5))"), "negation");
+        assertNull(PostgresConstraints.parseCheck("CHECK ((rating BETWEEN SYMMETRIC 5 AND 1))"), "symmetric bounds");
+        assertNull(PostgresConstraints.parseCheck("CHECK ((rating BETWEEN 5 AND 1))"), "empty range");
+        assertNull(PostgresConstraints.parseCheck("CHECK ((a BETWEEN b AND c))"), "column bounds");
+        assertNull(PostgresConstraints.parseCheck("CHECK ((length(code) BETWEEN 1 AND 5))"), "function of the column");
+        assertNull(PostgresConstraints.parseCheck("CHECK ((d BETWEEN '2020-01-01' AND '2020-12-31'))"), "non-numeric bounds");
+    }
+
+    /** CockroachDB writes {@code extract} with a comma and a quoted unit, not the standard FROM form. */
+    @Test
+    void parsesCockroachExtractCommaForm() {
+        ColumnConstraint c = PostgresConstraints.parseCheck("CHECK ((extract('day'::STRING, d) = 1.0))");
+
+        assertEquals(TruncatedDateGenerator.Unit.MONTH, c.dateTruncation());
+        assertFalse(c.hasAllowedValues(), "'day' is the argument to extract, not an allowed value: " + c);
+    }
+
+    @Test
+    void parsesCockroachCastsOnEveryCategoricalAndDateShape() {
+        assertEquals(TruncatedDateGenerator.Unit.MONTH,
+                PostgresConstraints.parseCheck("CHECK ((date_trunc('month'::STRING, d) = d))").dateTruncation());
+        assertEquals(List.of("A", "B"),
+                PostgresConstraints.parseCheck("CHECK ((grade IN ('A'::STRING, 'B'::STRING)))").allowedValues());
+        assertEquals(List.of("1", "2", "3"),
+                PostgresConstraints.parseCheck("CHECK ((priority IN (1, 2, 3)))").allowedValues());
+        assertEquals(List.of("a"),
+                PostgresConstraints.parseCheck("CHECK ((status = 'a'::STRING))").allowedValues());
+    }
+
+    /** Some CockroachDB builds write the annotation form of a cast, with three colons. */
+    @Test
+    void parsesTripleColonCasts() {
+        assertEquals(TruncatedDateGenerator.Unit.MONTH,
+                PostgresConstraints.parseCheck("CHECK ((date_trunc('month':::STRING, d) = d))").dateTruncation());
+        assertEquals(TruncatedDateGenerator.Unit.MONTH,
+                PostgresConstraints.parseCheck("CHECK ((extract('day':::STRING, d) = 1.0))").dateTruncation());
+        assertEquals(List.of("A", "B"),
+                PostgresConstraints.parseCheck("CHECK ((grade IN ('A':::STRING, 'B':::STRING)))").allowedValues());
     }
 }
