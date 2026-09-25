@@ -120,7 +120,7 @@
         <spotless-maven-plugin.version>3.10.2</spotless-maven-plugin.version>
         <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>
         <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
-        <cyclonedx-maven-plugin.version>2.9.2</cyclonedx-maven-plugin.version>
+        <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
 
         <!-- Per-package test-coverage floor enforced by jacoco:check (bound to verify). Set just
              below current coverage to lock in no-regression; ratchet upward over time. Modules that
