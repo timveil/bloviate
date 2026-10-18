@@ -81,7 +81,7 @@ jobs:
       # "build-website" check gates the merge.
       - name: Auto-merge website (npm) patch & minor updates
         if: >-
-          steps.metadata.outputs.package-ecosystem == 'npm' &&
+          steps.metadata.outputs.package-ecosystem == 'npm_and_yarn' &&
           (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
            steps.metadata.outputs.update-type == 'version-update:semver-minor')
         run: gh pr merge --auto --squash "$PR_URL"
