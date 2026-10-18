@@ -39,7 +39,7 @@ pnpm build    # outputs static site to dist/
 pnpm preview  # serve the production build locally
 ```
 
-Requires Node 22+ (see `.node-version`) and pnpm (pinned via the `packageManager` field
+Requires Node 24+ (see `.node-version`) and pnpm (pinned via the `packageManager` field
 in `package.json` — `corepack enable` will provision the right version).
 
 ## API reference (Javadoc)
