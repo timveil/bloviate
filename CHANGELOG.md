@@ -1,3 +1,9 @@
+## [3.11.1](https://github.com/timveil/bloviate/compare/v3.11.0...v3.11.1) (2026-10-18)
+
+### 🐛 Bug Fixes
+
+* **ci:** match npm_and_yarn ecosystem in dependabot auto-merge ([#680](https://github.com/timveil/bloviate/issues/680)) ([8ff01ac](https://github.com/timveil/bloviate/commit/8ff01aceacd38a5994ae96d416cb7f4c86bbbe7d))
+
 ## [3.11.0](https://github.com/timveil/bloviate/compare/v3.10.0...v3.11.0) (2026-09-21)
 
 ### ✨ Features
