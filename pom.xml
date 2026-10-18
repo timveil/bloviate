@@ -78,7 +78,7 @@
         <!-- transitive-only: jackson-dataformat-yaml and datafaker disagree (2.5 vs 2.6).
              Pinned to the higher so enforcer's dependencyConvergence rule has a single
              answer instead of relying on Maven's nearest-wins tiebreak. -->
-        <snakeyaml.version>2.6</snakeyaml.version>
+        <snakeyaml.version>2.7</snakeyaml.version>
 
         <!-- test / integration dependency versions -->
         <testcontainers.version>1.21.4</testcontainers.version>
