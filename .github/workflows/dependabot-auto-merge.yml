@@ -19,7 +19,7 @@ permissions:
 # path) and the PR branch name (fallback path), so the two paths can't drift.
 # Only patch & minor updates auto-merge; majors are always left for review.
 env:
-  MAVEN_ALLOWLIST: "com.zaxxer org.apache.commons com.fasterxml.jackson org.slf4j org.junit.jupiter org.testcontainers org.postgresql com.mysql mysql org.jgrapht org.apache.maven.plugins org.codehaus.mojo"
+  MAVEN_ALLOWLIST: "com.zaxxer org.apache.commons com.fasterxml.jackson org.slf4j org.junit.jupiter org.testcontainers org.postgresql com.mysql mysql org.jgrapht org.apache.maven org.codehaus.mojo com.github.spotbugs org.duckdb com.h2database"
 
 jobs:
   dependabot:
@@ -82,6 +82,19 @@ jobs:
       - name: Auto-merge website (npm) patch & minor updates
         if: >-
           steps.metadata.outputs.package-ecosystem == 'npm_and_yarn' &&
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+           steps.metadata.outputs.update-type == 'version-update:semver-minor')
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # GitHub Actions deps: auto-merge patch & minor only; majors are left for
+      # manual review. Actions are SHA-pinned and CodeQL scans the workflows, so
+      # a minor action bump carries little more risk than a build plugin bump.
+      - name: Auto-merge GitHub Actions patch & minor updates
+        if: >-
+          steps.metadata.outputs.package-ecosystem == 'github_actions' &&
           (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
            steps.metadata.outputs.update-type == 'version-update:semver-minor')
         run: gh pr merge --auto --squash "$PR_URL"
