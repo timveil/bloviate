@@ -1,7 +1,5 @@
 # https://bloviate.io
 User-agent: *
-# Generated API reference (Javadoc) is reference material, not indexable content
-# — kept reachable from the site but excluded from crawlers. Mirrored on javadoc.io.
-Disallow: /apidocs/
+Allow: /
 
 Sitemap: https://bloviate.io/sitemap-index.xml

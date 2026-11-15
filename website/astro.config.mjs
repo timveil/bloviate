@@ -1,4 +1,5 @@
 // @ts-check
+import { readdirSync } from 'node:fs';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
@@ -80,6 +81,24 @@ if (gv.length) {
 }
 `;
 
+// The committed Javadoc lives in public/, which @astrojs/sitemap doesn't see, so
+// list its indexable pages (package summaries and type pages) explicitly. URLs are
+// extensionless because Cloudflare redirects *.html to them. The index and
+// cross-reference pages are left out; public/_headers marks them noindex.
+const apidocsPages = [
+	'https://bloviate.io/apidocs/',
+	...readdirSync(new URL('./public/apidocs/io/', import.meta.url), { recursive: true })
+		.map(String)
+		.filter(
+			(path) =>
+				path.endsWith('.html') &&
+				!path.includes('class-use/') &&
+				!/package-(tree|use)\.html$/.test(path),
+		)
+		.sort()
+		.map((path) => `https://bloviate.io/apidocs/io/${path.replace(/\.html$/, '')}`),
+];
+
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://bloviate.io',
@@ -154,6 +173,6 @@ export default defineConfig({
 		}),
 		// Emits sitemap-index.xml + sitemap-0.xml at build (uses `site` above);
 		// referenced from public/robots.txt so crawlers discover every page.
-		sitemap(),
+		sitemap({ customPages: apidocsPages }),
 	],
 });
