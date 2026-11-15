@@ -4,7 +4,44 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
 
-# Keep the generated Javadoc out of search indexes (belt-and-suspenders alongside
-# the robots.txt Disallow; covers crawlers that fetch it anyway).
+# Javadoc links its pages as *.html, which Cloudflare 307-redirects to the
+# extensionless path; declare that path canonical so the redirect source isn't
+# indexed in its place.
 /apidocs/*
+  Link: <https://bloviate.io/apidocs/:splat>; rel="canonical"
+
+# Javadoc class and package-summary pages are indexed (API names are real search
+# queries). Its generated index/cross-reference pages are thin or duplicative, so
+# keep them out of search indexes while still letting crawlers follow their links.
+# Only one splat is allowed per pattern, so nested packages (gen/tpcc) need their
+# own placeholder rules.
+/apidocs/io/bloviate/:pkg/class-use/*
+  X-Robots-Tag: noindex
+/apidocs/io/bloviate/:pkg/:sub/class-use/*
+  X-Robots-Tag: noindex
+/apidocs/io/bloviate/:pkg/package-tree
+  X-Robots-Tag: noindex
+/apidocs/io/bloviate/:pkg/:sub/package-tree
+  X-Robots-Tag: noindex
+/apidocs/io/bloviate/:pkg/package-use
+  X-Robots-Tag: noindex
+/apidocs/io/bloviate/:pkg/:sub/package-use
+  X-Robots-Tag: noindex
+/apidocs/allclasses-index
+  X-Robots-Tag: noindex
+/apidocs/allpackages-index
+  X-Robots-Tag: noindex
+/apidocs/constant-values
+  X-Robots-Tag: noindex
+/apidocs/help-doc
+  X-Robots-Tag: noindex
+/apidocs/index-all
+  X-Robots-Tag: noindex
+/apidocs/overview-summary
+  X-Robots-Tag: noindex
+/apidocs/overview-tree
+  X-Robots-Tag: noindex
+/apidocs/search
+  X-Robots-Tag: noindex
+/apidocs/serialized-form
   X-Robots-Tag: noindex

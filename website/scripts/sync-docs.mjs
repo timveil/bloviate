@@ -90,7 +90,7 @@ function stripLeadingComment(md) {
  * (`../ARCHITECTURE.md`) and absolute URLs are intentionally left untouched —
  * those are authored as full GitHub URLs in the docs.
  */
-const GUIDE_LINK_RE = /\]\(\.\/([A-Za-z0-9_-]+)\.md(#[^)]*)?\)/g;
+const GUIDE_LINK_RE = /\]\((?:\.\/)?([A-Za-z0-9_-]+)\.md(#[^)]*)?\)/g;
 function rewriteGuideLinks(md) {
 	return md.replace(GUIDE_LINK_RE, (_full, name, hash = '') => `](/guides/${slugify(`${name}.md`)}/${hash})`);
 }
