@@ -1,3 +1,9 @@
+## [3.11.4](https://github.com/timveil/bloviate/compare/v3.11.3...v3.11.4) (2026-11-15)
+
+### 🐛 Bug Fixes
+
+* **website:** patch zod and fflate dependabot alerts ([#728](https://github.com/timveil/bloviate/issues/728)) ([f4ef34f](https://github.com/timveil/bloviate/commit/f4ef34f4bfa20df911046c3d2653e627bae273f4))
+
 ## [3.11.3](https://github.com/timveil/bloviate/compare/v3.11.2...v3.11.3) (2026-11-15)
 
 ### 🐛 Bug Fixes
