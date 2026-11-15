@@ -11,6 +11,9 @@
  *   crawled, and a user click just follows the redirect.
  * - Assets: javadoc ships its scripts and stylesheets unminified; minify them.
  *   The vendored `*.min.*` files already are.
+ * - Overview description: javadoc gives the overview (index.html) and
+ *   allpackages-index.html the same meta description, "package index". The
+ *   overview is the indexed landing page, so give it a real one.
  */
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -31,6 +34,20 @@ function servedPath(path) {
 
 export function rewriteJavadocLinks(html) {
 	return html.replace(RELATIVE_HTML_HREF_RE, (_full, path, suffix = '') => `href="${servedPath(path)}${suffix}"`);
+}
+
+const OVERVIEW_DESCRIPTION =
+	'API reference for Bloviate, the JDBC test-data generator: every public class and method across the core engine, generators, file output and integrations.';
+
+function describeOverview(html) {
+	const described = html.replace(
+		/<meta name="description" content="[^"]*">/,
+		`<meta name="description" content="${OVERVIEW_DESCRIPTION}">`,
+	);
+	if (described === html) {
+		throw new Error('optimize-javadoc: no meta description found in apidocs/index.html');
+	}
+	return described;
 }
 
 /**
@@ -59,6 +76,7 @@ export default function optimizeJavadoc() {
 
 				const pages = files.filter((path) => path.endsWith('.html'));
 				rewriteEach(apidocs, pages, rewriteJavadocLinks);
+				rewriteEach(apidocs, ['index.html'], describeOverview);
 
 				const assets = files.filter((path) => /\.(js|css)$/.test(path) && !/\.min\.(js|css)$/.test(path));
 				rewriteEach(apidocs, assets, (source, path) => minify(source, path.endsWith('.css') ? 'css' : 'js'));
