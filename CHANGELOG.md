@@ -1,3 +1,9 @@
+## [3.11.5](https://github.com/timveil/bloviate/compare/v3.11.4...v3.11.5) (2026-11-15)
+
+### 🐛 Bug Fixes
+
+* **website:** give the javadoc overview a unique meta description ([#729](https://github.com/timveil/bloviate/issues/729)) ([a7afab7](https://github.com/timveil/bloviate/commit/a7afab783c6db17a5f38a298c1da6afca3d941a0))
+
 ## [3.11.4](https://github.com/timveil/bloviate/compare/v3.11.3...v3.11.4) (2026-11-15)
 
 ### 🐛 Bug Fixes

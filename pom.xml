@@ -22,7 +22,7 @@
 
     <groupId>io.bloviate</groupId>
     <artifactId>bloviate-parent</artifactId>
-    <version>3.11.4</version>
+    <version>3.11.5</version>
 
     <packaging>pom</packaging>
 
