@@ -6,6 +6,7 @@ import sitemap from '@astrojs/sitemap';
 import rehypeDocIcons from './src/plugins/rehype-doc-icons.mjs';
 import rehypeMermaid from './src/plugins/rehype-mermaid.mjs';
 import rehypeGraphviz from './src/plugins/rehype-graphviz.mjs';
+import optimizeJavadoc from './src/plugins/optimize-javadoc.mjs';
 
 // Client-side Mermaid loader. Imported lazily from a CDN and only on pages that
 // actually contain a diagram, so the build stays dependency-free (Cloudflare
@@ -174,5 +175,6 @@ export default defineConfig({
 		// Emits sitemap-index.xml + sitemap-0.xml at build (uses `site` above);
 		// referenced from public/robots.txt so crawlers discover every page.
 		sitemap({ customPages: apidocsPages }),
+		optimizeJavadoc(),
 	],
 });
