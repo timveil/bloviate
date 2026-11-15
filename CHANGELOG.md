@@ -1,3 +1,9 @@
+## [3.11.3](https://github.com/timveil/bloviate/compare/v3.11.2...v3.11.3) (2026-11-15)
+
+### 🐛 Bug Fixes
+
+* **website:** avoid javadoc link redirects and minify its assets ([#727](https://github.com/timveil/bloviate/issues/727)) ([4c02653](https://github.com/timveil/bloviate/commit/4c02653d3f98f727e0f3b7cf11a0f3bab3349095))
+
 ## [3.11.2](https://github.com/timveil/bloviate/compare/v3.11.1...v3.11.2) (2026-11-15)
 
 ### 🐛 Bug Fixes
