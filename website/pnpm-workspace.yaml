@@ -4,6 +4,9 @@
 # Pin esbuild to a single version across the tree (Astro/Vite transitive dep).
 overrides:
   esbuild: ^0.28.1
+  # satori pins fflate 0.7.3, which has GHSA-px8p-9vwx-vf98 (fixed in 0.7.5).
+  # Drop this once a satori release picks up the patched version.
+  fflate: ^0.7.5
 
 # Dependencies allowed to run install/build scripts. pnpm blocks lifecycle
 # scripts by default (v10+); allowBuilds replaces the old onlyBuiltDependencies.
