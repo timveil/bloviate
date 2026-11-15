@@ -1,3 +1,9 @@
+## [3.11.2](https://github.com/timveil/bloviate/compare/v3.11.1...v3.11.2) (2026-11-15)
+
+### 🐛 Bug Fixes
+
+* **website:** fix broken guide links and index javadoc ([#726](https://github.com/timveil/bloviate/issues/726)) ([6a0e404](https://github.com/timveil/bloviate/commit/6a0e404c4dcf932d0fe3a48caf66854398b8cd32))
+
 ## [3.11.1](https://github.com/timveil/bloviate/compare/v3.11.0...v3.11.1) (2026-10-18)
 
 ### 🐛 Bug Fixes
